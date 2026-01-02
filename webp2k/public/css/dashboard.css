@@ -1,0 +1,86 @@
+/* Custom CSS untuk Dashboard P2K */
+
+.p2k-header {
+    background-color: white;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.user-badge {
+    background-color: #dbeafe; /* bg-blue-100 */
+    border-radius: 9999px;
+    padding: 0.25rem 0.5rem 0.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.p2k-nav {
+    background-color: #3730a3; /* bg-indigo-800 */
+    padding: 0.5rem 1.5rem;
+    color: white;
+    font-size: 0.875rem;
+}
+
+/* Card Statistik */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+@media (min-width: 768px) {
+    .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.card-stat {
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.bg-blue-p2k { background-color: #4338ca; } 
+.bg-green-p2k { background-color: #10b981; } 
+
+/* Menu Utama */
+.menu-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .menu-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.btn-menu {
+    background-color: #4338ca;
+    color: white;
+    border-radius: 0.75rem;
+    padding: 2rem 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-menu:hover {
+    background-color: #3730a3;
+}
+
+.p2k-footer {
+    background-color: #3730a3;
+    color: white;
+    text-align: center;
+    padding: 1rem 0;
+    margin-top: 3rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
