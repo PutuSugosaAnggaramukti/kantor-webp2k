@@ -14,6 +14,7 @@
 
 <body>
 
+
 <div id="intro-loader">
     <div class="loader-content">
         <div class="spinner"></div>
@@ -22,9 +23,16 @@
     </div>
 </div>
 
-<div class="page-load" id="login-page" style="display: none;">
-    <div class="login-container">
+<div id="loginLoading" class="login-loading">
+    <div class="loading-card">
+        <img src="/assets/logo.png" class="loading-logo" alt="P2K">
+        <p>Memuat Dashboard</p>
+        <div class="spinner"></div>
+    </div>
+</div>
 
+<div class="page-load" id="login-page">
+    <div class="login-container">
     <!-- LEFT -->
     <div class="login-left">
         <div class="brand">
@@ -62,29 +70,29 @@
         </div>
 @endif
 
-       <form method="POST" action="{{ route('login.preview') }}">
-             @csrf
+       <form onsubmit="previewLogin(event)">
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" placeholder="Masukkan username">
+        </div>
 
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" placeholder="Masukkan username" required>
-            </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" placeholder="Masukkan password">
+        </div>
 
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" placeholder="Masukkan password" required>
-            </div>
+        <button type="submit" class="btn-login">
+            Login
+        </button>
+    </form>
 
-            <button type="submit" class="btn-login">
-                Login
-            </button>
-
-            <a href="#" class="forgot">Lupa Password?</a>
-        </form>
     </div>
+
 
     
 </div>
+
+
 
 <script>
 window.addEventListener('load', () => {
@@ -96,10 +104,31 @@ window.addEventListener('load', () => {
 
         setTimeout(() => {
             loader.style.display = 'none';
-            login.style.display = 'block';
+            login.classList.add('active'); // ✅ bukan display block
         }, 600);
     }, 1500);
 });
+</script>
+
+<script>
+function previewLogin(e) {
+    e.preventDefault(); // stop submit form
+
+    // tampilkan animasi loading
+    document.getElementById('loginLoading').classList.add('active');
+
+    // simulasi loading
+    setTimeout(() => {
+        window.location.href = '/dashboard';
+    }, 1200);
+}
+</script>
+
+
+<script>
+    function showLoading() {
+        document.getElementById('loginLoading').classList.add('active');
+    }
 </script>
 
 

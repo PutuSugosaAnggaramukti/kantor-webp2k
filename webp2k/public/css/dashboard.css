@@ -1,5 +1,18 @@
 /* Custom CSS untuk Dashboard P2K */
 
+/* Update atau tambahkan di bagian paling atas CSS */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f9fafb; /* Warna background dashboard umum */
+}
+
 .p2k-header {
     background-color: white;
     padding: 1rem;
@@ -8,6 +21,61 @@
     align-items: center;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
+
+/* Layout kiri header */
+.p2k-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Brand */
+.p2k-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Tambahkan ini di CSS */
+.p2k-content {
+    flex: 1 0 auto; /* Ini akan memaksa konten mengambil sisa ruang kosong */
+    padding: 2rem 1.5rem;
+    max-width: 1200px; /* Opsional: agar konten tidak terlalu lebar di monitor besar */
+    margin: 0 auto;
+    width: 100%;
+}
+
+.p2k-logo {
+    width: 48px;
+    height: auto;
+}
+
+.p2k-title {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.p2k-title span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #111827;
+}
+
+.p2k-title strong {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+/* Judul halaman */
+.p2k-page-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #4338ca;
+    margin: 0;
+}
+
 
 .user-badge {
     background-color: #dbeafe; /* bg-blue-100 */
@@ -67,20 +135,167 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    transition: all 0.2s;
+
+    /* Animasi */
+    transition:
+        background-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Hover modern TANPA ubah ukuran */
 .btn-menu:hover {
     background-color: #3730a3;
+    transform: translateY(-4px); /* naik tanpa resize */
+    box-shadow:
+        0 10px 20px rgba(67, 56, 202, 0.35),
+        0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
+
+
 .p2k-footer {
+    flex-shrink: 0; /* Memastikan footer tidak gepeng */
     background-color: #3730a3;
     color: white;
     text-align: center;
     padding: 1rem 0;
-    margin-top: 3rem;
     font-size: 0.875rem;
     font-weight: 600;
+}
+
+/* ===== USER DROPDOWN ===== */
+
+.user-area {
+    position: relative;
+}
+
+.user-trigger {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.user-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1e3a8a;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+}
+
+/* Dropdown box */
+.user-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 10px);
+    width: 180px;
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    display: none;
+    z-index: 999;
+}
+
+/* Active state */
+.user-dropdown.active {
+    display: block;
+}
+
+/* Item */
+.dropdown-item {
+    display: block;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: #1f2933;
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    background-color: #eef2ff; /* indigo-50 */
+}
+
+/* Logout */
+.dropdown-item.logout {
+    color: #dc2626;
+}
+
+.dropdown-item.logout:hover {
+    background-color: #fee2e2;
+}
+
+.login-loading {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4); /* Background gelap transparan */
+    backdrop-filter: blur(10px);    /* Efek blur fullscreen */
+    -webkit-backdrop-filter: blur(10px);
+    
+    /* Z-index harus lebih tinggi dari Chart.js dan Header */
+    z-index: 999999 !important; 
+    
+    display: none; /* Sembunyikan secara default */
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+/* Aktifkan lewat JavaScript */
+.login-loading.active {
+    display: flex !important;
+    opacity: 1;
+}
+
+.loading-card {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 1.25rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    min-width: 280px;
+}
+
+.loading-logo {
+    width: 80px;
+    height: auto;
+    margin: 0 auto 1.5rem;
+}
+
+/* Pastikan class spinner memiliki properti animasi */
+.spinner {
+    width: 45px;
+    height: 45px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #4338ca; /* Warna indigo sesuai tema P2K */
+    border-radius: 50%;
+    margin: 1.5rem auto 0;
+    
+    /* HUBUNGKAN DENGAN KEYFRAMES DI BAWAH */
+    animation: spin 1s linear infinite !important; 
+}
+
+/* DEFINISIKAN GERAKAN BERPUTARNYA */
+@keyframes spin {
+    0% { 
+        transform: rotate(0deg); 
+    }
+    100% { 
+        transform: rotate(360deg); 
+    }
 }

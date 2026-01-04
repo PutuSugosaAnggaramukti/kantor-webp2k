@@ -1,7 +1,10 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\dashboard\DashboardController;
+use App\Http\Controllers\DokumenController;
+use App\Http\Controllers\KunjunganController;
 
 /*
 |--------------------------------------------------------------------------
@@ -39,3 +42,18 @@ Route::post('/login-preview', function (Request $request) {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index']);
+
+// Route Utama
+Route::get('/data-kunjungan', [KunjunganController::class, 'index'])->name('data-kunjungan');
+
+// Route untuk AJAX (Tanpa Refresh)
+Route::get('/data-kunjungan-content', [KunjunganController::class, 'dataKunjunganContent'])->name('data.kunjungan');
+Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'laporanKunjunganContent'])->name('laporan.kunjungan');
+Route::get('/dokumen-content', [DokumenController::class, 'dokumenContent'])->name('dokumen.content');
+
+// Route untuk menampilkan halaman Bukti Kunjungan
+Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
+
+// Route untuk menyimpan data dari Form Kunjungan
+Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
+

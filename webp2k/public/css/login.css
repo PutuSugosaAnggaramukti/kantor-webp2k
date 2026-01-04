@@ -1,3 +1,4 @@
+
 * {
     box-sizing: border-box;
     font-family: 'Poppins', sans-serif;
@@ -5,19 +6,14 @@
 
 body {
     margin: 0;
-    min-height: 100vh;
-
-    display: flex;                
-    align-items: center;           
-    justify-content: center;      
-
-    background:
-        linear-gradient(
-            rgba(0, 0, 0, 0.4),
-            rgba(0, 0, 0, 0.4)
-        ),
-        url("../assets/logobackground.jpg");
-
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+                url("../assets/logobackground.jpg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -27,39 +23,36 @@ body {
 /* Container */
 .login-container {
     width: 100%;
-    max-width: 1200px;
-    height: 600px;
-
+    max-width: 1000px; /* Dipersempit agar logo & card lebih menyatu */
     display: flex;
     align-items: center;
-    justify-content: space-between; 
-
-    padding: 0 60px; 
+    justify-content: center; /* Ubah dari space-between ke center */
+    gap: 80px; /* Memberikan jarak yang manis di tengah */
+    padding: 20px;
+    
+    /* Agar posisi agak ke bawah sesuai permintaan */
+    margin-top: 0;
+    transform: translateY(20px);
 }
-
 
 /* LEFT */
 .login-left {
-    flex: 1;
+    flex: 0 1 auto; /* Jangan paksa mengambil sisa ruang */
     color: #fff;
-
     display: flex;
     align-items: center;
-    justify-content: flex-start; 
-
-    padding-right: 60px;
+    justify-content: center;
+    padding-right: 0; /* Hapus padding lama */
 }
 
 .login-left .brand {
-    text-align: left;
+    text-align: center;
 }
-
 
 .login-left img {
-    width: 160px;
+    width: 160px; /* Ukuran tetap */
     margin-bottom: 20px;
 }
-
 .login-left h2 {
     font-weight: 600;
     margin: 0;
@@ -67,25 +60,21 @@ body {
 
 /* RIGHT */
 .login-right {
-    width: 420px;
+    width: 400px;
     padding: 40px;
-
-    color :#e8f4ff;
+    color: #e8f4ff;
     border-radius: 18px;
     background: rgba(255,255,255,0.1);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-
     border: 1px solid rgba(255,255,255,0.25);
     box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-
-    margin-left: 50px;   
-    margin-top: 24px;    
-    transform: translate(50px, 24px);
-
+    
+    margin-left: 0; /* Hapus margin kiri yang manual */
+    
+    /* Animasi tetap dipertahankan */
     animation: floatCard 6s ease-in-out infinite;
 }
-
 
 /* FORM GROUP */
 .form-group {
@@ -181,12 +170,14 @@ body {
 @media(max-width: 900px) {
     .login-container {
         flex-direction: column;
+        gap: 30px;
+        margin-top: 0;
         height: auto;
     }
 
     .login-right {
-        width: 100%;
-        margin-top: 20px;
+        width: 90%; /* Card lebar di layar kecil */
+        max-width: 400px;
     }
 }
 /* ALERT LOGIN */
@@ -217,13 +208,19 @@ body {
 /* PAGE LOAD ANIMATION */
 .page-load {
     min-height: 100vh;
+    width: 100vw;
     display: flex;
     align-items: center;
     justify-content: center;
 
     opacity: 0;
-    transform: scale(0.97);
-    animation: pageEnter 0.8s cubic-bezier(.22,1,.36,1) forwards;
+    pointer-events: none;
+    transition: opacity 0.6s ease;
+}
+
+.page-load.active {
+    opacity: 1;
+    pointer-events: all;
 }
 
 
@@ -291,6 +288,71 @@ body {
     opacity: 0.85;
 }
 
+.login-loading {
+    position: fixed; /* Mengunci posisi pada layar */
+    top: 0;
+    left: 0;
+    width: 100vw;    /* 100% lebar layar */
+    height: 100vh;   /* 100% tinggi layar */
+    z-index: 99999;  /* Pastikan angka ini paling besar agar di depan */
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* Gunakan background yang agak gelap agar blur lebih terlihat kontras */
+    background: rgba(0, 0, 0, 0.4); 
+    
+    /* Efek Blur Fullscreen */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    
+    /* Transition */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.login-loading.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.login-loading.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.loading-card {
+    background: white;
+    padding: 2rem 3rem;
+    border-radius: 1rem;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,.25);
+    animation: fadeUp 0.4s ease;
+}
+
+.loading-logo {
+    width: 60px;
+    margin-bottom: 1rem;
+}
+
+.loading-card p {
+    font-weight: 600;
+    color: #4338ca;
+    margin-bottom: 1rem;
+}
+
+/* Spinner */
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #4338ca;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+
+    margin: 0 auto;
+}
 /* SPINNER */
 .spinner {
     width: 56px;
@@ -323,12 +385,24 @@ body {
 }
 
 @keyframes floatCard {
-    0%, 100% {
-        transform: translate(40px, 30px);
-    }
-    50% {
-        transform: translate(40px, 20px);
-    }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
 }
 
+
+/* Animations */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 

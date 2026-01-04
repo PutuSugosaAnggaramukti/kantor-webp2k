@@ -1,81 +1,99 @@
 <!DOCTYPE html>
-<html lang="id">
-<head>
+<html lang="id" class="h-full"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Informasi P2K</title>
     
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
-    
-    <script src="https://cdn.tailwindcss.com"></script> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-100 font-sans">
 
-    <header class="p2k-header">
-        <div class="flex items-center space-x-3">
-            <img src="{{ asset('assets/logo.png') }}" alt="Logo" class="w-10 h-10">
-            <div>
-                <h1 class="font-bold text-lg leading-tight">Sistem Informasi</h1>
-                <h1 class="font-bold text-lg leading-tight text-blue-900">P2K</h1>
-            </div>
+<body class="bg-gray-100 font-sans flex flex-col min-h-full">
+
+    <div id="loginLoading" class="login-loading">
+        <div class="loading-card">
+            <img src="{{ asset('assets/logo.png') }}" class="loading-logo" alt="P2K">
+            <p>Memuat Data Kunjungan...</p>
+            <div class="spinner"></div>
         </div>
-        <div class="user-badge">
-            <span class="font-bold text-gray-700 text-sm">Username</span>
-            <div class="w-10 h-10 bg-gray-300 rounded-full overflow-hidden border-2 border-white">
-                <img src="https://www.w3schools.com/howto/img_avatar.png" alt="User">
+    </div>
+        
+    <div class="flex-grow">
+        <div class="p2k-header">
+            <div class="p2k-header-left">
+                <div class="p2k-brand">
+                    <img src="/assets/logo.png" alt="Logo P2K" class="p2k-logo">
+                    <div class="p2k-title">
+                        <span>Sistem Informasi</span>
+                        <strong>P2K</strong>
+                    </div>
+                </div>
             </div>
-        </div>
-    </header>
 
-    <nav class="p2k-nav">
-        <a href="#" class="hover:underline">Dashboard</a>
-    </nav>
+            <div class="user-area">
+                <button class="user-badge user-trigger" id="userTrigger">
+                    <span class="user-name">Username</span>
+                    <img src="/assets/avatar.png" class="user-avatar">
+                </button>
 
-    <main class="p-6 max-w-6xl mx-auto">
-        <h2 class="text-2xl font-bold mb-6">Statistik</h2>
-
-        <div class="stat-grid">
-            <div class="card-stat bg-blue-p2k">
-                <p class="text-lg font-semibold">Total Kunjungan</p>
-                <p class="text-4xl font-bold mt-2">{{ $total_kunjungan }}</p>
-            </div>
-            <div class="card-stat bg-green-p2k">
-                <p class="text-lg font-semibold">Sudah Dikunjungi</p>
-                <p class="text-4xl font-bold mt-2">{{ $sudah_dikunjungi }}</p>
-            </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-xl shadow-sm mb-8">
-            <div class="h-64">
-                <canvas id="visitChart"></canvas>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="" class="dropdown-item">Edit Profil</a>
+                    <form action="" method="POST">
+                        @csrf
+                        <button type="submit" class="dropdown-item logout">Logout</button>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <h2 class="text-2xl font-bold mb-6">Menu Aplikasi</h2>
+        <nav class="p2k-nav">
+            <a href="#" class="hover:underline">Dashboard</a>
+        </nav>
 
-        <div class="menu-grid">
-            <button class="btn-menu">
-                <i class="fa-solid fa-user-plus text-4xl mb-3"></i>
-                <span class="font-semibold">Data Kunjungan</span>
-            </button>
-            <button class="btn-menu">
-                <i class="fa-solid fa-clipboard-list text-4xl mb-3"></i>
-                <span class="font-semibold">Laporan Kunjungan</span>
-            </button>
-            <button class="btn-menu">
-                <i class="fa-solid fa-file-lines text-4xl mb-3"></i>
-                <span class="font-semibold">Dokumen</span>
-            </button>
-            <button class="btn-menu">
-                <i class="fa-solid fa-gear text-4xl mb-3"></i>
-                <span class="font-semibold">Pengaturan</span>
-            </button>
-        </div>
-    </main>
+        <main class="p-6 max-w-6xl mx-auto">
+            <h2 class="text-2xl font-bold mb-6">Statistik</h2>
 
-    <footer class="p2k-footer">
-        2025 Sistem Aplikasi P2K
+            <div class="stat-grid">
+                <div class="card-stat bg-blue-p2k">
+                    <p class="text-lg font-semibold">Total Kunjungan</p>
+                    <p class="text-4xl font-bold mt-2">{{ $total_kunjungan }}</p>
+                </div>
+                <div class="card-stat bg-green-p2k">
+                    <p class="text-lg font-semibold">Sudah Dikunjungi</p>
+                    <p class="text-4xl font-bold mt-2">{{ $sudah_dikunjungi }}</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm mb-8">
+                <div class="h-64">
+                    <canvas id="visitChart"></canvas>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-6">Menu Aplikasi</h2>
+
+            <div class="menu-grid">
+                <a href="javascript:void(0)" onclick="transitionToKunjungan()" class="btn-menu">
+                    <i class="fa-solid fa-user-plus text-4xl mb-3"></i>
+                    <span class="font-semibold">Data Kunjungan</span>
+                </a>
+                <button class="btn-menu">
+                    <i class="fa-solid fa-clipboard-list text-4xl mb-3"></i>
+                    <span class="font-semibold">Laporan Kunjungan</span>
+                </button>
+                <button class="btn-menu">
+                    <i class="fa-solid fa-file-lines text-4xl mb-3"></i>
+                    <span class="font-semibold">Dokumen</span>
+                </button>
+                <button class="btn-menu">
+                    <i class="fa-solid fa-gear text-4xl mb-3"></i>
+                    <span class="font-semibold">Pengaturan</span>
+                </button>
+            </div>
+        </main>
+    </div> <footer class="p2k-footer mt-auto"> 2025 Sistem Aplikasi P2K
     </footer>
 
     <script>
@@ -105,6 +123,28 @@
                 }
             }
         });
+
+        const trigger = document.getElementById('userTrigger');
+        const dropdown = document.getElementById('userDropdown');
+
+        trigger.addEventListener('click', () => {
+            dropdown.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!trigger.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        function transitionToKunjungan() {
+            const loader = document.getElementById('loginLoading');
+            loader.classList.add('active');
+            loader.style.display = 'flex';
+            setTimeout(() => {
+                window.location.href = "{{ route('data-kunjungan') }}";
+            }, 1000); 
+        }
     </script>
 </body>
 </html>
