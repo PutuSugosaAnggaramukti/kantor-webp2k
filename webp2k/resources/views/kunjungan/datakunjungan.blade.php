@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ asset('css/kunjunganuser.css') }}">
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         .btn-excel { cursor: pointer; transition: 0.3s; }
@@ -173,13 +174,12 @@
     </script>
 
     <script>
-            function switchSettingsTab(tab) {
+        function switchSettingsTab(tab) {
             const secAkun = document.getElementById('section-akun');
             const secSandi = document.getElementById('section-sandi');
             const btnAkun = document.getElementById('tab-btn-akun');
             const btnSandi = document.getElementById('tab-btn-sandi');
 
-            // Pastikan elemen ada sebelum dimanipulasi
             if (!secAkun || !secSandi) return;
 
             if (tab === 'akun') {
@@ -199,5 +199,82 @@
             }
         }
     </script>
+
+    <script>
+    document.addEventListener('click', function (e) {
+        
+        // --- 1. Konfirmasi Hapus Avatar ---
+        const deleteAvatarBtn = e.target.closest('.btn-settings-cancel'); // Tombol "Hapus Avatar"
+        if (deleteAvatarBtn && deleteAvatarBtn.innerText.includes('Hapus Avatar')) {
+            e.preventDefault();
+            
+            Swal.fire({
+                title: 'Hapus Foto Profil?',
+                text: "Foto profil Anda akan dikembalikan ke avatar default",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33', // Warna merah untuk aksi hapus
+                cancelButtonColor: '#cbd5e1',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Simulasi reset gambar ke default ui-avatars
+                    const profileImg = document.querySelector('.profile-avatar-img');
+                    if(profileImg) {
+                        profileImg.src = "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff&size=120";
+                    }
+
+                    Swal.fire({
+                        title: 'Terhapus!',
+                        text: 'Foto profil telah dihapus.',
+                        icon: 'success',
+                        confirmButtonColor: '#3f36b1'
+                    });
+                }
+            });
+        }
+
+        // --- 2. Alert Simpan Akun ---
+        const saveAccountBtn = e.target.closest('#section-akun .btn-settings-save');
+        if (saveAccountBtn && !saveAccountBtn.innerText.includes('Upload')) { 
+            e.preventDefault();
+            Swal.fire({
+                title: 'Simpan Perubahan Akun?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3f36b1',
+                confirmButtonText: 'Ya, Simpan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Berhasil!', 'Data akun telah diperbarui.', 'success');
+                }
+            });
+        }
+
+        // --- 3. Alert Simpan Kata Sandi ---
+        const savePassBtn = e.target.closest('#section-sandi .btn-settings-save');
+        if (savePassBtn) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Simpan Perubahan Kata Sandi?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3f36b1',
+                confirmButtonText: 'Ya, Simpan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Berhasil!', 'Kata sandi telah diperbarui.', 'success');
+                    document.querySelectorAll('#section-sandi input').forEach(input => input.value = '');
+                }
+            });
+        }
+    });
+</script>
+    
+   
+
 </body>
 </html>
