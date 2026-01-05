@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\dashboard\DashboardController;
 use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\KunjunganController;
+use App\Http\Controllers\PengaturanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,3 +58,5 @@ Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])-
 // Route untuk menyimpan data dari Form Kunjungan
 Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
 
+// Route untuk memanggil file partials/pengaturan_content.blade.php
+Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');

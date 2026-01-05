@@ -34,7 +34,9 @@
             <a href="javascript:void(0)" onclick="loadPage('dokumen')" class="nav-item" id="menu-dokumen">
                 <i class="fa-solid fa-file-invoice"></i> Dokumen
             </a>
-            <a href="#" class="nav-item"><i class="fa-solid fa-gear"></i> Pengaturan</a>
+            <a href="javascript:void(0)" onclick="loadPage('pengaturan')" class="nav-item" id="menu-pengaturan">
+                <i class="fa-solid fa-gear"></i> Pengaturan
+            </a>
         </div>
 
         <div class="main-container" style="flex: 1; display: flex; flex-direction: column;">
@@ -108,7 +110,7 @@
             });
         }
 
-      function updateSidebarActive(pageName) {
+     function updateSidebarActive(pageName) {
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             
             let targetId = '';
@@ -116,6 +118,8 @@
                 targetId = 'menu-laporan';
             } else if (pageName === 'dokumen') {
                 targetId = 'menu-dokumen';
+            } else if (pageName === 'pengaturan') { 
+                targetId = 'menu-pengaturan';
             } else {
                 targetId = 'menu-data';
             }
@@ -164,6 +168,34 @@
             if (event.target.classList.contains('modal-overlay')) {
                 closeModal();
                 closeDetailModal();
+            }
+        }
+    </script>
+
+    <script>
+            function switchSettingsTab(tab) {
+            const secAkun = document.getElementById('section-akun');
+            const secSandi = document.getElementById('section-sandi');
+            const btnAkun = document.getElementById('tab-btn-akun');
+            const btnSandi = document.getElementById('tab-btn-sandi');
+
+            // Pastikan elemen ada sebelum dimanipulasi
+            if (!secAkun || !secSandi) return;
+
+            if (tab === 'akun') {
+                secAkun.style.display = 'block';
+                secSandi.style.display = 'none';
+                btnAkun.style.background = '#adc7ff'; 
+                btnAkun.style.color = '#3f36b1';
+                btnSandi.style.background = 'transparent'; 
+                btnSandi.style.color = '#64748b';
+            } else {
+                secSandi.style.display = 'block';
+                secAkun.style.display = 'none';
+                btnSandi.style.background = '#adc7ff'; 
+                btnSandi.style.color = '#3f36b1';
+                btnAkun.style.background = 'transparent'; 
+                btnAkun.style.color = '#64748b';
             }
         }
     </script>

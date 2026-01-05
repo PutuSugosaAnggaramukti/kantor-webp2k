@@ -619,6 +619,126 @@ td {
     color: #2563eb; /* Biru Word */
 }
 
+/* --- STRUKTUR LAYOUT --- */
+.settings-container {
+    display: flex; /* WAJIB: Membuat sidebar dan form berjejer kesamping */
+    background: white;
+    border-radius: 20px;
+    min-height: 550px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.settings-sidebar {
+    width: 280px;
+    background-color: #f8fafc;
+    border-right: 1px solid #edf2f7;
+    padding: 25px;
+}
+
+.settings-content-area {
+    flex: 1;
+    padding: 40px;
+}
+
+/* --- ANIMASI HOVER & INTERAKSI --- */
+
+/* 1. Tab Menu Sidebar */
+.tab-setting-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    color: #64748b;
+    border-radius: 30px;
+    cursor: pointer;
+    margin-bottom: 12px;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-setting-item:hover:not(.tab-active) {
+    background-color: #e2e8f0;
+    color: #3f36b1;
+    transform: translateX(8px); /* Efek geser kanan */
+}
+
+.tab-setting-item.tab-active {
+    background: #adc7ff;
+    color: #3f36b1;
+}
+
+/* 2. Tombol-Tombol */
+.btn-settings-save {
+    background: #3f36b1;
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-settings-save:hover {
+    background-color: #312a8a;
+    transform: translateY(-3px); /* Efek tombol naik */
+    box-shadow: 0 6px 15px rgba(63, 54, 177, 0.3);
+}
+
+.btn-settings-cancel {
+    background: #cbd5e1;
+    color: #334155;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-settings-cancel:hover {
+    background-color: #b1bcc9;
+    transform: translateY(-3px);
+}
+
+/* 3. Input Form */
+.settings-group { margin-bottom: 25px; }
+.settings-group label { display: block; font-weight: 700; margin-bottom: 8px; }
+
+.settings-input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.settings-input:focus {
+    border-color: #3f36b1;
+    box-shadow: 0 0 0 3px rgba(63, 54, 177, 0.1);
+    outline: none;
+}
+
+/* 4. Avatar & Ikon Kamera */
+.profile-avatar-img {
+    width: 120px; height: 120px; border-radius: 50%; 
+    border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.avatar-camera-icon {
+    position: absolute; bottom: 5px; right: 5px; 
+    background: #3b82f6; color: white; width: 32px; height: 32px; 
+    border-radius: 50%; display: flex; align-items: center; 
+    justify-content: center; border: 2px solid white; cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.avatar-camera-icon:hover {
+    transform: scale(1.2);
+    background-color: #2563eb;
+}
 
 /* Animasi */
 @keyframes fadeIn {
