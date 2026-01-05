@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body class="bg-gray-100 font-sans flex flex-col min-h-full">
@@ -38,13 +39,13 @@
                     <img src="/assets/avatar.png" class="user-avatar">
                 </button>
 
-                <div class="user-dropdown" id="userDropdown">
-                    <a href="" class="dropdown-item">Edit Profil</a>
-                    <form action="" method="POST">
-                        @csrf
-                        <button type="submit" class="dropdown-item logout">Logout</button>
-                    </form>
-                </div>
+               <div class="user-dropdown" id="userDropdown">
+                <a href="javascript:void(0)" onclick="transitionToPage('pengaturan')" class="dropdown-item">Edit Profil</a>
+                
+                <button type="button" onclick="confirmLogout()" class="dropdown-item logout" style="width: 100%; text-align: left; border: none; background: none; cursor: pointer;">
+                    Logout
+                </button>
+            </div>
             </div>
         </div>
 
@@ -199,5 +200,37 @@
         }, 1000); 
     }
     </script>
+
+    <script>
+        function confirmLogout() {
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Anda akan keluar dari sistem P2K",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3f36b1', // Warna ungu seragam dengan UI
+                cancelButtonColor: '#cbd5e1',
+                confirmButtonText: 'Ya, Logout!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Panggil overlay loading yang sudah Anda miliki
+                    const loader = document.getElementById('loginLoading');
+                    if (loader) {
+                        const loadingText = loader.querySelector('p');
+                        if (loadingText) loadingText.innerText = "Mengakhiri Sesi...";
+                        loader.classList.add('active');
+                        loader.style.display = 'flex';
+                    }
+
+                    // Transisi ke halaman login-preview setelah 1 detik
+                    setTimeout(() => {
+                        window.location.href = "/login-preview";
+                    }, 1000);
+                }
+            });
+        }
+    </script>
+
 </body>
 </html>
