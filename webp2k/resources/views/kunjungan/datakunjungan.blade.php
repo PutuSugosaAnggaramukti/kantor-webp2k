@@ -61,7 +61,7 @@
     </div>
 
     <div class="footer">
-        2025 Sistem Aplikasi P2K
+        Sistem Aplikasi P2K
     </div>
 
     @include('kunjungan.partials.modals')
@@ -274,6 +274,17 @@
     });
 </script>
     
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetPage = urlParams.get('page');
+    
+    // Jika ada parameter page di URL, muat halaman tersebut secara otomatis
+    if (targetPage) {
+        loadPage(targetPage);
+    }
+});
+</script>
    
 
 </body>

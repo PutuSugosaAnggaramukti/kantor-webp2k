@@ -1,7 +1,8 @@
 <div class="page-title">
     <h2>Data Kunjungan</h2>
     <div class="breadcrumb">
-        Dashboard > <span style="color: #3b82f6;">Data Kunjungan</span>
+        <a href="/dashboard">Dashboard > </a>
+        <span style="color: #3b82f6;">Data Kunjungan</span>
     </div>
 </div>
 

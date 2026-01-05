@@ -242,21 +242,21 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.4); /* Background gelap transparan */
-    backdrop-filter: blur(10px);    /* Efek blur fullscreen */
+    background: rgba(0, 0, 0, 0.4); 
+    backdrop-filter: blur(10px);    
     -webkit-backdrop-filter: blur(10px);
     
-    /* Z-index harus lebih tinggi dari Chart.js dan Header */
+   
     z-index: 999999 !important; 
     
-    display: none; /* Sembunyikan secara default */
+    display: none; 
     justify-content: center;
     align-items: center;
     opacity: 0;
     transition: opacity 0.4s ease;
 }
 
-/* Aktifkan lewat JavaScript */
+
 .login-loading.active {
     display: flex !important;
     opacity: 1;
@@ -277,20 +277,20 @@ body {
     margin: 0 auto 1.5rem;
 }
 
-/* Pastikan class spinner memiliki properti animasi */
+
 .spinner {
     width: 45px;
     height: 45px;
     border: 5px solid #f3f3f3;
-    border-top: 5px solid #4338ca; /* Warna indigo sesuai tema P2K */
+    border-top: 5px solid #4338ca; 
     border-radius: 50%;
     margin: 1.5rem auto 0;
     
-    /* HUBUNGKAN DENGAN KEYFRAMES DI BAWAH */
+  
     animation: spin 1s linear infinite !important; 
 }
 
-/* DEFINISIKAN GERAKAN BERPUTARNYA */
+
 @keyframes spin {
     0% { 
         transform: rotate(0deg); 
@@ -299,3 +299,4 @@ body {
         transform: rotate(360deg); 
     }
 }
+

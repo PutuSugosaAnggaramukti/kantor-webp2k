@@ -79,21 +79,23 @@
                     <i class="fa-solid fa-user-plus text-4xl mb-3"></i>
                     <span class="font-semibold">Data Kunjungan</span>
                 </a>
-                <button class="btn-menu">
-                    <i class="fa-solid fa-clipboard-list text-4xl mb-3"></i>
-                    <span class="font-semibold">Laporan Kunjungan</span>
-                </button>
-                <button class="btn-menu">
+              <a href="javascript:void(0)" onclick="transitionToPage('laporan-kunjungan')" class="btn-menu">
                     <i class="fa-solid fa-file-lines text-4xl mb-3"></i>
+                    <span class="font-semibold">Laporan Kunjungan</span>
+                </a>
+
+                <a href="javascript:void(0)" onclick="loadMenuWithTransition('dokumen')" class="btn-menu">
+                    <i class="fa-solid fa-file-invoice text-4xl mb-3"></i>
                     <span class="font-semibold">Dokumen</span>
-                </button>
-                <button class="btn-menu">
+                </a>
+
+                <a href="javascript:void(0)" onclick="loadMenuWithTransition('pengaturan')" class="btn-menu">
                     <i class="fa-solid fa-gear text-4xl mb-3"></i>
                     <span class="font-semibold">Pengaturan</span>
-                </button>
+                </a>
             </div>
         </main>
-    </div> <footer class="p2k-footer mt-auto"> 2025 Sistem Aplikasi P2K
+    </div> <footer class="p2k-footer mt-auto"> Sistem Aplikasi P2K
     </footer>
 
     <script>
@@ -145,6 +147,57 @@
                 window.location.href = "{{ route('data-kunjungan') }}";
             }, 1000); 
         }
+    </script>
+
+    <script>
+    function transitionToPage(targetPage) {
+        const loader = document.getElementById('loginLoading');
+        const loadingText = loader.querySelector('p');
+        
+        // Memberikan feedback teks yang berbeda sesuai menu
+        const labels = {
+            'data-kunjungan': 'Memuat Data Kunjungan...',
+            'laporan-kunjungan': 'Memuat Laporan Kunjungan...',
+            'dokumen': 'Memuat Dokumen...',
+            'pengaturan': 'Memuat Pengaturan...'
+        };
+
+        if (loadingText) {
+            loadingText.innerText = labels[targetPage] || 'Memuat Halaman...';
+        }
+
+        // Tampilkan animasi loading
+        loader.classList.add('active');
+        loader.style.display = 'flex';
+
+        // Berikan jeda 1 detik agar transisi terasa halus sebelum pindah halaman
+        setTimeout(() => {
+            // Redirect ke route data-kunjungan dengan parameter 'page' agar bisa di-load dinamis
+            window.location.href = "{{ route('data-kunjungan') }}?page=" + targetPage;
+        }, 1000); 
+    }
+    </script>
+
+    <script>
+        function loadMenuWithTransition(targetPage) {
+        const loader = document.getElementById('loginLoading');
+        const loadingText = loader.querySelector('p');
+        
+        // Ubah teks loading sesuai menu yang diklik
+        if(targetPage === 'pengaturan') loadingText.innerText = "Memuat Pengaturan...";
+        else if(targetPage === 'dokumen') loadingText.innerText = "Memuat Dokumen...";
+        else if(targetPage === 'laporan-kunjungan') loadingText.innerText = "Memuat Laporan...";
+        else loadingText.innerText = "Memuat Data Kunjungan...";
+
+        // Tampilkan overlay loading
+        loader.classList.add('active');
+        loader.style.display = 'flex';
+
+        // Redirect ke halaman data-kunjungan dengan parameter 'page'
+        setTimeout(() => {
+            window.location.href = `{{ route('data-kunjungan') }}?page=${targetPage}`;
+        }, 1000); 
+    }
     </script>
 </body>
 </html>
