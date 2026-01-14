@@ -1,0 +1,607 @@
+/* Layout & Reset */
+body { 
+    margin: 0;
+    background-color: #f4f7fe; 
+    overflow-x: hidden;
+    animation: fadeInPage 0.8s ease-in-out;
+    font-family: 'Poppins', sans-serif;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 40px;
+    background: transparent;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-section img {
+    width: 50px;
+}
+
+.logo-section span {
+    font-weight: 700;
+    line-height: 1.2;
+    font-size: 1rem;
+}
+
+.user-profile {
+    background-color: #adc7ff;
+    padding: 8px 25px;
+    border-radius: 40px 15px 15px 40px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-profile span {
+    font-weight: bold;
+}
+
+.user-profile img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.wrapper {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Sidebar Styling */
+.sidebar { 
+    width: 280px; 
+    background-color: #4e4bc1; 
+    color: white; 
+    padding: 30px 0; 
+    border-top-right-radius: 40px; 
+}
+
+.sidebar h1 { 
+    text-align: center; 
+    font-size: 28px; 
+    margin-bottom: 40px; 
+    font-weight: 700; 
+}
+
+.sidebar h2 {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 30px;
+    color: white;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    text-decoration: none;
+    color: white;
+    margin: 8px 15px;
+    font-weight: 700; /* Teks tebal */
+    font-size: 15px;
+    border-radius: 50px; /* Kapsul lonjong */
+    transition: all 0.3s ease;
+}
+
+/* Ikon Ukuran Besar */
+.nav-item i {
+    font-size: 35px; /* Ukuran ikon dominan */
+    margin-right: 15px;
+    width: 45px;
+    text-align: center;
+}
+
+.nav-item.active {
+    background-color: white;
+    color: #0085FF !important; /* Warna biru cerah saat aktif */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.nav-item.active {
+    color: #4e4bc1; 
+}
+
+.nav-item.active:hover {
+    padding-left: 32px;
+}
+
+.nav-item:hover {
+    color: #ffeb3b; 
+    padding-left: 35px; 
+}
+
+.nav-item.active i {
+    color: #0085FF;
+}
+
+.nav-item:hover i {
+    transform: scale(1.1); 
+}
+
+.nav-item:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffeb3b; 
+    padding-left: 30px; 
+}
+
+.main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column; 
+    min-width: 0;
+    background-color: #f4f7fe;
+}
+
+/* Main Content Area */
+.main-content { 
+    flex: 1; 
+    padding: 30px 50px;
+    min-width: 0; 
+    background-color: #f4f7fe;
+    overflow-x: hidden;
+}
+
+/* Header & Profile Area */
+.top-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 10px 30px;
+}
+
+.profile-tag {
+    background-color: #add8e6;
+    padding: 10px 40px;
+    border-radius: 40px 0 0 40px; /* Lengkungan profil */
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.profile-tag span { font-weight: bold; }
+.profile-tag img { width: 45px; border-radius: 50%; }
+
+/* Table Styling */
+.content-padding {
+    padding: 20px 50px;
+}
+
+.breadcrumb { color: #000; font-weight: bold; margin-bottom: 30px; }
+.breadcrumb span { color: #3b82f6; }
+
+.btn-tambah {
+    background-color: #22c55e;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    border: 1px solid #000; /* Garis hitam tegas */
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* Search Box */
+.search-container {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.search-container input {
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 8px 20px;
+    width: 250px;
+}
+
+.petunjuk-container {
+    margin-top: 30px;
+    background-color: #f1f1f1; /* Abu-abu muda sesuai gambar */
+    padding: 20px 30px;
+    border-radius: 15px;
+    color: #000;
+}
+
+.petunjuk-title {
+    font-weight: 800;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.petunjuk-item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.petunjuk-item p {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.icon-box-purple {
+    background-color: #8c93ad; 
+    color: #1e293b;
+    width: 45px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 1.2rem;
+}
+
+/* Icon Bulat Outline */
+.icon-box-outline {
+    border: 2px solid #000;
+    color: #000;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%; 
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.option-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Jarak antar tombol */
+}
+
+.btn-action-add {
+    background-color: #8e94a9;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease; /* Durasi animasi halus */
+}
+
+.btn-action-add:hover {
+    background-color: #3f36b1; /* Berubah menjadi biru/ungu P2K */
+    transform: scale(1.1); /* Sedikit membesar */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.btn-action-info {
+    background: none;
+    border: 2px solid #333;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-action-info:hover {
+    background-color: #333; /* Background terisi warna hitam */
+    color: white; /* Huruf i berubah menjadi putih */
+    transform: rotate(15deg); /* Sedikit miring untuk efek unik */
+}
+
+.data-table td {
+    font-weight: 800;
+    border: 1px solid #000;
+}
+
+/* Container Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content-karyawan {
+    background: white;
+    padding: 30px;
+    border-radius: 20px;
+    width: 400px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Styling Input */
+.form-group-karyawan {
+    margin-bottom: 15px;
+}
+
+.form-group-karyawan label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+}
+
+.form-group-karyawan input, 
+.form-group-karyawan select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #fff;
+    font-size: 14px;
+}
+
+/* Footer Buttons */
+.modal-footer-karyawan {
+     display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 30px;  
+}
+
+.btn-cancel {
+    background-color: #f42626;
+    color: white;
+    border: none;
+    padding: 12px 35px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    min-width: 120px; 
+}
+
+.btn-save {
+    background-color: #3f36b1;
+    color: white;
+    border: none;
+    padding: 12px 35px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    min-width: 120px;
+}
+
+.btn-save:hover {
+    background-color: #2e2691;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-cancel:hover {
+    background-color: #d31d1d;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.modal-form-content {
+    background-color: #fff;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 20px;
+    padding: 40px;
+    font-family: 'Poppins', sans-serif;
+}
+
+.modal-form-content h2 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #333;
+    border-radius: 4px; 
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.detail-display-pill {
+    border: 1px solid #000;
+    border-radius: 50px; 
+    padding: 8px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.detail-display-pill label {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: -2px;
+}
+
+.detail-display-pill span {
+    font-weight: 800;
+    font-size: 1rem;
+    color: #000;
+    text-transform: uppercase;
+}
+
+.btn-action-edit {
+    background-color: #8e94a9; /* Warna dasar sesuai gambar */
+    color: white;
+    border: none;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease; /* Animasi halus untuk semua perubahan */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-action-edit:hover {
+    background-color: #f39c12; /* Berubah menjadi orange saat hover */
+    transform: translateY(-3px) scale(1.1); /* Terangkat sedikit dan membesar */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Memberikan efek bayangan */
+}
+
+.btn-cancel-edit {
+    flex: 1;
+    background-color: #ef4444; /* Merah sesuai gambar */
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel-edit:hover {
+    background-color: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+}
+
+/* Tombol Save (Biru/Ungu) */
+.btn-save-edit {
+    flex: 1;
+    background-color: #4f46e5; /* Biru/Ungu sesuai gambar */
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-save-edit:hover {
+    background-color: #4338ca;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(79, 70, 229, 0.4);
+}
+
+/* Input Styling agar rapi */
+.form-group-karyawan input, 
+.form-group-karyawan select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+}
+
+.dropdown-container {
+    display: none; /* Sembunyi secara default */
+    background-color: rgba(255, 255, 255, 0.05); /* Background transparan tipis */
+    margin: 0 15px 5px 15px;
+    border-radius: 15px;
+}
+
+.dropdown-container.show {
+    display: block; /* Tampil saat diklik */
+}
+
+.sub-nav-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 25px;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600; /* Font tebal sesuai referensi */
+    transition: 0.3s;
+}
+
+.sub-nav-item i {
+    font-size: 20px !important; /* Ikon sub-menu sedikit lebih kecil dari menu utama */
+    margin-right: 12px;
+    width: 30px !important;
+    text-align: center;
+}
+
+.sub-nav-item:hover {
+    color: #ffd700; /* Efek hover teks kuning */
+}
+
+/* Animasi Rotasi Panah */
+.arrow-icon {
+    transition: transform 0.3s ease;
+}
+
+.rotate {
+    transform: rotate(180deg);
+}
+
+.main-footer {
+    background-color: #4e4bc1; 
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+    width: 100%;
+    font-size: 14px;
+    font-weight: 700; 
+    margin-top: auto; 
+}
+
+.main-footer p {
+    margin: 0;
+    letter-spacing: 0.5px;
+}

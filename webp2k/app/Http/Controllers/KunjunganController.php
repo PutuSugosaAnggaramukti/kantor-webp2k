@@ -18,14 +18,12 @@ class KunjunganController extends Controller
     public function dataKunjunganContent()
     {
         $data = Nasabah::all();
-        // Panggil PARTIAL tabelnya saja, bukan file utama
         return view('kunjungan.partials.data_table', compact('data'));
     }
 
     public function laporanKunjunganContent()
     {
         $data = Nasabah::all();
-        // Ubah 'kunjungan.partials.laporan' menjadi 'kunjungan.partials.laporan_table'
         return view('kunjungan.partials.laporan_table', compact('data'));
     }
 
@@ -33,14 +31,12 @@ class KunjunganController extends Controller
     {
         $dataKunjungan = Kunjungan::findOrFail($id);
 
-        // Jika diklik melalui tombol (AJAX)
         if (request()->ajax()) {
             return view('kunjungan.partials.bukti_kunjungan', compact('dataKunjungan'));
         }
 
-        // Jika halaman di-refresh manual oleh user (Non-AJAX)
         return view('kunjungan.datakunjungan', [
-            'data' => Kunjungan::all(), // Agar tabel di belakang tidak error
+            'data' => Kunjungan::all(), 
             'content' => view('kunjungan.partials.bukti_kunjungan', compact('dataKunjungan'))->render()
         ]);
     }

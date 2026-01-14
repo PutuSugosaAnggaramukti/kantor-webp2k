@@ -3,9 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\dashboard\DashboardController;
+use App\Http\Controllers\dashboard\DashboardAdminController;
 use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\KunjunganController;
 use App\Http\Controllers\PengaturanController;
+use App\Http\Controllers\karyawan\KaryawanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,6 +44,7 @@ Route::post('/login-preview', function (Request $request) {
     return back()->with('success', 'Login berhasil (mode demo)');
 });
 
+Route::get('/admin/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
 Route::get('/dashboard', [DashboardController::class, 'index']);
 
 // Route Utama
@@ -60,3 +63,9 @@ Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('ku
 
 // Route untuk memanggil file partials/pengaturan_content.blade.php
 Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');
+
+// Route utama
+Route::get('/admin/karyawan', [KaryawanController::class, 'index']);
+
+// Route untuk Fetch SPA (Sesuaikan dengan nama di JS loadPage Anda)
+Route::get('/data-karyawan-content', [KaryawanController::class, 'index']);

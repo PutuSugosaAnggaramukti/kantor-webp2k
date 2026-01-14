@@ -53,13 +53,11 @@
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">NOV 2025</td>
                 <td style="border: 1px solid #333; padding: 15px;">
                     <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
-                        <button class="btn-plus" onclick="openModal('{{ $d['nama'] }}', '{{ $d['kode'] }}')" 
-                                style="background-color: #8e94a9; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer;">
+                        <button class="btn-action-add" onclick="openModal('{{ $d['nama'] }}', '{{ $d['kode'] }}')">
                             <i class="fa-solid fa-plus"></i>
                         </button>
-                        {{-- Tombol info dummy disesuaikan agar tidak error --}}
-                        <button onclick="openDetailModal('{{ $d['kode'] }}', '-', '{{ $d['nama'] }}', '-', '0', '0', '{{ $d['kol'] }}', '-', '-')" 
-                                style="background: none; border: 2px solid #333; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer;">
+
+                        <button class="btn-action-info" onclick="openDetailModal('{{ $d['kode'] }}', '-', '{{ $d['nama'] }}', '-', '0', '0', '{{ $d['kol'] }}', '-', '-')">
                             i
                         </button>
                     </div>

@@ -201,6 +201,42 @@ td {
     gap: 15px; 
 }
 
+.btn-action-add {
+    background-color: #8e94a9;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease; /* Durasi animasi halus */
+}
+
+.btn-action-add:hover {
+    background-color: #3f36b1; /* Berubah menjadi biru/ungu P2K */
+    transform: scale(1.1); /* Sedikit membesar */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.btn-action-info {
+    background: none;
+    border: 2px solid #333;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-action-info:hover {
+    background-color: #333; /* Background terisi warna hitam */
+    color: white; /* Huruf i berubah menjadi putih */
+    transform: rotate(15deg); /* Sedikit miring untuk efek unik */
+}
+
 .btn-plus { 
     background-color: #94a3b8; 
     color: white; 
