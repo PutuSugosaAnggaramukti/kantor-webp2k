@@ -18,15 +18,18 @@
         <div class="sidebar">
                 <h2>Menu</h2>
                 
-                <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan')" class="nav-item active" id="menu-karyawan">
+                <a href="javascript:void(0)" 
+                    onclick="loadAdminPage('data-karyawan', this)" class="nav-item {{ request()->is('admin/karyawan*') ? 'active' : '' }}">
                     <i class="fa-solid fa-users"></i> Data Karyawan
                 </a>
-                
-                <a href="javascript:void(0)" onclick="loadAdminPage('data-kunjungan')" class="nav-item" id="menu-kunjungan">
+
+                <a href="javascript:void(0)" 
+                    onclick="loadAdminPage('adm-kunjungan', this)" class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}">
                     <i class="fa-solid fa-clipboard-check"></i> Data Kunjungan
                 </a>
                 
-                <a href="javascript:void(0)" onclick="loadAdminPage('data-nasabah')" class="nav-item" id="menu-nasabah">
+                <a href="javascript:void(0)" 
+                    onclick="loadAdminPage('nasabah', this)" class="nav-item {{ request()->is('admin/nasabah*') ? 'active' : '' }}" id="menu-nasabah">
                     <i class="fa-solid fa-address-card"></i> Data Nasabah
                 </a>
 
@@ -89,46 +92,88 @@
     @include('admin.partials.modals')
 
     <script>
-        // Fungsi Navigasi SPA Admin
-        function loadAdminPage(pageName) {
-            const contentArea = document.getElementById('konten-admin');
-            contentArea.style.opacity = '0.3';
-
-            // Mengambil konten dari route Laravel yang mengembalikan view partial
-            fetch(`/admin/${pageName}-content`) 
-                .then(response => response.text())
-                .then(html => {
-                    contentArea.innerHTML = html;
-                    contentArea.style.opacity = '1';
-                    updateAdminSidebar(pageName);
-                })
-                .catch(err => console.error(err));
-        }
-
-      function updateAdminSidebar(pageName) {
-            // 1. Hapus class 'active' dari semua item menu
+            function loadAdminPage(pageName, element) {
+            const url = '/' + pageName + '-content'; 
+            
+            // 1. Reset semua menu yang aktif
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
             });
 
-            // 2. Cari elemen berdasarkan ID dan tambahkan class 'active'
-            // Pastikan ID di HTML sesuai (contoh: menu-data-karyawan)
+            // 2. Logika Penentuan Menu Aktif
+            if (element) {
+                // Jika diklik langsung dari sidebar
+                element.classList.add('active');
+            } 
+            else if (pageName === 'detail-kunjungan') {
+                // Pengecualian untuk detail kunjungan
+                const kunjunganMenu = document.querySelector('a[onclick*="adm-kunjungan"]');
+                if (kunjunganMenu) kunjunganMenu.classList.add('active');
+            } 
+            else if (pageName === 'pengunjung-nasabah' || pageName === 'nasabah') {
+                // PERBAIKAN: Gunakan ID menu-nasabah yang sudah Anda buat di sidebar
+                const nasabahMenu = document.getElementById('menu-nasabah');
+                if (nasabahMenu) {
+                    nasabahMenu.classList.add('active');
+                }
+            }
+
+            // 3. Eksekusi Fetch Konten
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Status: ' + response.status);
+                    return response.text();
+                })
+                .then(html => {
+                    document.getElementById('konten-admin').innerHTML = html;
+                })
+                .catch(err => console.error("Gagal load:", err));
+        }
+        function setActiveMenuOnLoad() {
+            const currentPath = window.location.pathname;
+            const navItems = document.querySelectorAll('.nav-item');
+
+            navItems.forEach(item => {
+                if (currentPath.includes('karyawan') && item.innerText.includes('Karyawan')) {
+                    item.classList.add('active');
+                } else if (currentPath.includes('kunjungan') && item.innerText.includes('Kunjungan')) {
+                    item.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', setActiveMenuOnLoad);
+
+      function updateAdminSidebar(pageName) {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+
             const activeMenu = document.getElementById(`menu-${pageName}`);
             if (activeMenu) {
                 activeMenu.classList.add('active');
             }
         }
 
-        // Fungsi Modal Edit Karyawan (Sesuai image_1225f4.png)
-        function openEditModal(kode, nama) {
-            document.getElementById('edit-kode').value = kode;
-            document.getElementById('edit-nama').value = nama;
-            document.getElementById('modalEditKaryawan').style.display = 'flex';
+        const modalEdit = document.getElementById('modalEditKaryawan');
+
+        function openModalEdit() {
+            if (modalEdit) {
+                modalEdit.style.display = 'flex';
+            }
         }
 
-        function closeEditModal() {
-            document.getElementById('modalEditKaryawan').style.display = 'none';
+        function closeModalEdit() {
+            if (modalEdit) {
+                modalEdit.style.display = 'none';
+            }
         }
+
+        window.addEventListener('click', function(event) {
+            if (event.target === modalEdit) {
+                closeModalEdit();
+            }
+        });
 
         document.querySelector('.dropdown-toggle').addEventListener('click', function() {
             const dropdown = document.getElementById('dropdown-input');
@@ -137,6 +182,64 @@
             dropdown.classList.toggle('show');
             arrow.classList.toggle('rotate');
         });
+
+       function openModalTambah() {
+            const modal = document.getElementById('modalTambahKaryawan');
+            if (modal) {
+                modal.style.display = 'flex'; 
+            }
+        }
+
+        function closeModalTambah() {
+            const modal = document.getElementById('modalTambahKaryawan');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        const modalDetail = document.getElementById('modalDetailKaryawan');
+
+        function openModalDetail() {
+            if (modalDetail) {
+                modalDetail.style.display = 'flex';
+            }
+        }
+
+        function closeModalDetail() {
+            if (modalDetail) {
+                modalDetail.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('click', function(event) {
+            if (event.target === modalDetail) {
+                closeModalDetail();
+            }
+        });
+
+        function openModalExport() {
+            $('#modalExportNasabah').fadeIn(); 
+        }
+
+        function closeModalExport() {
+            $('#modalExportNasabah').fadeOut();
+        }
+
+        function openModalFilter() {
+            $('#modalFilterNasabah').fadeIn();
+        }
+
+        function closeModalFilter() {
+            $('#modalFilterNasabah').fadeOut();
+        }
+
+        $(window).on('click', function(event) {
+            if ($(event.target).is('.modal-overlay')) {
+                closeModalExport();
+                closeModalFilter();
+            }
+        });
+                
 
     </script>
 </body>

@@ -8,6 +8,8 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\KunjunganController;
 use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\karyawan\KaryawanController;
+use App\Http\Controllers\karyawan\AdmKunjunganController;
+use App\Http\Controllers\karyawan\NasabahController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,8 +66,12 @@ Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('ku
 // Route untuk memanggil file partials/pengaturan_content.blade.php
 Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');
 
-// Route utama
-Route::get('/admin/karyawan', [KaryawanController::class, 'index']);
 
-// Route untuk Fetch SPA (Sesuaikan dengan nama di JS loadPage Anda)
+//ADMIN
+Route::get('/admin/karyawan', [KaryawanController::class, 'index'])->name('karyawan.index');
 Route::get('/data-karyawan-content', [KaryawanController::class, 'index']);
+Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index']);
+Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
+Route::get('/admin/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
+Route::get('/nasabah-content', [NasabahController::class, 'index']);
+Route::get('/pengunjung-nasabah-content', [NasabahController::class, 'pengunjung']);

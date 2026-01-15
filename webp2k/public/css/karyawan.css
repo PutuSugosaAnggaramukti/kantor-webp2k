@@ -103,9 +103,10 @@ body {
 }
 
 .nav-item.active {
-    background-color: white;
-    color: #0085FF !important; /* Warna biru cerah saat aktif */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    background-color: white !important;
+    color: #4e4bc1 !important; 
+    font-weight: bold;
+    border-radius: 10px 0 0 10px;
 }
 
 .nav-item.active {
@@ -122,7 +123,7 @@ body {
 }
 
 .nav-item.active i {
-    color: #0085FF;
+    color: #4e4bc1 !important;
 }
 
 .nav-item:hover i {
@@ -191,6 +192,42 @@ body {
     align-items: center;
     gap: 10px;
     margin-bottom: 25px;
+}
+
+.btn-edit {
+        transition: all 0.3s ease;
+        background-color: #eee;
+        border: 2px solid #000;
+        border-radius: 8px;
+        padding: 5px;
+        cursor: pointer;
+}
+
+
+.btn-edit:hover {
+    background-color: #d1d1d1; 
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-info-circle {
+    transition: all 0.3s ease;
+    background-color: transparent;
+    border: 2px solid #000;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-info-circle:hover {
+    background-color: #000; /* Berubah jadi hitam */
+    color: #fff; /* Teks i jadi putih */
+    transform: rotate(15deg) scale(1.1); /* Efek miring sedikit */
 }
 
 .data-table {
@@ -380,7 +417,9 @@ body {
     cursor: pointer;
     font-weight: 700;
     font-size: 14px;
-    min-width: 120px; 
+    min-width: 120px;
+    transition: all 0.3s ease-in-out !important; 
+    display: inline-block;
 }
 
 .btn-save {
@@ -393,16 +432,24 @@ body {
     font-weight: 700;
     font-size: 14px;
     min-width: 120px;
+    transition: all 0.3s ease-in-out !important;
+    display: inline-block;
 }
 
 .btn-save:hover {
     background-color: #2e2691;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(63, 54, 177, 0.4);
+    transform: scale(1.05);
 }
 
 .btn-cancel:hover {
     background-color: #d31d1d;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(63, 54, 177, 0.4);
+    transform: scale(1.05);
+}
+
+.btn-save:active, .btn-cancel:active {
+    transform: translateY(0);
 }
 
 .modal-form-content {
@@ -604,4 +651,51 @@ body {
 .main-footer p {
     margin: 0;
     letter-spacing: 0.5px;
+}
+
+/* Di dalam file CSS utama/parent Anda */
+.btn-next {
+    background: #3f36b1; /* Samakan dengan warna tombol Save */
+    color: white;
+    border: none;
+    padding: 6px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.btn-next:hover {
+    background: #2e2691; /* Samakan dengan hover tombol Save */
+    transform: scale(1.05);
+}
+
+
+/* ANIMASI MODAL */
+@keyframes fadeInOverlay {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+
+@keyframes zoomInModal {
+    from { 
+        opacity: 0;
+        transform: scale(0.8); 
+    }
+    to { 
+        opacity: 1;
+        transform: scale(1); 
+    }
+}
+
+#modalTambahKaryawan {
+    display: none; 
+    animation: fadeInOverlay 0.3s ease-out; 
+}
+
+
+#modalTambahKaryawan > div {
+    animation: zoomInModal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
 }

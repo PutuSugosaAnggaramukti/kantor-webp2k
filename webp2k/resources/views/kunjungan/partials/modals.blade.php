@@ -69,3 +69,37 @@
         <button onclick="closeDetailModal()" style="width: 100%; margin-top: 20px; padding: 10px; border-radius: 10px; cursor: pointer;">Tutup</button>
     </div>
 </div>
+
+<div id="modalExportNasabah" class="modal-overlay" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: #fff; margin: 10% auto; padding: 25px; border-radius: 15px; width: 350px; font-family: 'Inter', sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        
+        <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 25px;">Filter Data</h2>
+        
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px;">Tanggal Awal</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="date" class="form-control-modal" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                <button style="background: #e0e0e0; border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px;">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size: 12px;"></i>
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 25px;">
+            <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px;">Tanggal Akhir</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="date" class="form-control-modal" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                <button style="background: #e0e0e0; border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px;">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size: 12px;"></i>
+                </button>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeModalExport()" style="background: #ff4d4d; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 12px;">Cancel</button>
+            <button class="btn-export-excel" style="background-color: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px;">
+                <i class="fa-solid fa-file-excel"></i> Export
+            </button>
+        </div>
+    </div>
+</div>
