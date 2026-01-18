@@ -180,3 +180,31 @@
         </div>
     </div>
 </div>
+
+<div id="modalExportPelaporan" class="modal-overlay" style="display: none;">
+    <div class="modal-content-karyawan" style="width: 450px;">
+        <h2 style="text-align: center; font-weight: 800; margin-bottom: 30px;">Export Pelaporan</h2>
+        
+        <form action="#" method="GET">
+            <div class="form-group-karyawan">
+                <label>Tanggal Awal</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="date" name="tgl_awal" style="flex: 1;">
+                </div>
+            </div>
+
+            <div class="form-group-karyawan" style="margin-top: 20px;">
+                <label>Tanggal Akhir</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="date" name="tgl_akhir" style="flex: 1;">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 40px;">
+                <button type="submit" class="btn-tambah" style="background-color: #44c759; padding: 10px 30px; border-radius: 30px;">
+                    <i class="fa-solid fa-file-excel"></i> Export
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

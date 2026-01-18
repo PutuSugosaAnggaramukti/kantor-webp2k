@@ -33,7 +33,8 @@
                     <i class="fa-solid fa-address-card"></i> Data Nasabah
                 </a>
 
-                <a href="javascript:void(0)" onclick="loadAdminPage('pelaporan')" class="nav-item" id="menu-pelaporan">
+                <a href="javascript:void(0)" 
+                    onclick="loadAdminPage('pelaporan', this)" class="nav-item {{ request()->is('pelaporan*') ? 'active' : '' }}" id="menu-pelaporan">
                     <i class="fa-solid fa-file-signature"></i> Pelaporan
                 </a>
 
@@ -232,6 +233,21 @@
         function closeModalFilter() {
             $('#modalFilterNasabah').fadeOut();
         }
+
+        function openExportModal() {
+            const modal = document.getElementById('modalExportPelaporan');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('modalExportPelaporan');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
 
         $(window).on('click', function(event) {
             if ($(event.target).is('.modal-overlay')) {

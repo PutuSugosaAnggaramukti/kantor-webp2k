@@ -10,6 +10,7 @@ use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\karyawan\KaryawanController;
 use App\Http\Controllers\karyawan\AdmKunjunganController;
 use App\Http\Controllers\karyawan\NasabahController;
+use App\Http\Controllers\karyawan\PelaporanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,3 +76,4 @@ Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail'
 Route::get('/admin/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
 Route::get('/nasabah-content', [NasabahController::class, 'index']);
 Route::get('/pengunjung-nasabah-content', [NasabahController::class, 'pengunjung']);
+Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
