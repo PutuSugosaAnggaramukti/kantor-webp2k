@@ -181,18 +181,33 @@ body {
 .breadcrumb { color: #000; font-weight: bold; margin-bottom: 30px; }
 .breadcrumb span { color: #3b82f6; }
 
-.btn-tambah {
-    background-color: #22c55e;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 12px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 25px;
+.btn-tambah, 
+.btn-action-green,
+button[style*="background-color: #28a745"], 
+button[style*="background-color: #4CAF50"], 
+button[style*="background-color: #44c759"] {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; /* Animasi smooth */
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+.btn-tambah:hover, 
+.btn-action-green:hover,
+button[style*="background-color: #28a745"]:hover, 
+button[style*="background-color: #4CAF50"]:hover, 
+button[style*="background-color: #44c759"]:hover {
+    filter: brightness(1.1); /* Mencerahkan warna sedikit */
+    transform: translateY(-3px); /* Efek melayang ke atas */
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15); /* Bayangan lebih halus namun dalam */
+}
+
+.btn-tambah:active, 
+.btn-action-green:active,
+button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 
 .btn-edit {
         transition: all 0.3s ease;
@@ -669,6 +684,16 @@ body {
 .btn-next:hover {
     background: #2e2691; /* Samakan dengan hover tombol Save */
     transform: scale(1.05);
+}
+
+#dropdownLogout a:hover {
+    background-color: #f8f9fa;
+    color: #3f36b1 !important;
+}
+
+#dropdownLogout a:last-child:hover {
+    background-color: #fff5f5;
+    color: #c0392b !important;
 }
 
 

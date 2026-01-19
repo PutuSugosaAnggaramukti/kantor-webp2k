@@ -7,10 +7,10 @@
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <div style="display: flex; gap: 10px;">
-       <button onclick="openModalExport()" class="btn-action-green" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer;">
+       <button onclick="openModalExport()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer;">
             <span style="margin-right: 8px;">X</span> Export
         </button>
-       <button onclick="openModalFilter()" class="btn-action-green" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer;">
+       <button onclick="openModalFilter()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer;">
         <i class="fa-solid fa-sliders" style="margin-right: 8px;"></i> Filter
        </button>
     </div>

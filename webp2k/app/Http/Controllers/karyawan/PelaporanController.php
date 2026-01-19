@@ -10,4 +10,8 @@ class PelaporanController extends Controller
     public function index(){
         return view ('admin.partials.pelaporan');
     }
+
+    public function detail_nasabah(){
+        return view ('admin.partials.detail_pelaporan_nasabah');
+    }
 }

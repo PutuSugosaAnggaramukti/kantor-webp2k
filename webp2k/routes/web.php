@@ -9,6 +9,7 @@ use App\Http\Controllers\KunjunganController;
 use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\karyawan\KaryawanController;
 use App\Http\Controllers\karyawan\AdmKunjunganController;
+use App\Http\Controllers\karyawan\AdmDokumenController;
 use App\Http\Controllers\karyawan\NasabahController;
 use App\Http\Controllers\karyawan\PelaporanController;
 
@@ -69,7 +70,7 @@ Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])
 
 
 //ADMIN
-Route::get('/admin/karyawan', [KaryawanController::class, 'index'])->name('karyawan.index');
+Route::get('/admin', [KaryawanController::class, 'index'])->name('karyawan.index');
 Route::get('/data-karyawan-content', [KaryawanController::class, 'index']);
 Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index']);
 Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
@@ -77,3 +78,5 @@ Route::get('/admin/nasabah', [NasabahController::class, 'index'])->name('nasabah
 Route::get('/nasabah-content', [NasabahController::class, 'index']);
 Route::get('/pengunjung-nasabah-content', [NasabahController::class, 'pengunjung']);
 Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
+Route::get('/detail-pelaporan-nasabah-content', [PelaporanController::class, 'detail_nasabah']);
+Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumen']);

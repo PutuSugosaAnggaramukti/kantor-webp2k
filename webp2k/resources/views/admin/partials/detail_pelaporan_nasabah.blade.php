@@ -1,7 +1,7 @@
 <div class="page-title" style="margin-bottom: 25px;">
-    <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Pelaporan</h2>
+    <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Data Pelaporan Nasabah</h2>
     <p style="font-size: 14px; font-weight: 600;">
-        Dashboard <span style="margin: 0 5px;">></span> <span style="color: #007bff;">Pelaporan</span>
+        Dashboard <span style="margin: 0 5px;">></span> Pelaporan <span style="margin: 0 5px;">></span> <span style="color: #007bff;">Wahyu</span>
     </p>
 </div>
 
@@ -21,33 +21,30 @@
             <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #fcfcfc;">
                 <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
                 <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">Tanggal</th>
-                <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">Kode AO</th>
+                <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">No.Ang</th>
                 <th style="padding: 15px;">Nama</th>
             </tr>
         </thead>
         <tbody style="font-weight: 700; font-size: 14px;">
             @php
-                $pelaporanData = [
-                    ['tgl' => '2025-12-01', 'kode' => 'PG.803', 'nama' => 'WAHYU'],
-                    ['tgl' => '2025-12-02', 'kode' => 'PG.804', 'nama' => 'ABU'],
-                    ['tgl' => '2025-12-03', 'kode' => 'PG.805', 'nama' => 'TEGAR'],
-                    ['tgl' => '2025-12-03', 'kode' => 'PG.806', 'nama' => 'NUGROHO'],
-                    ['tgl' => '2025-12-04', 'kode' => 'PG.807', 'nama' => 'FAJAR'],
-                    ['tgl' => '2025-12-05', 'kode' => 'PG.808', 'nama' => 'IBNU'],
+                // Data dummy sesuai gambar referensi
+                $detailNasabah = [
+                    ['tgl' => '2025-12-01', 'no_ang' => '20002347', 'nama' => 'HENI SUSILONINGSIH DRA'],
+                    ['tgl' => '2025-12-02', 'no_ang' => '20000228', 'nama' => 'EKO SUTRISNO AJI'],
+                    ['tgl' => '2025-12-03', 'no_ang' => '20002225', 'nama' => 'INGRAM SUHARTO'],
+                    ['tgl' => '2025-12-03', 'no_ang' => '21002253', 'nama' => 'SUPARDI'],
+                    ['tgl' => '2025-12-04', 'no_ang' => '22002666', 'nama' => 'MUJINAH'],
+                    ['tgl' => '2025-12-05', 'no_ang' => '19000718', 'nama' => 'FELIX DODY YULIANTO'],
                 ];
             @endphp
 
-            @foreach($pelaporanData as $index => $item)
-            <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #fff;">
+            @foreach($detailNasabah as $index => $item)
+            <tr style="border-bottom: 2px solid #000; text-align: center;">
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['tgl'] }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['kode'] }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['no_ang'] }}</td>
                 <td style="padding: 15px; text-align: left; padding-left: 20px; text-transform: uppercase;">
-                    <a href="javascript:void(0)" 
-                    onclick="loadAdminPage('detail-pelaporan-nasabah')" 
-                    style="text-decoration: none; color: #000; font-weight: 800;">
-                        {{ $item['nama'] }}
-                    </a>
+                    {{ $item['nama'] }}
                 </td>
             </tr>
             @endforeach
