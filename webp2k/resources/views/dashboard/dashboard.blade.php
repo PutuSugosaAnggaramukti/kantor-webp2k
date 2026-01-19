@@ -23,30 +23,34 @@
         
     <div class="flex-grow">
         <div class="p2k-header">
-            <div class="p2k-header-left">
-                <div class="p2k-brand">
-                    <img src="/assets/logo.png" alt="Logo P2K" class="p2k-logo">
-                    <div class="p2k-title">
-                        <span>Sistem Informasi</span>
-                        <strong>P2K</strong>
+                <div class="p2k-header-left">
+                    <div class="p2k-brand">
+                        <img src="/assets/logo.png" alt="Logo P2K" class="p2k-logo">
+                        <div class="p2k-title">
+                            <span>Sistem Informasi</span>
+                            <strong>P2K</strong>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="user-area">
-                <button class="user-badge user-trigger" id="userTrigger">
-                    <span class="user-name">Username</span>
-                    <img src="/assets/avatar.png" class="user-avatar">
-                </button>
-
-               <div class="user-dropdown" id="userDropdown">
-                <a href="javascript:void(0)" onclick="transitionToPage('pengaturan')" class="dropdown-item">Edit Profil</a>
+                <div class="user-area">
+                    <button class="user-badge user-trigger" id="userTrigger">
+                        <span class="user-name">{{ Auth::user()->name }}</span>
+                        <img src="{{ asset('assets/avatar.png') }}" class="user-avatar">
+                    </button>
                 
-                <button type="button" onclick="confirmLogout()" class="dropdown-item logout" style="width: 100%; text-align: left; border: none; background: none; cursor: pointer;">
-                    Logout
-                </button>
-            </div>
-            </div>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="javascript:void(0)" onclick="transitionToPage('pengaturan')" class="dropdown-item">Edit Profil</a>
+                        
+                        <a href="javascript:void(0)" class="dropdown-item logout" onclick="confirmLogout()">
+                            Logout
+                        </a>
+                    </div>
+                </div>
+                
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                    @csrf
+                </form>
         </div>
 
         <nav class="p2k-nav">
@@ -202,19 +206,19 @@
     </script>
 
     <script>
-        function confirmLogout() {
+       function confirmLogout() {
             Swal.fire({
                 title: 'Apakah Anda yakin?',
                 text: "Anda akan keluar dari sistem P2K",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#3f36b1', // Warna ungu seragam dengan UI
+                confirmButtonColor: '#3f36b1', 
                 cancelButtonColor: '#cbd5e1',
                 confirmButtonText: 'Ya, Logout!',
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Panggil overlay loading yang sudah Anda miliki
+                    // Aktifkan overlay loading
                     const loader = document.getElementById('loginLoading');
                     if (loader) {
                         const loadingText = loader.querySelector('p');
@@ -223,9 +227,9 @@
                         loader.style.display = 'flex';
                     }
 
-                    // Transisi ke halaman login-preview setelah 1 detik
+                    // Ganti Redirect Manual dengan Submit Form POST Laravel
                     setTimeout(() => {
-                        window.location.href = "/login-preview";
+                        document.getElementById('logout-form').submit(); // Mengarah ke route logout
                     }, 1000);
                 }
             });

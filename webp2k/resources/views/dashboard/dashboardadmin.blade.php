@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ asset('css/admin-dashboard.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
@@ -16,9 +17,20 @@
             <div style="font-weight: bold; line-height: 1.2;">Sistem Informasi <br><span style="color: #3b82f6;">P2K</span></div>
         </div>
         <div class="user-profile-tag">
-            <span>Username</span>
-            <img src="{{ asset('img/avatar.png') }}" width="40" height="40" style="border-radius: 50%;">
+            <span style="cursor: pointer;" onclick="toggleAdminDropdown()">
+                {{ Auth::user()->name }}
+            </span>
+        
+            <div id="adminDropdown" style="display: none; position: absolute; top: 50px; right: 20px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100;">
+                <a href="javascript:void(0)" onclick="confirmLogout()" style="text-decoration: none; color: #ef4444; font-weight: bold;">
+                    Logout
+                </a>
+            </div>
         </div>
+        
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+            @csrf
+        </form>
     </header>
 
     <div class="breadcrumb-banner">Dashboard</div>
@@ -107,5 +119,38 @@
             }
         });
     </script>
+
+    <script>
+        function toggleAdminDropdown() {
+            const dropdown = document.getElementById('adminDropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function confirmLogout() {
+            Swal.fire({
+                title: 'Konfirmasi Logout',
+                text: "Sesi admin akan diakhiri",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3f36b1',
+                confirmButtonText: 'Ya, Keluar!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Aktifkan loader jika ada
+                    const loader = document.getElementById('loginLoading');
+                    if (loader) {
+                        loader.style.display = 'flex';
+                    }
+
+                    // Kirim form POST ke Laravel
+                    setTimeout(() => {
+                        document.getElementById('logout-form').submit();
+                    }, 800);
+                }
+            });
+        }
+    </script>
+
 </body>
 </html>

@@ -70,21 +70,20 @@
         </div>
 @endif
 
-       <form onsubmit="previewLogin(event)">
-        <div class="form-group">
-            <label>Username</label>
-            <input type="text" placeholder="Masukkan username">
-        </div>
+        <form action="{{ route('login.post') }}" method="POST">
+            @csrf
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="Masukkan username" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="Masukkan password" required>
+            </div>
 
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" placeholder="Masukkan password">
-        </div>
-
-        <button type="submit" class="btn-login">
-            Login
-        </button>
-    </form>
+            <button type="submit" class="btn-login">Login</button>
+        </form>
 
     </div>
 

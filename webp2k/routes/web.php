@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\login\LoginController;
 use App\Http\Controllers\dashboard\DashboardController;
 use App\Http\Controllers\dashboard\DashboardAdminController;
 use App\Http\Controllers\DokumenController;
@@ -19,64 +20,39 @@ use App\Http\Controllers\karyawan\PelaporanController;
 |--------------------------------------------------------------------------
 */
 
-// ✅ GET → tampilkan halaman login
-Route::get('/login-preview', function () {
-    return view('auth.login');
-})->name('login.preview');
+Route::get('/login', [LoginController::class, 'index'])->name('login');
+Route::post('/login', [LoginController::class, 'authenticate'])->name('login.post');
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// ✅ POST → simulasi proses login
-Route::post('/login-preview', function (Request $request) {
+// Grouping untuk Admin
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin', [KaryawanController::class, 'index'])->name('karyawan.index');
+    Route::get('/data-karyawan-content', [KaryawanController::class, 'index']);
+    Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index']);
+    Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
+    Route::get('/admin/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
+    Route::get('/nasabah-content', [NasabahController::class, 'index']);
+    Route::get('/pengunjung-nasabah-content', [NasabahController::class, 'pengunjung']);
+    Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
+    Route::get('/detail-pelaporan-nasabah-content', [PelaporanController::class, 'detail_nasabah']);
+    Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumen']);
 
-    $username = $request->input('username');
-    $password = $request->input('password');
-
-    // simulasi validasi kosong
-    if (!$username || !$password) {
-        return back()
-            ->withInput()
-            ->with('error', 'Username dan password wajib diisi');
-    }
-
-    // simulasi login salah
-    if ($username !== 'admin' || $password !== 'admin') {
-        return back()
-            ->withInput()
-            ->with('error', 'Username atau password salah (mode demo)');
-    }
-
-    // simulasi login sukses
-    return back()->with('success', 'Login berhasil (mode demo)');
 });
 
-Route::get('/admin/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
-Route::get('/dashboard', [DashboardController::class, 'index']);
-
-// Route Utama
-Route::get('/data-kunjungan', [KunjunganController::class, 'index'])->name('data-kunjungan');
-
-// Route untuk AJAX (Tanpa Refresh)
-Route::get('/data-kunjungan-content', [KunjunganController::class, 'dataKunjunganContent'])->name('data.kunjungan');
-Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'laporanKunjunganContent'])->name('laporan.kunjungan');
-Route::get('/dokumen-content', [DokumenController::class, 'dokumenContent'])->name('dokumen.content');
-
-// Route untuk menampilkan halaman Bukti Kunjungan
-Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
-
-// Route untuk menyimpan data dari Form Kunjungan
-Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
-
-// Route untuk memanggil file partials/pengaturan_content.blade.php
-Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');
+// Grouping untuk User
+Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/data-kunjungan', [KunjunganController::class, 'index'])->name('data-kunjungan');
+    Route::get('/data-kunjungan-content', [KunjunganController::class, 'dataKunjunganContent'])->name('data.kunjungan');
+    Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'laporanKunjunganContent'])->name('laporan.kunjungan');
+    Route::get('/dokumen-content', [DokumenController::class, 'dokumenContent'])->name('dokumen.content');
+    Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
+    Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
+    Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');
+});
 
 
-//ADMIN
-Route::get('/admin', [KaryawanController::class, 'index'])->name('karyawan.index');
-Route::get('/data-karyawan-content', [KaryawanController::class, 'index']);
-Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index']);
-Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
-Route::get('/admin/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
-Route::get('/nasabah-content', [NasabahController::class, 'index']);
-Route::get('/pengunjung-nasabah-content', [NasabahController::class, 'pengunjung']);
-Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
-Route::get('/detail-pelaporan-nasabah-content', [PelaporanController::class, 'detail_nasabah']);
-Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumen']);
+
+
+
