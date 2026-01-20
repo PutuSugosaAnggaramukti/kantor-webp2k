@@ -11,7 +11,9 @@ class KaryawanController extends Controller
 {
     public function index()
     {
-        return view('dashboard.dashboardadmin'); 
+        // Ambil data agar saat pertama kali dibuka, tabel tidak kosong
+        $karyawan = Karyawan::all(); 
+        return view('dashboard.dashboardadmin', compact('karyawan'));
     }
 
     public function dataKaryawanContent()

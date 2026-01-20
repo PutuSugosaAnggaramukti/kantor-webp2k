@@ -107,38 +107,27 @@
 
     <script>
       function loadAdminPage(pageName, element) {
+            // Jika rute di web.php adalah /admin/data-karyawan-content
+            const url = '/admin/' + pageName + '-content'; 
+            
+            // Logika active menu tetap sama...
+            
             const contentArea = document.getElementById('konten-admin');
-            const loader = document.getElementById('loginLoading');
-            
-            if (loader) {
-                loader.style.display = 'flex';
-                loader.classList.add('active');
-            }
+            contentArea.style.opacity = '0.5'; // Efek transisi saat loading
 
-            // Gunakan parameter ?page= agar seragam dengan pola User Anda
-            const url = '/admin/' + pageName + '-content?page=' + pageName; 
-            
-            fetch(url, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest' // Memberitahu Laravel ini adalah AJAX
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Server Error 500'); //
-                return response.text();
-            })
-            .then(html => {
-                setTimeout(() => {
-                    contentArea.innerHTML = html; // Injeksi konten
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Halaman tidak ditemukan');
+                    return response.text();
+                })
+                .then(html => {
+                    contentArea.innerHTML = html;
                     contentArea.style.opacity = '1';
-                    if (loader) loader.style.display = 'none';
-                }, 600);
-            })
-            .catch(err => {
-                console.error("Gagal load:", err);
-                Swal.fire('Error', 'Terjadi kesalahan pada server (Error 500)', 'error');
-                if (loader) loader.style.display = 'none';
-            });
+                })
+                .catch(err => {
+                    console.error("Gagal load:", err);
+                    contentArea.innerHTML = '<div style="padding:20px; color:red;">Gagal memuat konten. Silakan cek koneksi atau rute.</div>';
+                });
         }
     </script>
 
