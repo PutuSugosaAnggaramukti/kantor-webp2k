@@ -2,20 +2,23 @@
 
 namespace App\Http\Controllers\karyawan;
 
+
 use App\Http\Controllers\Controller;
+use App\Models\Karyawan;
 use Illuminate\Http\Request;
 
 class KaryawanController extends Controller
 {
-  public function index(Request $request)
+    public function index()
     {
-        $karyawan = [
-            ['kode' => 'PG.803', 'nama' => 'WAHYU'],
-        ];
-        if ($request->ajax() || $request->is('*-content')) {
-            return view('admin.partials.karyawan_table', compact('karyawan'))->render();
-        }
+        // Ambil data agar saat pertama kali dibuka, tabel tidak kosong
+        $karyawan = Karyawan::all(); 
+        return view('dashboard.dashboardadmin', compact('karyawan'));
+    }
 
-        return view('admin.datakaryawan', compact('karyawan'));
+    public function dataKaryawanContent()
+    {
+        $karyawan = Karyawan::all(); 
+        return view('admin.partials.karyawan_table', compact('karyawan'));
     }
 }

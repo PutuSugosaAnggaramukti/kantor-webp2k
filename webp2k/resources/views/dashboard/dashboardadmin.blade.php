@@ -11,6 +11,14 @@
 </head>
 <body>
 
+    <div id="loginLoading" class="login-loading">
+        <div class="loading-content">
+            <img src="{{ asset('assets/logo.png') }}" class="loading-logo">
+            <p>Memuat Data...</p>
+            <div class="spinner"></div>
+        </div>
+    </div>
+
     <header class="navbar-admin">
         <div class="logo-area" style="display: flex; align-items: center; gap: 10px;">
             <img src="{{ asset('assets/logo.png') }}" alt="Logo" height="40">
@@ -36,37 +44,92 @@
     <div class="breadcrumb-banner">Dashboard</div>
 
     <main class="container-center">
-        <h3 style="margin-bottom: 1.5rem;">Statistik</h3>
-        
-        <div class="stats-container">
-            <div class="card-stats bg-purple">
-                <div style="font-size: 1.1rem; opacity: 0.9;">Total Kunjungan</div>
-                <div style="font-size: 3.5rem; font-weight: bold; margin-top: 10px;">50</div>
-            </div>
+            <div id="konten-admin" style="transition: opacity 0.3s ease;">
+                <h3 style="margin-bottom: 1.5rem;">Statistik</h3>
             
-           
-        </div>
+            <div class="stats-container">
+                <div class="card-stats bg-purple">
+                    <div style="font-size: 1.1rem; opacity: 0.9;">Total Kunjungan</div>
+                    <div style="font-size: 3.5rem; font-weight: bold; margin-top: 10px;">50</div>
+                </div>
+                
+            
+            </div>
 
-        <div class="chart-box">
-            <canvas id="myChart" height="120"></canvas>
-        </div>
+            <div class="chart-box">
+                <canvas id="myChart" height="120"></canvas>
+            </div>
 
-        <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
-        
-        <div class="menu-grid">
-            <a href="#" class="menu-item"><i class="fas fa-users"></i><span>Data Karyawan</span></a>
-            <a href="#" class="menu-item"><i class="fas fa-clipboard-list"></i><span>Data Kunjungan</span></a>
-            <a href="#" class="menu-item"><i class="fas fa-file-invoice"></i><span>Data Nasabah</span></a>
-            <a href="#" class="menu-item"><i class="fas fa-edit"></i><span>Pelaporan</span></a>
-            <a href="#" class="menu-item"><i class="fas fa-file-alt"></i><span>Dokumen</span></a>
-            <a href="#" class="menu-item"><i class="fas fa-folder-plus"></i><span>Input Data Kunjungan</span></a>
-            <a href="#" class="menu-item"><i class="fas fa-calendar-alt"></i><span>Jadwal Kunjungan</span></a>
+            <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
+            
+            <div class="menu-grid">
+                <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="menu-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Data Karyawan</span>
+                </a>
+
+                <a href="javascript:void(0)" onclick="loadAdminPage('adm-kunjungan', this)" class="menu-item">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>Data Kunjungan</span>
+                </a>
+
+                <a href="javascript:void(0)" onclick="loadAdminPage('nasabah', this)" class="menu-item">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Data Nasabah</span>
+                </a>
+
+                <a href="javascript:void(0)" onclick="loadAdminPage('pelaporan', this)" class="menu-item">
+                    <i class="fas fa-edit"></i>
+                    <span>Pelaporan</span>
+                </a>
+
+                <a href="javascript:void(0)" onclick="loadAdminPage('dokumen', this)" class="menu-item">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Dokumen</span>
+                </a>
+
+                <a href="javascript:void(0)" onclick="loadAdminPage('input-data-kunjungan', this)" class="menu-item">
+                    <i class="fas fa-folder-plus"></i>
+                    <span>Input Data Kunjungan</span>
+                </a>
+
+                <a href="javascript:void(0)" onclick="loadAdminPage('jadwal-kunjungan', this)" class="menu-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Jadwal Kunjungan</span>
+                </a>
+            </div>
         </div>
     </main>
 
     <footer class="footer-admin">
         Sistem Aplikasi P2K
     </footer>
+
+    <script>
+      function loadAdminPage(pageName, element) {
+            // Jika rute di web.php adalah /admin/data-karyawan-content
+            const url = '/admin/' + pageName + '-content'; 
+            
+            // Logika active menu tetap sama...
+            
+            const contentArea = document.getElementById('konten-admin');
+            contentArea.style.opacity = '0.5'; // Efek transisi saat loading
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) throw new Error('Halaman tidak ditemukan');
+                    return response.text();
+                })
+                .then(html => {
+                    contentArea.innerHTML = html;
+                    contentArea.style.opacity = '1';
+                })
+                .catch(err => {
+                    console.error("Gagal load:", err);
+                    contentArea.innerHTML = '<div style="padding:20px; color:red;">Gagal memuat konten. Silakan cek koneksi atau rute.</div>';
+                });
+        }
+    </script>
 
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');

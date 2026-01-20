@@ -28,8 +28,8 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/admin', [KaryawanController::class, 'index'])->name('karyawan.index');
-    Route::get('/data-karyawan-content', [KaryawanController::class, 'index']);
-    Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index']);
+    Route::get('/data-karyawan-content', [KaryawanController::class, 'dataKaryawanContent'])->name('admin.karyawan.content');
+    Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('adm.index');
     Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
     Route::get('/admin/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
     Route::get('/nasabah-content', [NasabahController::class, 'index']);

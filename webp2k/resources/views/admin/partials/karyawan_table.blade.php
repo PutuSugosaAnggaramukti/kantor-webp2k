@@ -1,8 +1,9 @@
-<div class="page-title" style="margin-bottom: 25px;">
-    <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Data Karyawan</h2>
-    <p style="font-size: 14px; font-weight: 600;">
-        Dashboard <span style="margin: 0 5px;">></span> <span style="color: #007bff;">Data Karyawan</span>
-    </p>
+<div class="page-title">
+    <h2>Data Karyawan</h2>
+    <div class="breadcrumb">
+        <a href="/admin/dashboard">Dashboard > </a>
+        <span style="color: #3b82f6;">Data Karyawan</span>
+    </div>
 </div>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -26,34 +27,26 @@
                 <th style="padding: 15px; width: 150px;">Option</th>
             </tr>
         </thead>
-        <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
-            @php
-                // Data disesuaikan dengan gambar referensi
-                $karyawanData = [
-                    ['kode' => 'PG.803', 'nama' => 'WAHYU', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'ABU', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'RIKA', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'TEGAR', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'IBNU', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'NUGROHO', 'status' => 'AKTIF'],
-                ];
-            @endphp
-
-            @foreach($karyawanData as $index => $item)
+       <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
+            @foreach($karyawan as $index => $item)
             <tr style="border-bottom: 2px solid #000;">
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['kode'] }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">{{ $item['nama'] }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['status'] }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
+                    {{ $item->nama }}
+                </td>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->status }}</td>
+                
                 <td style="padding: 10px; display: flex; justify-content: center; gap: 15px; align-items: center;">
-                    <button title="Ubah Data" class="btn-edit" onclick="openModalEdit()" style="background: none; border: none; padding: 0;">
+                    {{-- Tambahkan ID ke dalam fungsi modal agar bisa edit data yang spesifik --}}
+                    <button title="Ubah Data" class="btn-edit" onclick="openModalEdit({{ $item->id }})" style="background: none; border: none; padding: 0; cursor: pointer;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                     </button>
 
-                    <button title="Detail" class="btn-info-circle" onclick="openModalDetail()">
+                    <button title="Detail" class="btn-info-circle" onclick="openModalDetail({{ $item->id }})" style="cursor: pointer;">
                         <span style="font-family: 'Times New Roman', serif; font-size: 18px;">i</span>
                     </button>
                 </td>

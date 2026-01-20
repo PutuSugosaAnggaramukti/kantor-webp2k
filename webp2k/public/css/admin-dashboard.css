@@ -73,6 +73,65 @@ h3 {
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
+/* Container Utama Overlay */
+.login-loading {
+    position: fixed; /* Wajib fixed agar tidak ikut scroll atau terjepit layout */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5); /* Hitam transparan (50%) */
+    backdrop-filter: blur(4px); /* Efek blur halus pada background */
+    display: none; /* Sembunyi secara default */
+    justify-content: center;
+    align-items: center;
+    z-index: 99999; /* Pastikan di atas semua elemen dashboard */
+}
+
+/* Konten Modal yang Diperkecil */
+.loading-content {
+    background: white;
+    padding: 1.5rem; /* Padding dikurangi agar lebih kecil */
+    border-radius: 15px; /* Border radius lebih halus */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 220px; /* Lebar diperkecil dari 300px ke 220px */
+}
+
+/* Ukuran Logo yang Lebih Kecil */
+.loading-logo {
+    width: 50px; /* Ukuran diperkecil dari 80px ke 50px */
+    margin-bottom: 1rem;
+}
+
+/* Teks Loading yang Lebih Kecil */
+.loading-content p {
+    font-size: 0.9rem; /* Ukuran font diperkecil */
+    font-weight: 500;
+    color: #444;
+    margin-bottom: 1rem;
+}
+
+/* Spinner yang Lebih Halus */
+.spinner {
+    width: 30px; /* Ukuran diperkecil dari 40px ke 30px */
+    height: 30px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3f36b1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.login-loading.active {
+    display: flex !important;
+}
+
 /* Menu Grid */
 .menu-grid {
     display: grid;
