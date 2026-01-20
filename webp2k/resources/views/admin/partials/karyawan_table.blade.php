@@ -1,8 +1,9 @@
-<div class="page-title" style="margin-bottom: 25px;">
-    <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Data Karyawan</h2>
-    <p style="font-size: 14px; font-weight: 600;">
-        Dashboard <span style="margin: 0 5px;">></span> <span style="color: #007bff;">Data Karyawan</span>
-    </p>
+<div class="page-title">
+    <h2>Data Karyawan</h2>
+    <div class="breadcrumb">
+        <a href="/admin/dashboard">Dashboard > </a>
+        <span style="color: #3b82f6;">Data Karyawan</span>
+    </div>
 </div>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -27,18 +28,6 @@
             </tr>
         </thead>
         <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
-            @php
-                // Data disesuaikan dengan gambar referensi
-                $karyawanData = [
-                    ['kode' => 'PG.803', 'nama' => 'WAHYU', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'ABU', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'RIKA', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'TEGAR', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'IBNU', 'status' => 'AKTIF'],
-                    ['kode' => 'PG.803', 'nama' => 'NUGROHO', 'status' => 'AKTIF'],
-                ];
-            @endphp
-
             @foreach($karyawanData as $index => $item)
             <tr style="border-bottom: 2px solid #000;">
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>

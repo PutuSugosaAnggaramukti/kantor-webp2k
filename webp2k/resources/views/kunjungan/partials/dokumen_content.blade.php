@@ -1,7 +1,7 @@
 <div class="page-title">
     <h2>Dokumen</h2>
     <div class="breadcrumb">
-       <a href="/dashboard">Dashboard > </a> <span style="color: #3b82f6;">Dokumen</span>
+       <a href="/user/dashboard">Dashboard > </a> <span style="color: #3b82f6;">Dokumen</span>
     </div>
 </div>
 

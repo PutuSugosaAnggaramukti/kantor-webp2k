@@ -81,7 +81,7 @@
 
             <div class="menu-grid">
                 <a href="javascript:void(0)" onclick="transitionToKunjungan()" class="btn-menu">
-                    <i class="fa-solid fa-user-plus text-4xl mb-3"></i>
+                    <i class="fa-solid fa-users text-4xl mb-3"></i>
                     <span class="font-semibold">Data Kunjungan</span>
                 </a>
               <a href="javascript:void(0)" onclick="transitionToPage('laporan-kunjungan')" class="btn-menu">

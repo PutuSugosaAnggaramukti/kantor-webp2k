@@ -112,7 +112,7 @@
 
     <script>
           function loadAdminPage(pageName, element) {
-            const url = '/' + pageName + '-content'; 
+            const url = '/admin/' + pageName + '-content'; 
             
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
