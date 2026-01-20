@@ -1,7 +1,7 @@
 <div class="page-title">
-    <h2>Bukti Kunjungan</h2>
+    <h2>Dokumen</h2>
     <div class="breadcrumb">
-        Dashboard > Laporan Kunjungan > <span style="color: #3b82f6;">Bukti Kunjungan</span>
+       <a href="/user/dashboard">Dashboard > Laporan Kunjungan > </a> <span style="color: #3b82f6;">Bukti Kunjungan</span>
     </div>
 </div>
 

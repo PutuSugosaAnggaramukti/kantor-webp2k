@@ -72,7 +72,7 @@
             const contentArea = document.getElementById('konten-utama');
             contentArea.style.opacity = '0.3';
 
-            fetch(`/${pageName}-content`) 
+            fetch(`/user/${pageName}-content`) 
                 .then(response => {
                     if (!response.ok) throw new Error('Gagal memuat halaman');
                     return response.text();
@@ -87,6 +87,14 @@
                     alert('Kesalahan: ' + error.message);
                     contentArea.style.opacity = '1';
                 });
+        }
+
+        function loadDashboardGrafik() {
+            if (typeof loadAdminPage === "function") {
+                loadAdminPage('dashboard'); 
+            } else {
+                loadPage('dashboard');
+            }
         }
 
         // --- Fungsi Khusus Load Detail/Bukti (Tombol Check) ---

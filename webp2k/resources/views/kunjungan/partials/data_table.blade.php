@@ -1,10 +1,10 @@
 <div class="page-title">
-    <h2>Data Kunjungan</h2>
+    <h2>Dokumen</h2>
     <div class="breadcrumb">
-        <a href="/dashboard">Dashboard > </a>
-        <span style="color: #3b82f6;">Data Kunjungan</span>
+       <a href="/user/dashboard">Dashboard > </a> <span style="color: #3b82f6;">Dokumen</span>
     </div>
 </div>
+
 
 <div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
     <div style="position: relative; width: 300px;">

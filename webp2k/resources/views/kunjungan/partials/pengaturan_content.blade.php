@@ -1,7 +1,7 @@
 <div class="page-title" style="margin-bottom: 20px;">
     <h2>Pengaturan</h2>
     <div class="breadcrumb">
-        <a href="/dashboard">Dashboard > </a> <span style="color: #3b82f6;">Pengaturan</span>
+        <a href="/user/dashboard">Dashboard > </a> <span style="color: #3b82f6;">Pengaturan</span>
     </div>
 </div>
 

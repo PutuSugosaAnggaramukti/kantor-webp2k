@@ -42,10 +42,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
 // Grouping untuk User
 Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
     Route::get('/data-kunjungan', [KunjunganController::class, 'index'])->name('data-kunjungan');
     Route::get('/data-kunjungan-content', [KunjunganController::class, 'dataKunjunganContent'])->name('data.kunjungan');
-    Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'laporanKunjunganContent'])->name('laporan.kunjungan');
+    Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'laporanKunjunganContent'])->name('user.laporan.content');
     Route::get('/dokumen-content', [DokumenController::class, 'dokumenContent'])->name('dokumen.content');
     Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
     Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
