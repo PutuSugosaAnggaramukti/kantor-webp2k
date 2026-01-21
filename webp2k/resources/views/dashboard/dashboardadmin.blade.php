@@ -106,30 +106,67 @@
     </footer>
 
     <script>
-      function loadAdminPage(pageName, element) {
-            // Jika rute di web.php adalah /admin/data-karyawan-content
-            const url = '/admin/' + pageName + '-content'; 
-            
-            // Logika active menu tetap sama...
-            
-            const contentArea = document.getElementById('konten-admin');
-            contentArea.style.opacity = '0.5'; // Efek transisi saat loading
-
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error('Halaman tidak ditemukan');
-                    return response.text();
-                })
-                .then(html => {
-                    contentArea.innerHTML = html;
-                    contentArea.style.opacity = '1';
-                })
-                .catch(err => {
-                    console.error("Gagal load:", err);
-                    contentArea.innerHTML = '<div style="padding:20px; color:red;">Gagal memuat konten. Silakan cek koneksi atau rute.</div>';
-                });
+    function loadAdminPage(pageName, element) {
+        // 1. Tentukan target container (sesuaikan ID dengan div di HTML Anda)
+        const contentArea = document.getElementById('main-content-area');
+        
+        if (!contentArea) {
+            console.error("Target ID 'main-content-area' tidak ditemukan!");
+            return;
         }
-    </script>
+
+        // 2. Beri efek visual sedang memuat
+        contentArea.style.opacity = '0.3';
+        contentArea.style.transition = 'opacity 0.3s ease';
+
+        // 3. Tentukan URL (mengarah ke controller yang hanya return view partial/tabel)
+        const url = `/admin/${pageName}-content`;
+
+        // 4. Lakukan Fetch data
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Halaman gagal dimuat (Error: ' + response.status + ')');
+            return response.text();
+        })
+        .then(html => {
+            // 5. Masukkan konten ke dalam area putih
+            contentArea.innerHTML = html;
+            contentArea.style.opacity = '1';
+
+            // 6. Atur class 'active' agar menu yang diklik berwarna ungu
+            updateActiveClass(element);
+        })
+        .catch(error => {
+            console.error('Fetch Error:', error);
+            contentArea.innerHTML = `
+                <div style="text-align:center; padding:50px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size:48px; color:#e74c3c;"></i>
+                    <p style="margin-top:15px; font-weight:bold;">Gagal memuat konten.</p>
+                    <small style="color:#666;">${error.message}</small>
+                </div>
+            `;
+            contentArea.style.opacity = '1';
+        });
+    }
+
+    /**
+     * Fungsi pembantu untuk mengelola status 'active' di Sidebar & Grid
+     */
+    function updateActiveClass(element) {
+        // Hapus class active dari semua menu (sidebar & grid)
+        const allMenus = document.querySelectorAll('.nav-item, .menu-item, .sub-nav-item');
+        allMenus.forEach(menu => menu.classList.remove('active'));
+
+        // Jika elemen diklik ada, tambahkan class active
+        if (element) {
+            element.classList.add('active');
+        }
+    }
+</script>
 
     <script>
         const ctx = document.getElementById('myChart').getContext('2d');

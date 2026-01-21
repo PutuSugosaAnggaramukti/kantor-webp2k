@@ -18,8 +18,7 @@
         <div class="sidebar">
                 <h2>Menu</h2>
                 
-                <a href="javascript:void(0)" 
-                    onclick="loadAdminPage('data-karyawan', this)" class="nav-item {{ request()->is('admin/karyawan*') ? 'active' : '' }}">
+                <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="nav-item">
                     <i class="fa-solid fa-users"></i> Data Karyawan
                 </a>
 
@@ -93,10 +92,10 @@
                 </div>
             </div>
 
-            <div class="main-content">
+          <div class="main-content">
                 <div class="content-padding">
-                    <div id="konten-admin">
-                        @include('admin.partials.karyawan_table')
+                    <div id="main-content-area">
+                        @include('admin.partials.karyawan_table') 
                     </div>
                 </div>
             </div>
@@ -111,53 +110,46 @@
     @include('admin.partials.modals')
 
     <script>
-          function loadAdminPage(pageName, element) {
-            const url = '/admin/' + pageName + '-content'; 
+          // Gunakan nama ini agar cocok dengan link di sidebar Anda
+        window.loadAdminPage = function(pageName, element) {
+            console.log("Memuat halaman:", pageName);
             
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-
-            if (element) {
-                element.classList.add('active');
-            } 
-            else if (pageName === 'detail-kunjungan') {
-                const kunjunganMenu = document.querySelector('a[onclick*="adm-kunjungan"]');
-                if (kunjunganMenu) kunjunganMenu.classList.add('active');
-            } 
-            else if (pageName === 'detail-pelaporan-nasabah') {
-                const pelaporanMenu = document.querySelector('a[onclick*="pelaporan"]');
-                if (pelaporanMenu) pelaporanMenu.classList.add('active');
-            }
-            else if (pageName === 'pengunjung-nasabah' || pageName === 'nasabah') {
-                const nasabahMenu = document.getElementById('menu-nasabah');
-                if (nasabahMenu) nasabahMenu.classList.add('active');
+            const contentArea = document.getElementById('main-content-area'); 
+            if (!contentArea) {
+                console.error("Error: ID 'main-content-area' tidak ditemukan!");
+                return;
             }
 
-            else if (pageName === 'dokumen') {
-                const dokumenMenu = document.getElementById('menu-dokumen');
-                if (dokumenMenu) dokumenMenu.classList.add('active');
-            }
-
-            const contentArea = document.getElementById('konten-admin');
-            contentArea.style.opacity = '0'; 
-
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error('Status: ' + response.status);
-                    return response.text();
+            contentArea.style.opacity = '0.5';
+            
+            // Memanggil route Laravel
+            fetch(`/admin/${pageName}-content`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Halaman tidak ditemukan');
+                    return res.text();
                 })
                 .then(html => {
                     contentArea.innerHTML = html;
-                    contentArea.style.opacity = '1'; 
-                    contentArea.style.transition = 'opacity 0.3s ease';
+                    contentArea.style.opacity = '1';
+                    
+                    // Mengatur class active pada menu
+                    document.querySelectorAll('.nav-item, .sub-nav-item, .menu-item').forEach(i => {
+                        i.classList.remove('active');
+                    });
+                    
+                    if(element) {
+                        element.classList.add('active');
+                    }
                 })
                 .catch(err => {
-                    console.error("Gagal load:", err);
-                    contentArea.innerHTML = '<p>Gagal memuat halaman.</p>';
+                    console.error(err);
+                    contentArea.innerHTML = '<div style="padding:20px; color:red;">Gagal memuat konten.</div>';
                     contentArea.style.opacity = '1';
                 });
-        }
+        };
+
+    // Alias navigasiAdmin ke loadAdminPage agar link Data Karyawan tidak error
+    window.navigasiAdmin = window.loadAdminPage;
 
         function setActiveMenuOnLoad() {
             const currentPath = window.location.pathname;

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\karyawan;
 
-
 use App\Http\Controllers\Controller;
 use App\Models\Karyawan;
 use Illuminate\Http\Request;
@@ -11,7 +10,7 @@ class KaryawanController extends Controller
 {
     public function index()
     {
-        // Ambil data agar saat pertama kali dibuka, tabel tidak kosong
+        // Ini hanya untuk memuat layout utama (Sidebar, Header, dsb)
         $karyawan = Karyawan::all(); 
         return view('dashboard.dashboardadmin', compact('karyawan'));
     }
@@ -19,6 +18,7 @@ class KaryawanController extends Controller
     public function dataKaryawanContent()
     {
         $karyawan = Karyawan::all(); 
-        return view('admin.partials.karyawan_table', compact('karyawan'));
+        // Pastikan view ini HANYA berisi potongan kode tabel yang Anda kirim tadi
+        return view('karyawan.partials.karyawan_table', compact('karyawan'));
     }
 }
