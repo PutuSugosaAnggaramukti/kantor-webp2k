@@ -44,7 +44,7 @@
     <div class="breadcrumb-banner">Dashboard</div>
 
     <main class="container-center">
-            <div id="konten-admin" style="transition: opacity 0.3s ease;">
+            <div id="main-content-area" style="transition: opacity 0.3s ease;">
                 <h3 style="margin-bottom: 1.5rem;">Statistik</h3>
             
             <div class="stats-container">
@@ -63,7 +63,7 @@
             <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
             
             <div class="menu-grid">
-                <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="menu-item">
+                <a href="{{ route('karyawan.index') }}" class="menu-item">
                     <i class="fa-solid fa-users"></i>
                     <span>Data Karyawan</span>
                 </a>
