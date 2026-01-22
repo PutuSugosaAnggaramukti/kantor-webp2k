@@ -11,6 +11,8 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
 
@@ -131,6 +133,8 @@
                 .then(html => {
                     contentArea.innerHTML = html;
                     contentArea.style.opacity = '1';
+
+                    history.pushState({page: pageName}, "", `/admin/${pageName}`);
                     
                     // Mengatur class active pada menu
                     document.querySelectorAll('.nav-item, .sub-nav-item, .menu-item').forEach(i => {
@@ -297,6 +301,67 @@
             }
         }
 
+        $(document).ready(function() {
+        let isProcessing = false; // Flag tambahan untuk mencegah klik beruntun
+
+        // Gunakan .off() untuk memastikan hanya ada SATU handler yang aktif
+        $(document).off('submit', '#formTambahKaryawan').on('submit', '#formTambahKaryawan', function(e) {
+            e.preventDefault();
+            
+            // Jika sedang memproses, jangan lakukan apa-apa
+            if (isProcessing) return false;
+
+            let form = $(this);
+            let submitButton = form.find('button[type="submit"]');
+            
+            // Aktifkan mode processing
+            isProcessing = true;
+            submitButton.prop('disabled', true).text('Processing...');
+
+            $.ajax({
+                url: "{{ route('karyawan.store') }}",
+                type: "POST",
+                data: new FormData(this),
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: 'Data karyawan kedua berhasil disimpan.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        closeModalTambah();
+                        form[0].reset(); // Sangat penting agar data lama tidak terkirim lagi
+                        
+                        // Muat ulang halaman data-karyawan
+                        loadAdminPage('data-karyawan'); 
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.status === 422) {
+                        let errors = xhr.responseJSON.errors;
+                        let errorString = Object.values(errors).flat().join('<br>');
+                        Swal.fire('Gagal!', errorString, 'warning');
+                    } else {
+                        Swal.fire('Error!', 'Terjadi kesalahan sistem.', 'error');
+                    }
+                },
+                complete: function() {
+                    // Matikan mode processing agar tombol bisa digunakan lagi nanti
+                    isProcessing = false;
+                    submitButton.prop('disabled', false).text('Save');
+                }
+            });
+            return false;
+        });
+    });
     </script>
 </body>
 </html>

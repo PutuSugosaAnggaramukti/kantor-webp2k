@@ -6,11 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Karyawan extends Model
 {
-    protected $fillable = [
-        'kode_ao', 
-        'nama', 
-        'username', 
-        'password', 
-        'status'
-    ];
+    // Pastikan nama tabel benar
+    protected $table = 'karyawans'; 
+
+    // Pastikan kolom-kolom ini ada
+    protected $fillable = ['kode_ao', 'nama', 'username', 'password', 'status'];
 }

@@ -6,27 +6,27 @@
 
         <form id="formTambahKaryawan">
             <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Kode AO*</label>
+                <label>Kode AO*</label>
                 <input type="text" name="kode_ao" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama*</label>
+                <label>Nama*</label>
                 <input type="text" name="nama" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Username*</label>
+                <label>Username*</label>
                 <input type="text" name="username" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Password*</label>
+                <label>Password*</label>
                 <input type="password" name="password" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 30px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Status*</label>
+                <label>Status*</label>
                 <select name="status" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #fff; cursor: pointer;">
                     <option value="Aktif">Aktif</option>
                     <option value="Non-Aktif">Non-Aktif</option>
