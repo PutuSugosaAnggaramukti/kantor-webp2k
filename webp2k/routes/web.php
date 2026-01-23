@@ -39,6 +39,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/detail-pelaporan-nasabah-content', [PelaporanController::class, 'detail_nasabah']);
     Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumen']);
 
+    // Route untuk memuat halaman partial
+    Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('admin.kunjungan.content');
+
+    // Route untuk menyimpan data
+    Route::post('/datakunjungan/store', [AdmKunjunganController::class, 'store'])->name('admin.datakunjungan.store');
+
 });
 
 // Grouping untuk User

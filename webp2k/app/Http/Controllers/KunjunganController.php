@@ -3,15 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Models\DataKunjunganAdm;
 use App\Models\Nasabah;
+use App\Models\Karyawan;
 use App\Models\Kunjungan;
 use Illuminate\Http\Request;
 
 class KunjunganController extends Controller
 {
-    public function index()
+   public function index()
     {
-        $data = Nasabah::all();
+        $karyawanId = Auth::guard('karyawan')->id();
+        $data = DataKunjunganAdm::where('karyawan_id', $karyawanId)->get();
+
         return view('kunjungan.datakunjungan', compact('data'));
     }
 

@@ -18,52 +18,42 @@
 
    <div class="wrapper">
         <div class="sidebar">
-                <h2>Menu</h2>
-                
-                <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="nav-item">
-                    <i class="fa-solid fa-users"></i> Data Karyawan
-                </a>
+            <h2>Menu</h2>
+            
+            <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="nav-item">
+                <i class="fa-solid fa-users"></i> Data Karyawan
+            </a>
 
-                <a href="javascript:void(0)" 
-                    onclick="loadAdminPage('adm-kunjungan', this)" class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}">
-                    <i class="fa-solid fa-clipboard-check"></i> Data Kunjungan
-                </a>
-                
-                <a href="javascript:void(0)" 
-                    onclick="loadAdminPage('nasabah', this)" class="nav-item {{ request()->is('admin/nasabah*') ? 'active' : '' }}" id="menu-nasabah">
-                    <i class="fa-solid fa-address-card"></i> Data Nasabah
-                </a>
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('adm-kunjungan', this)" 
+                class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}">
+                <i class="fa-solid fa-clipboard-check"></i> Data Kunjungan
+            </a>
+            
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('nasabah', this)" 
+                class="nav-item {{ request()->is('admin/nasabah*') ? 'active' : '' }}" id="menu-nasabah">
+                <i class="fa-solid fa-address-card"></i> Data Nasabah
+            </a>
 
-                <a href="javascript:void(0)" 
-                    onclick="loadAdminPage('pelaporan', this)" class="nav-item {{ request()->is('pelaporan*') ? 'active' : '' }}" id="menu-pelaporan">
-                    <i class="fa-solid fa-file-signature"></i> Pelaporan
-                </a>
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('pelaporan', this)" 
+                class="nav-item {{ request()->is('pelaporan*') ? 'active' : '' }}" id="menu-pelaporan">
+                <i class="fa-solid fa-file-signature"></i> Pelaporan
+            </a>
 
-                <a href="javascript:void(0)" 
-                    onclick="loadAdminPage('dokumen', this)" class="nav-item" id="menu-dokumen">
-                    <i class="fa-solid fa-file-lines"></i> Dokumen
-                </a>
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('dokumen', this)" 
+                class="nav-item" id="menu-dokumen">
+                <i class="fa-solid fa-file-lines"></i> Dokumen
+            </a>
 
-                <div class="dropdown-wrapper">
-                    <a href="javascript:void(0)" class="nav-item dropdown-toggle" id="menu-input-data">
-                        <div style="display: flex; align-items: center;">
-                            <i class="fa-solid fa-file-circle-plus"></i> 
-                            <span>Input Data Kunjungan</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-down arrow-icon" style="font-size: 14px; margin-right: 10px;"></i> 
-                    </a>
-                    
-                    <div class="dropdown-container" id="dropdown-input">
-                        <a href="javascript:void(0)" onclick="loadAdminPage('jadwal')" class="sub-nav-item" id="menu-jadwal">
-                            <i class="fa-solid fa-calendar-days"></i> Jadwal Kunjungan
-                        </a>
-                        
-                        <a href="javascript:void(0)" onclick="loadAdminPage('input-baru')" class="sub-nav-item">
-                            <i class="fa-solid fa-circle-plus"></i> Tambah Data
-                        </a>
-                    </div>
-                </div>
-            </div>
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('adm-kunjungan', this)" 
+                class="nav-item" id="menu-input-jadwal">
+                <i class="fa-solid fa-calendar-plus"></i> Input Jadwal Kunjungan
+            </a>
+        </div>
 
         <div class="main-container">
             <div class="header">
@@ -236,6 +226,38 @@
                 if (dropdown) dropdown.style.display = 'none';
             }
         };
+
+      $(document).on('submit', '#formTambahKunjungan', function(e) {
+            e.preventDefault();
+            const btn = $(this).find('button[type="submit"]');
+            btn.prop('disabled', true).text('Saving...');
+
+            $.ajax({
+                url: "/admin/datakunjungan/store",
+                type: "POST",
+                data: $(this).serialize(),
+                success: function(response) {
+                    Swal.fire('Berhasil!', response.message, 'success');
+                    closeModalKunjungan();
+                    loadAdminPage('adm-kunjungan'); // Refresh tabel
+                },
+                error: function() {
+                    Swal.fire('Error!', 'Gagal menyimpan data.', 'error');
+                },
+                complete: function() {
+                    btn.prop('disabled', false).text('Simpan');
+                }
+            });
+        });
+
+        function openModalKunjungan() {
+            $('#modalTambahKunjungan').css('display', 'flex');
+        }
+
+        function closeModalKunjungan() {
+            $('#modalTambahKunjungan').hide();
+            $('#formTambahKunjungan')[0].reset();
+        }
     </script>
 </body>
 </html>

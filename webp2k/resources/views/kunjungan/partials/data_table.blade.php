@@ -1,7 +1,7 @@
 <div class="page-title">
-    <h2>Dokumen</h2>
+    <h2>Data Kunjungan</h2>
     <div class="breadcrumb">
-       <a href="/user/dashboard">Dashboard > </a> <span style="color: #3b82f6;">Dokumen</span>
+       <a href="/user/dashboard">Dashboard > </a> <span style="color: #3b82f6;">Data Kunjungan</span>
     </div>
 </div>
 
@@ -31,74 +31,39 @@
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Option</th>
             </tr>
         </thead>
-        <tbody>
-            @php
-                $dummies = [
-                    ['no' => 1, 'kode' => 'PG.803', 'nama' => 'SUPARDI', 'kol' => 'LANCAR'],
-                    ['no' => 2, 'kode' => 'PG.803', 'nama' => 'MUJINAH', 'kol' => 'LANCAR'],
-                    ['no' => 3, 'kode' => 'PG.803', 'nama' => 'MUJIYATNO', 'kol' => 'LANCAR'],
-                    ['no' => 4, 'kode' => 'PG.803', 'nama' => 'SUNARDI', 'kol' => 'DPK'],
-                    ['no' => 5, 'kode' => 'PG.803', 'nama' => 'HARTO', 'kol' => 'DPK'],
-                    ['no' => 6, 'kode' => 'PG.803', 'nama' => 'PARJILAN', 'kol' => 'DPK'],
-                ];
-            @endphp
-
-            {{-- 1. LOOP DATA DUMMY --}}
-            @foreach($dummies as $d)
-            <tr style="text-align: center;">
-                <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $d['no'] }}</td>
-                <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $d['kode'] }}</td>
-                <td style="border: 1px solid #333; padding: 15px; font-weight: 700; text-align: left;">{{ $d['nama'] }}</td>
-                <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $d['kol'] }}</td>
-                <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">NOV 2025</td>
+        <tbody style="font-weight: 800; font-size: 16px; color: #000;">
+            @forelse($data as $index => $item)
+            <tr style="border-bottom: 2px solid #000; text-align: center;">
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
+                    {{ $item->nama_nasabah }}
+                </td>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kol }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000;">
+                    {{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('M Y') }}
+                </td>
                 <td style="border: 1px solid #333; padding: 15px;">
                     <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
-                        <button class="btn-action-add" onclick="openModal('{{ $d['nama'] }}', '{{ $d['kode'] }}')">
-                            <i class="fa-solid fa-plus"></i>
+                        
+                        <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}')" 
+                                style="background-color: #A3A8AC; color: #333; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
                         </button>
 
-                        <button class="btn-action-info" onclick="openDetailModal('{{ $d['kode'] }}', '-', '{{ $d['nama'] }}', '-', '0', '0', '{{ $d['kol'] }}', '-', '-')">
-                            i
+                        <button onclick="openDetailModal('{{ $item->kode_ao }}', '-', '{{ $item->nama_nasabah }}', '-', '0', '0', '{{ $item->kol }}', '-', '-')" 
+                                style="background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
                         </button>
+                        
                     </div>
                 </td>
             </tr>
-            @endforeach
-
-            {{-- 2. LOOP DATA DARI DATABASE DENGAN PENGAMAN --}}
-            @if(isset($data) && count($data) > 0)
-                @foreach($data as $key => $item)
-                <tr style="text-align: center;">
-                    <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $key + 7 }}</td>
-                    <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->kode }}</td>
-                    <td style="border: 1px solid #333; padding: 15px; font-weight: 700; text-align: left;">{{ strtoupper($item->nasabah) }}</td>
-                    <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->kol }}</td>
-                    <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->bulan }}</td>
-                    <td style="border: 1px solid #333; padding: 15px;">
-                        <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
-                            <button class="btn-plus" onclick="openModal('{{ $item->nasabah }}', '{{ $item->kode }}')" style="background-color: #8e94a9; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer;">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                            <button class="btn-info" 
-                                onclick="openDetailModal(
-                                    '{{ $item->kode }}', 
-                                    '{{ $item->no_angsuran }}', 
-                                    '{{ $item->nasabah }}', 
-                                    '{{ $item->alamat }}', 
-                                    'Rp {{ number_format($item->nominal ?? 0, 0, ',', '.') }}', 
-                                    'Rp {{ number_format($item->sisa_pokok ?? 0, 0, ',', '.') }}', 
-                                    '{{ $item->kol }}', 
-                                    '{{ $item->kode_ao }}', 
-                                    '{{ $item->nama_ao }}'
-                                )"
-                                style="background: none; border: 2px solid #333; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer;">
-                                i
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                @endforeach
-            @endif
+            @empty
+            <tr>
+                <td colspan="6" style="padding: 20px; text-align: center;">Belum ada jadwal kunjungan untuk Anda.</td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 </div>
