@@ -2,13 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Model;
 
-class Karyawan extends Model
+class Karyawan extends Authenticatable
 {
-    // Pastikan nama tabel benar
-    protected $table = 'karyawans'; 
-
-    // Pastikan kolom-kolom ini ada
+    use Notifiable;
+    
+    protected $table = 'karyawans';
     protected $fillable = ['kode_ao', 'nama', 'username', 'password', 'status'];
+    protected $hidden = ['password'];
+
+    public function getRoleAttribute()
+    {
+        return 'user'; 
+    }
 }

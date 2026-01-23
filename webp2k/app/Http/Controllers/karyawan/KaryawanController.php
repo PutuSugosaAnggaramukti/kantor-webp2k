@@ -21,29 +21,39 @@ class KaryawanController extends Controller
 
     }
 
-   public function store(Request $request)
+  public function store(Request $request)
     {
-        // Pastikan validasi mengembalikan pesan yang jelas
-        $request->validate([
-            'kode_ao'  => 'required|unique:karyawans,kode_ao',
-            'nama'     => 'required',
-            'username' => 'required|unique:karyawans,username',
-            'password' => 'required|min:6',
-            'status'   => 'required'
-        ]);
+        try {
+            $request->validate([
+                'kode_ao'  => 'required|unique:karyawans,kode_ao',
+                'nama'     => 'required',
+                'username' => 'required|unique:karyawans,username',
+                'password' => 'required|min:6',
+                'status'   => 'required'
+            ]);
 
-        // Proses Simpan
-        Karyawan::create([
-            'kode_ao'  => $request->kode_ao,
-            'nama'     => $request->nama,
-            'username' => $request->username,
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-            'status'   => $request->status,
-        ]);
+            Karyawan::create([
+                'kode_ao'  => $request->kode_ao,
+                'nama'     => $request->nama,
+                'username' => $request->username,
+                'password' => Hash::make($request->password),
+                'status'   => $request->status,
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data karyawan berhasil disimpan!'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Data karyawan berhasil disimpan!'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem.'
+            ], 500);
+        }
     }
 }

@@ -35,7 +35,7 @@
 
                 <div class="user-area">
                     <button class="user-badge user-trigger" id="userTrigger">
-                        <span class="user-name">{{ Auth::user()->name }}</span>
+                        <span class="user-name">{{ Auth::guard('karyawan')->user()->nama}}</span>
                         <img src="{{ asset('assets/avatar.png') }}" class="user-avatar">
                     </button>
                 

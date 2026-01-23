@@ -13,42 +13,24 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function authenticate(Request $request)
+   public function authenticate(Request $request)
     {
-        // Validasi input
         $credentials = $request->validate([
-            'username' => ['required'], // Menyesuaikan input dari form
+            'username' => ['required'],
             'password' => ['required'],
-        ], [
-            'username.required' => 'Username wajib diisi',
-            'password.required' => 'Password wajib diisi',
         ]);
-    
-        // Kita ubah 'username' menjadi 'name' karena di tabel users bawaan Laravel kolomnya bernama 'name'
-        $loginData = [
-            'name'     => $credentials['username'],
-            'password' => $credentials['password']
-        ];
 
-        if (Auth::attempt($loginData)) {
+        if (Auth::attempt(['name' => $credentials['username'], 'password' => $credentials['password']])) {
             $request->session()->regenerate();
-            $user = Auth::user();
-        
-            if ($user->role === 'admin') {
-                // Pastikan mengarah ke /admin/dashboard sesuai prefix admin
-                return redirect()->intended('/admin/dashboard')
-                    ->with('success', 'Selamat datang Admin!');
-            } else {
-                // Pastikan mengarah ke /user/dashboard sesuai prefix user
-                return redirect()->intended('/user/dashboard')
-                    ->with('success', 'Login berhasil, selamat bertugas!');
-            }
+            return redirect()->intended('/admin/dashboard');
         }
-    
-        // Jika gagal
-        return back()
-            ->withInput()
-            ->with('error', 'Username atau password salah');
+
+        if (Auth::guard('karyawan')->attempt(['username' => $credentials['username'], 'password' => $credentials['password']])) {
+            $request->session()->regenerate();
+            return redirect()->intended('/user/dashboard');
+        }
+
+        return back()->withInput()->with('error', 'Username atau password salah');
     }
 
    public function logout(Request $request)

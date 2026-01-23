@@ -29,10 +29,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/admin', [KaryawanController::class, 'index'])->name('karyawan.index');
     Route::get('/data-karyawan-content', [KaryawanController::class, 'getContent']);
-    Route::post('/admin/karyawan/store', [KaryawanController::class, 'store'])->name('karyawan.store');
+    Route::post('/karyawan/store', [KaryawanController::class, 'store'])->name('karyawan.store');
     Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('adm.index');
     Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
-    Route::get('/admin/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
+    Route::get('/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
     Route::get('/nasabah-content', [NasabahController::class, 'index']);
     Route::get('/pengunjung-nasabah-content', [NasabahController::class, 'pengunjung']);
     Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
@@ -42,7 +42,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 });
 
 // Grouping untuk User
-Route::middleware(['auth', 'role:user'])->prefix('user')->group(function () {
+Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
     Route::get('/data-kunjungan', [KunjunganController::class, 'index'])->name('data-kunjungan');
     Route::get('/data-kunjungan-content', [KunjunganController::class, 'dataKunjunganContent'])->name('data.kunjungan');

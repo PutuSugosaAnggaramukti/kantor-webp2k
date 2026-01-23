@@ -16,11 +16,14 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, $role): Response
     {
-        // Cek apakah user sudah login dan apakah rolenya sesuai
-        if (!Auth::check() || Auth::user()->role !== $role) {
-            abort(403, 'Anda tidak memiliki akses ke halaman ini.');
+        if (Auth::guard('web')->check() && Auth::guard('web')->user()->role === $role) {
+            return $next($request);
         }
 
-        return $next($request);
+        if (Auth::guard('karyawan')->check() && $role === 'user') {
+            return $next($request);
+        }
+
+        abort(403, 'Anda tidak memiliki akses ke halaman ini.');
     }
 }
