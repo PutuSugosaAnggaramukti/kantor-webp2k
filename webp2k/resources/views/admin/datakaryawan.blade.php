@@ -24,8 +24,8 @@
                 <i class="fa-solid fa-users"></i> Data Karyawan
             </a>
 
-            <a href="javascript:void(0)" 
-                onclick="loadAdminPage('adm-kunjungan', this)" 
+           <a href="javascript:void(0)" 
+                onclick="loadAdminPage('data-kunjungan', this)" 
                 class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}">
                 <i class="fa-solid fa-clipboard-check"></i> Data Kunjungan
             </a>
@@ -251,6 +251,21 @@
         });
 
         function openModalKunjungan() {
+            $('#selectKaryawan').html('<option value="">Mengambil data...</option>');
+            $.ajax({
+                url: "/admin/get-karyawan-list", 
+                type: "GET",
+                success: function(response) {
+                    let options = '<option value="">-- Pilih AO --</option>';
+                    response.forEach(function(k) {
+                        options += `<option value="${k.id}">${k.nama}</option>`;
+                    });
+                    $('#selectKaryawan').html(options);
+                },
+                error: function() {
+                    $('#selectKaryawan').html('<option value="">Gagal memuat data</option>');
+                }
+            });
             $('#modalTambahKunjungan').css('display', 'flex');
         }
 
@@ -258,6 +273,45 @@
             $('#modalTambahKunjungan').hide();
             $('#formTambahKunjungan')[0].reset();
         }
+
+        function refreshKaryawanDropdown() {
+            $.ajax({
+                url: "/get-karyawan-list",
+                type: "GET",
+                success: function(response) {
+                    // Cari elemen select di dalam modal
+                    let dropdown = $('select[name="karyawan_id"]');
+                    dropdown.empty(); // Kosongkan daftar lama
+                    dropdown.append('<option value="">-- Pilih AO --</option>');
+
+                    // Masukkan data terbaru dari database
+                    response.forEach(function(karyawan) {
+                        dropdown.append(`<option value="${karyawan.id}">${karyawan.nama}</option>`);
+                    });
+                },
+                error: function() {
+                    console.error("Gagal mengambil data karyawan terbaru.");
+                }
+            });
+        }
+
+        function updateKaryawanDropdown() {
+            $.ajax({
+                url: "/get-karyawan-list", // Kita akan buat route ini
+                type: "GET",
+                success: function(response) {
+                    let dropdown = $('select[name="karyawan_id"]');
+                    dropdown.empty(); // Kosongkan pilihan lama
+                    dropdown.append('<option value="">-- Pilih AO --</option>');
+                    
+                    // Isi dengan data terbaru
+                    response.forEach(function(k) {
+                        dropdown.append(`<option value="${k.id}">${k.nama}</option>`);
+                    });
+                }
+            });
+        }
+
     </script>
 </body>
 </html>

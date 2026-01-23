@@ -220,11 +220,8 @@
             @csrf
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama AO (Karyawan)</label>
-                <select name="karyawan_id" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+                <select name="karyawan_id" id="selectKaryawan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
                     <option value="">-- Pilih AO --</option>
-                    @foreach($karyawan as $k)
-                        <option value="{{ $k->id }}">{{ $k->nama }}</option>
-                    @endforeach
                 </select>
             </div>
 

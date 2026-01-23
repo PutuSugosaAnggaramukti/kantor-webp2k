@@ -20,6 +20,6 @@ class DataKunjunganAdm extends Model
 
     public function karyawan()
     {
-        return $this->belongsTo(Karyawan::class, 'karyawan_id');
+        return $this->belongsTo(Karyawan::class, 'karyawan_id', 'id');
     }
 }

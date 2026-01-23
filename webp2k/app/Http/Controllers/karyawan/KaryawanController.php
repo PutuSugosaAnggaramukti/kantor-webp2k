@@ -56,4 +56,10 @@ class KaryawanController extends Controller
             ], 500);
         }
     }
+
+   public function getList()
+    {
+        // Mengambil id dan nama karyawan terbaru
+        return response()->json(Karyawan::select('id', 'nama')->get());
+    }
 }

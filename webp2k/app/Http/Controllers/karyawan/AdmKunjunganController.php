@@ -18,6 +18,13 @@ class AdmKunjunganController extends Controller
         return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungans'));
     }
 
+    public function dataKunjunganContent()
+    {
+        $karyawan = Karyawan::withCount('kunjungan')->get();
+
+        return view('admin.partials.kunjungan', compact('karyawan'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -37,5 +44,13 @@ class AdmKunjunganController extends Controller
         ]);
 
         return response()->json(['success' => true, 'message' => 'Jadwal kunjungan berhasil dibuat!']);
+    }
+
+    public function rekapKunjungan()
+    {
+        $rekap = Karyawan::withCount(['kunjungan as jumlah_kunjungan'])
+            ->get();
+
+        return view('admin.rekap_kunjungan_content', compact('rekap'));
     }
 }

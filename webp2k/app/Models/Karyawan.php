@@ -18,4 +18,9 @@ class Karyawan extends Authenticatable
     {
         return 'user'; 
     }
+
+    public function kunjungan()
+    {
+        return $this->hasMany(DataKunjunganAdm::class, 'karyawan_id', 'id');
+    }
 }
