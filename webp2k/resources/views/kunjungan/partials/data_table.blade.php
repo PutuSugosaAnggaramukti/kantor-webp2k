@@ -1,3 +1,23 @@
+<style>
+    /* Paksa menu Data Kunjungan aktif */
+    #menu-data {
+        background-color: white !important;
+        color: #4e4bc1 !important;
+        font-weight: bold !important;
+        border-radius: 10px 0 0 10px !important;
+    }
+    #menu-data i {
+        color: #4e4bc1 !important;
+    }
+    
+    /* Matikan paksa menu Laporan jika sedang di halaman ini */
+    #menu-laporan {
+        background-color: transparent !important;
+        color: white !important;
+    }
+</style>
+
+
 <div class="page-title">
     <h2>Data Kunjungan</h2>
     <div class="breadcrumb">

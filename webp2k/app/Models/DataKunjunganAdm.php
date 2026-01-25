@@ -22,4 +22,9 @@ class DataKunjunganAdm extends Model
     {
         return $this->belongsTo(Karyawan::class, 'karyawan_id', 'id');
     }
+
+    public function hasilKunjungan()
+    {
+        return $this->hasOne(HasilKunjungan::class, 'nama_nasabah', 'nama_nasabah');
+    }
 }

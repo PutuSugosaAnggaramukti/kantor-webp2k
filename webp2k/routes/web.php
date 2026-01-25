@@ -55,7 +55,8 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
     Route::get('/data-kunjungan', [KunjunganController::class, 'index'])->name('data-kunjungan');
     Route::get('/data-kunjungan-content', [KunjunganController::class, 'dataKunjunganContent'])->name('data.kunjungan');
-    Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'laporanKunjunganContent'])->name('user.laporan.content');
+    Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'indexpelaporan'])->name('user.laporan.content');
+    Route::get('/detail-pelaporan', [KunjunganController::class, 'detailPelaporan']);
     Route::get('/dokumen-content', [DokumenController::class, 'dokumenContent'])->name('dokumen.content');
     Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
     Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
