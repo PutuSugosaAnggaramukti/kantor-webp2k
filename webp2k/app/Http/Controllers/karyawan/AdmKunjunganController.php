@@ -25,25 +25,40 @@ class AdmKunjunganController extends Controller
         return view('admin.partials.kunjungan', compact('karyawan'));
     }
 
+   public function detail($kode_ao)
+    {
+        try {
+            $data_detail = DataKunjunganAdm::whereHas('karyawan', function($q) use ($kode_ao) {
+                    $q->where('kode_ao', $kode_ao);
+                })
+                // Tambahkan orderBy agar rapi
+                ->orderBy('tanggal', 'desc')
+                ->get();
+
+            // Pastikan path view sesuai dengan lokasi file kamu
+            return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
+            
+        } catch (\Exception $e) {
+            return "<div style='color:red; padding:20px;'>Error: " . $e->getMessage() . "</div>";
+        }
+    }
+
     public function store(Request $request)
     {
-        $request->validate([
-            'karyawan_id'  => 'required',
-            'nama_nasabah' => 'required',
-            'kol'          => 'required',
-            'bulan'        => 'required',
-        ]);
-        $karyawan = Karyawan::findOrFail($request->karyawan_id);
+        // Cek dulu apakah data masuk ke server atau tidak dengan ini (opsional untuk debug)
+        // dd($request->all()); 
 
-        DataKunjunganAdm::create([
-            'kode_ao'      => $karyawan->kode_ao,
+        \App\Models\DataKunjunganAdm::create([
+            'karyawan_id'  => $request->karyawan_id,
             'nama_nasabah' => $request->nama_nasabah,
             'kol'          => $request->kol,
             'bulan'        => $request->bulan,
-            'karyawan_id'  => $karyawan->id,
+            'no_angsuran'  => $request->no_angsuran,
+            'tanggal'      => $request->tanggal, 
+            'kode_ao'      => Karyawan::find($request->karyawan_id)->kode_ao ?? null,
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Jadwal kunjungan berhasil dibuat!']);
+        return response()->json(['success' => true, 'message' => 'Data berhasil disimpan']);
     }
 
     public function rekapKunjungan()

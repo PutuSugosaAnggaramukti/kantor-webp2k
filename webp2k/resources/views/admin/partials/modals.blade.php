@@ -246,6 +246,16 @@
                 <input type="month" name="bulan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
             </div>
 
+           <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Tanggal Kunjungan</label>
+                <input type="date" name="tanggal" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Angsuran</label>
+                <input type="text" name="no_angsuran" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+            </div>
+
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
                 <button type="button" onclick="closeModalKunjungan()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #000; background: #fff; font-weight: 700; cursor: pointer;">Batal</button>
                 <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: #28a745; color: #fff; border: 2px solid #000; font-weight: 700; cursor: pointer;">Simpan</button>

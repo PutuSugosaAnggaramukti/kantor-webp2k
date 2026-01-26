@@ -6,26 +6,42 @@
 </div>
 
 <div class="table-responsive">
-    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background-color: #fff;">
+    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
         <thead>
-            <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #fcfcfc;">
-                <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
-                <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">Tanggal</th>
-                <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">No.Ang</th>
-                <th style="padding: 15px; border-right: 2px solid #000;">Nama</th>
-                <th style="padding: 15px; width: 100px;">Option</th>
+            <tr style="background: #f0f0f0; border-bottom: 2px solid #000;">
+                <th style="padding: 10px; border-right: 2px solid #000;">No</th>
+                <th style="padding: 10px; border-right: 2px solid #000;">Tanggal</th>
+                <th style="padding: 10px; border-right: 2px solid #000;">No. Angsuran</th>
+                <th style="padding: 10px; border-right: 2px solid #000;">Nama Nasabah</th>
+                <th style="padding: 10px;">Aksi</th>
             </tr>
         </thead>
         <tbody>
-            <tr style="border-bottom: 2px solid #000; text-align: center; font-weight: 700;">
-                <td style="padding: 15px; border-right: 2px solid #000;">1</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">2025-12-01</td>
-                <td style="padding: 15px; border-right: 2px solid #000;"></td>
-                <td style="padding: 15px; border-right: 2px solid #000;"></td>
-                <td style="padding: 15px;">
-                    <button style="background: transparent; border: 2px solid #000; border-radius: 50%; width: 25px; height: 25px; font-weight: bold;">i</button>
+            @forelse($data_detail as $item)
+            <tr style="border-bottom: 2px solid #000; text-align: center;">
+                <td style="padding: 10px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
+                
+                <td style="padding: 10px; border-right: 2px solid #000;">
+                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') : 'Belum Input' }}
+                </td>
+                
+                <td style="padding: 10px; border-right: 2px solid #000;">
+                    {{ $item->no_angsuran ?? '-' }}
+                </td>
+                
+                <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
+                    {{ $item->nama_nasabah ?? '-' }}
+                </td>
+                
+                <td style="padding: 10px;">
+                    <button style="border-radius: 50%; width: 25px; height: 25px;">i</button>
                 </td>
             </tr>
+            @empty
+            <tr>
+                <td colspan="5" style="padding: 20px;">Data kunjungan tidak ditemukan.</td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 </div>

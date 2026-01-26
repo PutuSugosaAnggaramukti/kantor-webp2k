@@ -34,7 +34,12 @@
                     {{ $item->nama }}
                 </td>
                 <td style="padding: 15px; text-align: center;">
-                    {{ $item->kunjungan_count }} </td>
+                    <span 
+                        onclick="loadAdminPage('kunjungan-detail/{{ $item->kode_ao }}')" 
+                        style="color: #007bff; text-decoration: underline; cursor: pointer; font-weight: 800;">
+                        {{ $item->kunjungan_count }}
+                    </span>
+                </td>
             </tr>
             @endforeach
         </tbody>

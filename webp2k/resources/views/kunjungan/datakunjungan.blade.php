@@ -86,7 +86,6 @@
     @include('kunjungan.partials.modals')
 
     <script>
-        // --- Fungsi Navigasi Menu Utama ---
         function loadPage(pageName) {
             const contentArea = document.getElementById('konten-utama');
             contentArea.style.opacity = '0.3';
@@ -99,7 +98,7 @@
                 .then(html => {
                     contentArea.innerHTML = html;
                     contentArea.style.opacity = '1';
-                    updateSidebarActive(pageName); // Panggil fungsi di sini
+                    updateSidebarActive(pageName);
                 })
                 .catch(error => {
                     console.error('Fetch error:', error);
@@ -116,7 +115,6 @@
             }
         }
 
-        // --- Fungsi Khusus Load Detail/Bukti (Tombol Check) ---
         function loadContent(url) {
             const contentArea = document.getElementById('konten-utama');
             contentArea.style.opacity = '0.3';

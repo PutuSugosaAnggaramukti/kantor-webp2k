@@ -19,14 +19,12 @@
    <div class="wrapper">
         <div class="sidebar">
             <h2>Menu</h2>
-            
             <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="nav-item">
                 <i class="fa-solid fa-users"></i> Data Karyawan
             </a>
 
-           <a href="javascript:void(0)" 
-                onclick="loadAdminPage('data-kunjungan', this)" 
-                class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}">
+            <a href="javascript:void(0)" 
+                id="menu-rekap-kunjungan" onclick="loadAdminPage('data-kunjungan', this)" class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}">
                 <i class="fa-solid fa-clipboard-check"></i> Data Kunjungan
             </a>
             
@@ -48,9 +46,7 @@
                 <i class="fa-solid fa-file-lines"></i> Dokumen
             </a>
 
-            <a href="javascript:void(0)" 
-                onclick="loadAdminPage('adm-kunjungan', this)" 
-                class="nav-item" id="menu-input-jadwal">
+            <a href="javascript:void(0)" onclick="loadAdminPage('adm-kunjungan', this)" class="nav-item" id="menu-input-jadwal">
                 <i class="fa-solid fa-calendar-plus"></i> Input Jadwal Kunjungan
             </a>
         </div>
@@ -106,34 +102,44 @@
 
         var isProcessingKaryawan = false;
 
-        // --- 2. NAVIGASI (LOAD PAGE) ---
         window.loadAdminPage = function(pageName, element) {
             const contentArea = document.getElementById('main-content-area'); 
             if (!contentArea) return;
 
             contentArea.style.opacity = '0.5';
             
-            fetch(`/admin/${pageName}-content`)
+            const fetchUrl = `/admin/${pageName}-content`;
+
+            fetch(fetchUrl)
                 .then(res => {
-                    if (!res.ok) throw new Error('Halaman tidak ditemukan');
+                    if (!res.ok) throw new Error('404');
                     return res.text();
                 })
                 .then(html => {
                     contentArea.innerHTML = html;
                     contentArea.style.opacity = '1';
+                    
                     history.pushState({page: pageName}, "", `/admin/${pageName}`);
                     
-                    document.querySelectorAll('.nav-item, .sub-nav-item').forEach(i => i.classList.remove('active'));
-                    if(element) element.classList.add('active');
+                    // 1. Bersihkan semua class active dari semua menu
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+
+                    // 2. Tentukan menu mana yang harus aktif
+                    if (element) {
+                        // Jika diklik langsung dari sidebar, nyalakan elemen tersebut
+                        element.classList.add('active');
+                    } else if (pageName.includes('kunjungan-detail')) {
+                        // Jika dipicu dari klik "angka" (detail), nyalakan menu Data Kunjungan via ID
+                        const menuRekap = document.getElementById('menu-rekap-kunjungan');
+                        if (menuRekap) menuRekap.classList.add('active');
+                    }
                 })
                 .catch(err => {
-                    contentArea.innerHTML = '<div style="padding:20px; color:red;">Gagal memuat konten.</div>';
+                    console.error(err);
                     contentArea.style.opacity = '1';
                 });
         };
-
-        // --- 3. FORM SUBMIT HANDLER (ANTI-DUPLICATE) ---
-        // Letakkan di luar $(document).ready agar terdaftar sekali secara global
+        
         $(document).off('submit', '#formTambahKaryawan').on('submit', '#formTambahKaryawan', function(e) {
             e.preventDefault();
 
@@ -227,22 +233,33 @@
             }
         };
 
-      $(document).on('submit', '#formTambahKunjungan', function(e) {
+      $(document).off('submit', '#formTambahKunjungan').on('submit', '#formTambahKunjungan', function(e) {
             e.preventDefault();
-            const btn = $(this).find('button[type="submit"]');
-            btn.prop('disabled', true).text('Saving...');
+            
+            const form = $(this);
+            const btn = form.find('button[type="submit"]');
+            
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
 
             $.ajax({
                 url: "/admin/datakunjungan/store",
                 type: "POST",
-                data: $(this).serialize(),
+                // GUNAKAN FormData agar input 'date' dan 'month' terkirim dengan sempurna
+                data: new FormData(this), 
+                processData: false,
+                contentType: false,
                 success: function(response) {
-                    Swal.fire('Berhasil!', response.message, 'success');
-                    closeModalKunjungan();
-                    loadAdminPage('adm-kunjungan'); // Refresh tabel
+                    if (response.success) {
+                        Swal.fire('Berhasil!', 'Data kunjungan telah disimpan.', 'success');
+                        closeModalKunjungan();
+                        
+                        // Refresh ke halaman rekap kunjungan
+                        loadAdminPage('adm-kunjungan'); 
+                    }
                 },
-                error: function() {
-                    Swal.fire('Error!', 'Gagal menyimpan data.', 'error');
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    Swal.fire('Error!', 'Gagal menyimpan data. Pastikan semua input terisi.', 'error');
                 },
                 complete: function() {
                     btn.prop('disabled', false).text('Simpan');

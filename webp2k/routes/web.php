@@ -30,13 +30,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/admin', [KaryawanController::class, 'index'])->name('karyawan.index');
     Route::get('/data-karyawan-content', [KaryawanController::class, 'getContent']);
     Route::post('/karyawan/store', [KaryawanController::class, 'store'])->name('karyawan.store');
-    
-    // 1. Ini untuk halaman INPUT JADWAL (Tabel Nasabah & Tombol Tambah)
     Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('admin.kunjungan.index');
-    
-    // 2. UBAH BARIS INI: Ini untuk halaman REKAP/DATA KUNJUNGAN (Tabel Jumlah Kunjungan AO)
     Route::get('/data-kunjungan-content', [AdmKunjunganController::class, 'dataKunjunganContent'])->name('admin.kunjungan.rekap');
-    
+    Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail'])
+    ->where('kode_ao', '.*');
     Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
     Route::get('/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
     Route::get('/nasabah-content', [NasabahController::class, 'index']);
@@ -44,7 +41,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
     Route::get('/detail-pelaporan-nasabah-content', [PelaporanController::class, 'detail_nasabah']);
     Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumen']);
-    
+    Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail']);
     Route::post('/datakunjungan/store', [AdmKunjunganController::class, 'store'])->name('admin.datakunjungan.store');
     Route::get('/get-karyawan-list', [KaryawanController::class, 'getList'])->name('admin.karyawan.list');
 });
