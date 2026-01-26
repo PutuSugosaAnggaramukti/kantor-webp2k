@@ -35,9 +35,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail'])
     ->where('kode_ao', '.*');
     Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
-    Route::get('/nasabah', [NasabahController::class, 'index'])->name('nasabah.index');
-    Route::get('/nasabah-content', [NasabahController::class, 'index']);
-    Route::get('/pengunjung-nasabah-content', [NasabahController::class, 'pengunjung']);
+    Route::get('/nasabah-content', [NasabahController::class, 'nasabahContent']);
+    Route::get('/nasabah-detail/{no_angsuran}-content', [NasabahController::class, 'detail']);
     Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
     Route::get('/detail-pelaporan-nasabah-content', [PelaporanController::class, 'detail_nasabah']);
     Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumen']);

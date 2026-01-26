@@ -29,33 +29,36 @@
                 <th style="padding: 15px; width: 150px;">Option</th>
             </tr>
         </thead>
-        <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
-            @php
-                $nasabahData = [
-                    ['ang' => '20002347', 'nama' => 'HENI SUSILO', 'jml' => 2],
-                    ['ang' => '20000228', 'nama' => 'EKO SUTRISNO', 'jml' => 2],
-                    ['ang' => '20002225', 'nama' => 'INGRAM SUHARTO', 'jml' => 3],
-                    ['ang' => '21002553', 'nama' => 'SUPARDI', 'jml' => 3],
-                    ['ang' => '22002666', 'nama' => 'MUJINAH', 'jml' => 4],
-                    ['ang' => '240001114', 'nama' => 'NAWAWI', 'jml' => 1],
-                ];
-            @endphp
-
-            @foreach($nasabahData as $index => $item)
-            <tr style="border-bottom: 2px solid #000;">
-                <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                <td style="padding: 12px; border-right: 2px solid #000;">{{ $item['ang'] }}</td>
-                <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">{{ $item['nama'] }}</td>
-                <td style="padding: 12px; border-right: 2px solid #000;">{{ $item['jml'] }}</td>
-                <td style="padding: 12px; display: flex; justify-content: center;">
-                   <button class="btn-save" 
-                        onclick="loadAdminPage('pengunjung-nasabah')" style="padding: 6px 20px; border-radius: 20px; display: flex; align-items: center; gap: 8px; border: none; cursor: pointer; background-color: #3f36b1; color: white;">
-                        <span style="color: #00ff88; font-weight: 900;">➜</span> 
-                        <span style="font-size: 11px;">NEXT</span>
+       <tbody>
+            @forelse($nasabah_all as $nasabah)
+            <tr style="border-bottom: 2px solid #000; font-weight: 700; text-align: center;">
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
+                
+                <td style="padding: 15px; border-right: 2px solid #000;">
+                    {{ $nasabah->no_angsuran }}
+                </td>
+                
+                <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
+                    {{ $nasabah->nama_nasabah }}
+                </td>
+                
+                <td style="padding: 15px; border-right: 2px solid #000;">
+                    {{ $nasabah->jml_pengunjung }}
+                </td>
+                
+                <td style="padding: 15px;">
+                    <button class="btn-next" onclick="loadAdminPage('nasabah-detail/{{ trim($nasabah->no_angsuran) }}')" style="background: #3f36b1; color: #fff; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer;">
+                        NEXT →
                     </button>
                 </td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="5" style="padding: 30px; text-align: center; font-weight: bold; color: #888;">
+                    Belum ada data nasabah. Silakan input kunjungan terlebih dahulu.
+                </td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 </div>

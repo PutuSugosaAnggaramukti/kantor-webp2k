@@ -22,25 +22,24 @@
             </tr>
         </thead>
         <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
-            @php
-                $detailData = [
-                    ['tgl' => '2025-12-01', 'kode' => 'PG.803', 'nama' => 'WAHYU'],
-                    ['tgl' => '2025-12-02', 'kode' => 'PG.804', 'nama' => 'ABU'],
-                    ['tgl' => '2025-12-03', 'kode' => 'PG.805', 'nama' => 'TEGAR'],
-                    ['tgl' => '2025-12-03', 'kode' => 'PG.806', 'nama' => 'NUGROHO'],
-                    ['tgl' => '2025-12-04', 'kode' => 'PG.807', 'nama' => 'FAJAR'],
-                    ['tgl' => '2025-12-05', 'kode' => 'PG.808', 'nama' => 'IBNU'],
-                ];
-            @endphp
-
-            @foreach($detailData as $index => $item)
+            @forelse($histori_kunjungan as $index => $item)
             <tr style="border-bottom: 2px solid #000;">
                 <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                <td style="padding: 12px; border-right: 2px solid #000;">{{ $item['tgl'] }}</td>
-                <td style="padding: 12px; border-right: 2px solid #000;">{{ $item['kode'] }}</td>
-                <td style="padding: 12px; text-align: left; padding-left: 20px;">{{ $item['nama'] }}</td>
+                <td style="padding: 12px; border-right: 2px solid #000;">
+                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') : 'Belum Input' }}
+                </td>
+                <td style="padding: 12px; border-right: 2px solid #000;">
+                    {{ $item->karyawan->kode_ao ?? $item->kode_ao }}
+                </td>
+                <td style="padding: 12px; text-align: left; padding-left: 20px;">
+                    {{ $item->karyawan->nama ?? 'N/A' }}
+                </td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="4" style="padding: 20px;">Belum ada riwayat kunjungan.</td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 </div>
