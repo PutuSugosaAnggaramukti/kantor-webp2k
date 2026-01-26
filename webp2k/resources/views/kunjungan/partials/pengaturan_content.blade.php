@@ -18,26 +18,40 @@
     <div class="settings-content-area">
         <div id="section-akun" style="display: block;">
             <div class="avatar-upload-section" style="display: flex; align-items: center; gap: 30px; margin-bottom: 40px;">
-                <div style="position: relative;">
-                    <img src="https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff&size=120" 
-                         class="profile-avatar-img">
-                    <div class="avatar-camera-icon">
+                <div style="position: relative; width: 120px; height: 120px;">
+                    <img id="display-avatar" 
+                        src="{{ Auth::guard('karyawan')->user()->avatar ? asset('storage/' . Auth::guard('karyawan')->user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::guard('karyawan')->user()->nama) . '&background=0D8ABC&color=fff&size=120' }}" 
+                        class="profile-avatar-img" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover;">
+                    
+                    <input type="file" id="upload-avatar-input" hidden accept="image/*" onchange="previewAvatar(this)">
+                    
+                    <div class="avatar-camera-icon" onclick="document.getElementById('upload-avatar-input').click()" 
+                        style="position: absolute; bottom: 5px; right: 5px; background: #3b82f6; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; cursor: pointer;">
                         <i class="fa-solid fa-camera" style="font-size: 14px;"></i>
                     </div>
                 </div>
+
                 <div style="display: flex; gap: 12px;">
-                    <button class="btn-settings-save" style="padding: 10px 20px;">Upload Avatar</button>
-                    <button class="btn-settings-cancel" style="padding: 10px 20px;">Hapus Avatar</button>
+                    <button type="button" onclick="simpanAvatarKeServer()" class="btn-settings-save" style="padding: 10px 20px;">
+                        Upload Avatar
+                    </button>
+                    <button type="button" onclick="resetAvatarPreview()" class="btn-settings-cancel" style="padding: 10px 20px;">
+                        Hapus Avatar
+                    </button>
                 </div>
             </div>
 
             <div class="settings-group">
-                <label>Username</label>
-                <input type="text" value="Username" class="settings-input">
+                <label>Username (Read Only)</label>
+                <input type="text" value="{{ Auth::guard('karyawan')->user()->username }}" class="settings-input" readonly style="background: #f5f5f5;">
             </div>
             <div class="settings-group">
-                <label>Nomor HP</label>
-                <input type="text" placeholder="Masukkan nomor HP" class="settings-input">
+                <label>Nama Lengkap</label>
+                <input type="text" name="nama" value="{{ Auth::guard('karyawan')->user()->nama }}" class="settings-input">
+            </div>
+            <div class="settings-group">
+                <label>Kode AO</label>
+                <input type="text" value="{{ Auth::guard('karyawan')->user()->kode_ao }}" class="settings-input" readonly style="background: #f5f5f5;">
             </div>
             <div class="settings-group">
                 <label>Email</label>

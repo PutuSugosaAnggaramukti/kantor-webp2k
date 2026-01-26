@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/kunjunganuser.css') }}">
 
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
@@ -329,6 +331,189 @@
         }
     }
 </script>
+
+<script>
+// Fungsi Switch Tab (Akun / Sandi)
+function switchSettingsTab(tab) {
+    const btnAkun = document.getElementById('tab-btn-akun');
+    const btnSandi = document.getElementById('tab-btn-sandi');
+    const secAkun = document.getElementById('section-akun');
+    const secSandi = document.getElementById('section-sandi');
+
+    if (tab === 'akun') {
+        btnAkun.classList.add('tab-active');
+        btnSandi.classList.remove('tab-active');
+        secAkun.style.display = 'block';
+        secSandi.style.display = 'none';
+    } else {
+        btnSandi.classList.add('tab-active');
+        btnAkun.classList.remove('tab-active');
+        secSandi.style.display = 'block';
+        secAkun.style.display = 'none';
+    }
+}
+
+// Fungsi Simpan Profil Akun
+async function simpanAkun() {
+    const nama = document.querySelector('input[name="nama"]').value;
+    const no_hp = document.querySelector('input[name="no_hp"]').value;
+    const _token = document.querySelector('input[name="_token"]').value;
+
+    try {
+        const response = await fetch("{{ route('settings.akun') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': _token
+            },
+            body: JSON.stringify({ nama, no_hp })
+        });
+
+        const res = await response.json();
+        if(response.ok) {
+            alert(res.success);
+            // Opsional: Update nama di pojok kanan atas secara instan
+            document.querySelector('.user-profile span').innerText = nama;
+        } else {
+            alert("Terjadi kesalahan.");
+        }
+    } catch (e) {
+        alert("Gagal terhubung ke server.");
+    }
+}
+
+// Fungsi Simpan Sandi
+async function simpanSandi() {
+    const current_password = document.querySelector('input[name="current_password"]').value;
+    const new_password = document.querySelector('input[name="new_password"]').value;
+    const _token = document.querySelector('input[name="_token"]').value;
+
+    const response = await fetch("{{ route('settings.sandi') }}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': _token
+        },
+        body: JSON.stringify({ current_password, new_password })
+    });
+
+    const res = await response.json();
+    if(response.ok) {
+        alert(res.success);
+        // Kosongkan input setelah berhasil
+        document.querySelectorAll('input[type="password"]').forEach(el => el.value = '');
+    } else {
+        alert(res.error || "Gagal ganti sandi.");
+    }
+}
+
+window.fileSiapUpload = null;
+
+window.previewAvatar = function(input) {
+    if (input.files && input.files[0]) {
+        window.fileSiapUpload = input.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            document.getElementById('display-avatar').src = e.target.result;
+        }
+        
+        reader.readAsDataURL(window.fileSiapUpload);
+    }
+}
+
+window.simpanAvatarKeServer = async function() {
+    if (!window.fileSiapUpload) {
+        alert("Pilih foto terlebih dahulu dengan mengklik logo kamera!");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', window.fileSiapUpload);
+    formData.append('_token', document.querySelector('input[name="_token"]').value);
+
+    try {
+        const response = await fetch("{{ route('settings.avatar') }}", {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert('Avatar berhasil diperbarui!');
+            document.querySelectorAll('.user-profile img').forEach(img => img.src = result.url);
+            window.fileSiapUpload = null;
+        } else {
+            alert(result.error || 'Gagal mengupload foto.');
+        }
+    } catch (error) {
+        alert('Terjadi kesalahan jaringan.');
+    }
+}
+
+let fileSiapUpload = null;
+
+// Fungsi 1: Hanya menampilkan pratinjau (Preview)
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
+        fileSiapUpload = input.files[0]; // Simpan file ke variabel
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            document.getElementById('display-avatar').src = e.target.result;
+        }
+        
+        reader.readAsDataURL(fileSiapUpload);
+    }
+}
+
+window.simpanAvatarKeServer = async function() {
+    if (!window.fileSiapUpload) {
+        alert("Pilih foto terlebih dahulu!");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('avatar', window.fileSiapUpload);
+    
+    // Ambil token dari meta tag yang kita pasang di head tadi
+    const token = document.querySelector('meta[name="csrf-token"]').content;
+
+    try {
+        const response = await fetch("{{ route('settings.avatar') }}", {
+            method: 'POST',
+            body: formData,
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': token // Kirim token via Header
+            }
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+            alert(result.success);
+            const newUrl = result.url + '?t=' + new Date().getTime();
+            document.getElementById('display-avatar').src = newUrl;
+            document.querySelectorAll('.user-profile img').forEach(img => img.src = newUrl);
+            window.fileSiapUpload = null;
+        } else {
+            alert(result.error || 'Gagal menyimpan.');
+        }
+    } catch (e) { alert("Terjadi kesalahan sistem."); }
+}
+
+// Fungsi 3: Reset jika tidak jadi upload
+function resetAvatarPreview() {
+    const defaultAvatar = "{{ Auth::guard('karyawan')->user()->avatar ? asset('storage/' . Auth::guard('karyawan')->user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::guard('karyawan')->user()->nama) . '&background=0D8ABC&color=fff&size=120' }}";
+    document.getElementById('display-avatar').src = defaultAvatar;
+    document.getElementById('upload-avatar-input').value = "";
+    fileSiapUpload = null;
+}
+</script>
+
+
 
 </body>
 </html>

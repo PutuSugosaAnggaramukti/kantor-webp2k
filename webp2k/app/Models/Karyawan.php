@@ -11,7 +11,7 @@ class Karyawan extends Authenticatable
     use Notifiable;
     
     protected $table = 'karyawans';
-    protected $fillable = ['kode_ao', 'nama', 'username', 'password', 'status'];
+    protected $fillable = ['kode_ao', 'nama', 'username', 'password', 'status', 'avatar'];
     protected $hidden = ['password'];
 
     public function getRoleAttribute()
