@@ -61,6 +61,8 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
     Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
     Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');
+    Route::get('/export-pdf/{id}', [KunjunganController::class, 'exportPDF'])->name('export.pdf');
+    Route::get('/export-word/{id}', [KunjunganController::class, 'exportWord'])->name('export.word');
 });
 
 

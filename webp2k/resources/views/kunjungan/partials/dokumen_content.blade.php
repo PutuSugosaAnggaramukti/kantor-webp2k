@@ -23,27 +23,33 @@
                 <th>Kunjungan</th>
             </tr>
         </thead>
-        <tbody id="documentTable">
+       <tbody id="documentTable">
             @forelse($dokumen as $index => $item)
-            <tr>
-                <td>{{ $index + 1 }}</td>
-                <td>{{ $item->no_nasabah ?? 'PG.803' }}</td>
-                <td>{{ $item->nama_nasabah }}</td>
-                <td>{{ $item->kol ?? 'LANCAR' }}</td>
-                <td>NOV 2025</td>
-                <td class="p-4 border border-black">
-                    <div class="icon-container">
-                        <a href="#" title="Download PDF">
-                            <i class="fa-solid fa-file-pdf btn-doc btn-pdf"></i>
+            <tr style="text-align: center; border-bottom: 1px solid #ddd;">
+                <td style="padding: 12px; border: 1px solid #333;">{{ $index + 1 }}</td>
+                <td style="padding: 12px; border: 1px solid #333;">{{ $item->dataKunjungan->kode_ao ?? '-' }}</td>
+                <td style="padding: 12px; border: 1px solid #333; text-align: left;">{{ $item->dataKunjungan->nama_nasabah }}</td>
+                <td style="padding: 12px; border: 1px solid #333;">{{ $item->dataKunjungan->kol }}</td>
+                <td style="padding: 12px; border: 1px solid #333;">
+                    {{ \Carbon\Carbon::parse($item->dataKunjungan->bulan)->translatedFormat('M Y') }}
+                </td>
+                <td style="padding: 12px; border: 1px solid #333;">
+                    <div style="display: flex; justify-content: center; gap: 15px;">
+                        {{-- Link Download PDF --}}
+                        <a href="{{ route('export.pdf', $item->id) }}" target="_blank" title="Download PDF">
+                            <i class="fa-solid fa-file-pdf" style="font-size: 24px; color: #e74c3c; cursor: pointer;"></i>
                         </a>
                         
-                        <a href="#" title="Download Word">
-                            <i class="fa-solid fa-file-word btn-doc btn-word"></i>
+                        <a href="{{ route('export.word', $item->id) }}" title="Download Word">
+                            <i class="fa-solid fa-file-word" style="font-size: 24px; color: #3498db; cursor: pointer;"></i>
                         </a>
                     </div>
                 </td>
             </tr>
             @empty
+            <tr>
+                <td colspan="6" style="padding: 20px; text-align: center;">Belum ada dokumen laporan yang tersedia.</td>
+            </tr>
             @endforelse
         </tbody>
     </table>

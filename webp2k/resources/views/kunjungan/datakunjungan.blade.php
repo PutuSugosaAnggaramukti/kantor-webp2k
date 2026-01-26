@@ -46,9 +46,26 @@
                     <img src="{{ asset('assets/logo.png') }}" alt="Logo">
                     <span>Sistem Informasi<br>P2K</span>
                 </div>
-                <div class="user-profile">
-                    <span>Username</span>
-                    <img src="https://i.pravatar.cc/150?u=admin" alt="User">
+               <div class="user-profile" style="position: relative; cursor: pointer;" onclick="toggleDropdown()">
+                    <span style="font-weight: 700;">{{ Auth::guard('karyawan')->user()->nama }}</span>
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::guard('karyawan')->user()->nama) }}&background=4e4bc1&color=fff" alt="User">
+                    <i class="fa-solid fa-chevron-down" style="font-size: 12px; margin-left: 5px; color: #666;"></i>
+
+                    <div id="userDropdown" style="display: none; position: absolute; right: 0; top: 50px; width: 150px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; border: 1px solid #eee;">
+                        <ul style="list-style: none; margin: 0; padding: 0;">
+                            <li style="padding: 10px 15px; border-bottom: 1px solid #eee; font-size: 14px; color: #333;">
+                                <i class="fa-solid fa-user" style="margin-right: 8px;"></i> Profil
+                            </li>
+                            <li style="padding: 0;">
+                                <form action="{{ route('logout') }}" method="POST" id="logout-form">
+                                    @csrf
+                                    <button type="submit" style="width: 100%; text-align: left; padding: 10px 15px; background: none; border: none; color: #e74c3c; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600;">
+                                        <i class="fa-solid fa-right-from-bracket" style="margin-right: 8px;"></i> Logout
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
 
@@ -287,13 +304,31 @@
     const urlParams = new URLSearchParams(window.location.search);
     const targetPage = urlParams.get('page');
     
-    // Jika ada parameter page di URL, muat halaman tersebut secara otomatis
     if (targetPage) {
         loadPage(targetPage);
     }
 });
 </script>
    
+<script>
+    function toggleDropdown() {
+        const dropdown = document.getElementById("userDropdown");
+        if (dropdown.style.display === "none" || dropdown.style.display === "") {
+            dropdown.style.display = "block";
+        } else {
+            dropdown.style.display = "none";
+        }
+    }
+
+    window.onclick = function(event) {
+        if (!event.target.closest('.user-profile')) {
+            const dropdown = document.getElementById("userDropdown");
+            if (dropdown) {
+                dropdown.style.display = "none";
+            }
+        }
+    }
+</script>
 
 </body>
 </html>
