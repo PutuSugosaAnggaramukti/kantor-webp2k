@@ -13,6 +13,7 @@ class DataKunjunganAdm extends Model
     protected $fillable = [
         'kode_ao',
         'nama_nasabah',
+        'alamat_nasabah',
         'kol',
         'bulan',
         'tanggal',

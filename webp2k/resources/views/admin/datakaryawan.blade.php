@@ -34,16 +34,15 @@
                 <i class="fa-solid fa-address-card"></i> Data Nasabah
             </a>
 
-            <a href="javascript:void(0)" 
-                onclick="loadAdminPage('pelaporan', this)" 
-                class="nav-item {{ request()->is('pelaporan*') ? 'active' : '' }}" id="menu-pelaporan">
-                <i class="fa-solid fa-file-signature"></i> Pelaporan
+           <a href="javascript:void(0)" 
+            onclick="loadAdminPage('pelaporan', this)" class="nav-item {{ Request::is('admin/pelaporan*') ? 'active' : '' }}" id="menu-pelaporan">
+                <i class="fa-solid fa-file-signature"></i> 
+                <span>Pelaporan</span>
             </a>
 
-            <a href="javascript:void(0)" 
-                onclick="loadAdminPage('dokumen', this)" 
-                class="nav-item" id="menu-dokumen">
-                <i class="fa-solid fa-file-lines"></i> Dokumen
+           <a href="javascript:void(0)" onclick="loadAdminPage('dokumen', this)" class="nav-item" id="menu-dokumen">
+                <i class="fa-solid fa-file-word"></i> 
+                <span>Dokumen</span>
             </a>
 
             <a href="javascript:void(0)" onclick="loadAdminPage('adm-kunjungan', this)" class="nav-item" id="menu-input-jadwal">
@@ -103,43 +102,44 @@
         var isProcessingKaryawan = false;
 
         window.loadAdminPage = function(pageName, element) {
-            const contentArea = document.getElementById('main-content-area'); 
+            const contentArea = document.getElementById('main-content-area');
             if (!contentArea) return;
 
-            contentArea.style.opacity = '0.5';
-            
-            const fetchUrl = `/admin/${pageName}-content`;
+            // Menghapus class active dari semua menu sidebar dulu
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
 
+            // LOGIKA BARU: Tentukan menu mana yang harus aktif
+            let menuToActive = element; // defaultnya adalah elemen yang diklik
+
+            if (!element) {
+                // Jika dipicu tanpa klik langsung (misal dari tombol NEXT)
+                if (pageName.includes('nasabah-detail')) {
+                    menuToActive = document.getElementById('menu-nasabah');
+                } else {
+                    menuToActive = document.getElementById(`menu-${pageName}`);
+                }
+            } else {
+                // Jika klik dari sidebar, tapi kita ingin memastikan detail tetap menginduk ke nasabah
+                if (pageName.includes('nasabah-detail')) {
+                    menuToActive = document.getElementById('menu-nasabah');
+                }
+            }
+
+            // Aktifkan menu yang sesuai
+            if (menuToActive) menuToActive.classList.add('active');
+
+            // Proses fetch data seperti biasa
+            const fetchUrl = `/admin/${pageName}-content`;
             fetch(fetchUrl)
-                .then(res => {
-                    if (!res.ok) throw new Error('404');
-                    return res.text();
-                })
+                .then(res => res.text())
                 .then(html => {
                     contentArea.innerHTML = html;
-                    contentArea.style.opacity = '1';
-                    
-                    history.pushState({page: pageName}, "", `/admin/${pageName}`);
-                    
-                    // 1. Bersihkan semua class active dari semua menu
-                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-
-                    // 2. Tentukan menu mana yang harus aktif
-                    if (element) {
-                        // Jika diklik langsung dari sidebar, nyalakan elemen tersebut
-                        element.classList.add('active');
-                    } else if (pageName.includes('kunjungan-detail')) {
-                        // Jika dipicu dari klik "angka" (detail), nyalakan menu Data Kunjungan via ID
-                        const menuRekap = document.getElementById('menu-rekap-kunjungan');
-                        if (menuRekap) menuRekap.classList.add('active');
-                    }
+                    // Update URL browser agar rapi
+                    history.pushState({page: pageName}, "", `/admin/${pageName.replace('-content', '')}`);
                 })
-                .catch(err => {
-                    console.error(err);
-                    contentArea.style.opacity = '1';
-                });
+                .catch(err => console.error("Gagal memuat halaman:", err));
         };
-        
+                
         $(document).off('submit', '#formTambahKaryawan').on('submit', '#formTambahKaryawan', function(e) {
             e.preventDefault();
 

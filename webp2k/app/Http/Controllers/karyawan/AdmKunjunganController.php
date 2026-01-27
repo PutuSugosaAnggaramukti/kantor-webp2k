@@ -51,6 +51,7 @@ class AdmKunjunganController extends Controller
         \App\Models\DataKunjunganAdm::create([
             'karyawan_id'  => $request->karyawan_id,
             'nama_nasabah' => $request->nama_nasabah,
+            'alamat_nasabah' => $request->alamat_nasabah,
             'kol'          => $request->kol,
             'bulan'        => $request->bulan,
             'no_angsuran'  => $request->no_angsuran,

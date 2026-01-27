@@ -1,7 +1,11 @@
 <div class="page-title" style="margin-bottom: 25px;">
     <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Dokumen</h2>
     <p style="font-size: 14px; font-weight: 600;">
-        Dashboard <span style="margin: 0 5px;">></span> <span style="color: #007bff;">Dokumen</span>
+        <span onclick="loadAdminPage('dashboard')" style="cursor: pointer; color: #000;" onmouseover="this.style.color='#007bff'" onmouseout="this.style.color='#000'">
+            Dashboard
+        </span> 
+        <span style="margin: 0 5px;">></span> 
+        <span style="color: #007bff;">Dokumen</span>
     </p>
 </div>
 
@@ -23,33 +27,35 @@
             </tr>
         </thead>
         <tbody style="font-weight: 700; font-size: 14px;">
-            @php
-                // Data dummy untuk tampilan dokumen
-                $dokumenData = [
-                    ['tgl' => '2025-12-01', 'no_ang' => '20002347', 'nama' => 'HENI SUSILONINGSIH DRA'],
-                    ['tgl' => '2025-12-02', 'no_ang' => '20000228', 'nama' => 'EKO SUTRISNO AJI'],
-                    ['tgl' => '2025-12-03', 'no_ang' => '20002225', 'nama' => 'INGRAM SUHARTO'],
-                    ['tgl' => '2025-12-03', 'no_ang' => '21002253', 'nama' => 'SUPARDI'],
-                    ['tgl' => '2025-12-04', 'no_ang' => '22002666', 'nama' => 'MUJINAH'],
-                    ['tgl' => '2025-12-05', 'no_ang' => '19000718', 'nama' => 'FELIX DODY YULIANTO'],
-                ];
-            @endphp
-
-            @foreach($dokumenData as $index => $item)
+            {{-- Menggunakan variabel asli dari Controller --}}
+            @forelse($dokumen_all as $index => $item)
             <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #fff;">
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['tgl'] }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['no_ang'] }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px; text-transform: uppercase;">
-                    {{ $item['nama'] }}
+                <td style="padding: 15px; border-right: 2px solid #000;">
+                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') : '-' }}
                 </td>
-                <td style="padding: 15px;">
-                    <button type="button" style="background: none; border: none; cursor: pointer; padding: 0;">
-                        <i class="fa-regular fa-file-lines" style="font-size: 22px; color: #333;"></i>
-                    </button>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->no_angsuran }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px; text-transform: uppercase;">
+                    {{ $item->nama_nasabah }}
+                </td>
+               <td style="padding: 15px; text-align: center;">
+                    <a href="{{ route('download.docx', $item->id) }}" 
+                    target="_blank" 
+                    onclick="event.stopPropagation();"
+                    download>
+                        <button type="button" style="background: none; border: none; cursor: pointer; padding: 0;">
+                            <i class="fa-regular fa-file-word" style="font-size: 24px; color: #2b579a;"></i>
+                        </button>
+                    </a>
                 </td>
             </tr>
-            @endforeach
+            @empty
+            <tr>
+                <td colspan="5" style="padding: 30px; text-align: center; color: #888;">
+                    Data kunjungan tidak ditemukan.
+                </td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 </div>

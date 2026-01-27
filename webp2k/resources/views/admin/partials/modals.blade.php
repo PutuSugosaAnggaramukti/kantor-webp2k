@@ -231,6 +231,11 @@
             </div>
 
             <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Alamat</label>
+                <input type="text" name="alamat_nasabah" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">KOL</label>
                 <select name="kol" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
                     <option value="1">KOL 1</option>

@@ -38,8 +38,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/nasabah-content', [NasabahController::class, 'nasabahContent']);
     Route::get('/nasabah-detail/{no_angsuran}-content', [NasabahController::class, 'detail']);
     Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
+    Route::get('/pelaporan-detail/{id_ao}-content', [PelaporanController::class, 'detailAo'])->name('pelaporan.detail');
     Route::get('/detail-pelaporan-nasabah-content', [PelaporanController::class, 'detail_nasabah']);
-    Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumen']);
+    Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumenIndex']);
+    Route::get('/download-docx/{id}', [AdmDokumenController::class, 'downloadWord'])->name('download.docx');
     Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail']);
     Route::post('/datakunjungan/store', [AdmKunjunganController::class, 'store'])->name('admin.datakunjungan.store');
     Route::get('/get-karyawan-list', [KaryawanController::class, 'getList'])->name('admin.karyawan.list');

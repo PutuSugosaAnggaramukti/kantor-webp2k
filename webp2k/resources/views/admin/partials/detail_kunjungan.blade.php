@@ -13,16 +13,17 @@
                 <th style="padding: 10px; border-right: 2px solid #000;">Tanggal</th>
                 <th style="padding: 10px; border-right: 2px solid #000;">No. Angsuran</th>
                 <th style="padding: 10px; border-right: 2px solid #000;">Nama Nasabah</th>
+                <th style="padding: 10px; border-right: 2px solid #000;">Alamat</th>
                 <th style="padding: 10px;">Aksi</th>
             </tr>
         </thead>
-        <tbody>
+       <tbody>
             @forelse($data_detail as $item)
             <tr style="border-bottom: 2px solid #000; text-align: center;">
                 <td style="padding: 10px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
                 
                 <td style="padding: 10px; border-right: 2px solid #000;">
-                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') : 'Belum Input' }}
+                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') : '-' }}
                 </td>
                 
                 <td style="padding: 10px; border-right: 2px solid #000;">
@@ -32,14 +33,22 @@
                 <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
                     {{ $item->nama_nasabah ?? '-' }}
                 </td>
+
+                <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
+                    {{ $item->alamat_nasabah ?? '-' }}
+                </td>
                 
                 <td style="padding: 10px;">
-                    <button style="border-radius: 50%; width: 25px; height: 25px;">i</button>
+                    <button type="button" 
+                            onclick="window.open('{{ route('download.docx', $item->id) }}', '_blank'); event.stopPropagation();" 
+                            style="background: none; border: none; cursor: pointer; padding: 0;">
+                        <i class="fa-regular fa-file-word" style="font-size: 20px; color: #2b579a;"></i>
+                    </button>
                 </td>
             </tr>
             @empty
             <tr>
-                <td colspan="5" style="padding: 20px;">Data kunjungan tidak ditemukan.</td>
+                <td colspan="6" style="padding: 20px;">Data kunjungan tidak ditemukan.</td>
             </tr>
             @endforelse
         </tbody>

@@ -1,8 +1,26 @@
 <div class="page-title" style="margin-bottom: 25px;">
     <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Data Nasabah</h2>
     <p style="font-size: 14px; font-weight: 600;">
-        Dashboard <span style="margin: 0 5px;">></span> 
-        Data Nasabah <span style="margin: 0 5px;">></span> 
+        <span 
+            onclick="loadAdminPage('dashboard')" 
+            style="cursor: pointer; color: #000; transition: color 0.2s;" 
+            onmouseover="this.style.color='#007bff'" 
+            onmouseout="this.style.color='#000'">
+            Dashboard
+        </span>
+
+        <span style="margin: 0 5px;">></span> 
+        
+        <span 
+            onclick="loadAdminPage('nasabah')" 
+            style="cursor: pointer; color: #000; transition: color 0.2s;" 
+            onmouseover="this.style.color='#007bff'" 
+            onmouseout="this.style.color='#000'">
+            Data Nasabah
+        </span> 
+
+        <span style="margin: 0 5px;">></span> 
+        
         <span style="color: #007bff;">Pengunjung</span>
     </p>
 </div>
