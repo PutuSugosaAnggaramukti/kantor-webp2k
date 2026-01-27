@@ -29,7 +29,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/admin', [KaryawanController::class, 'index'])->name('karyawan.index');
     Route::get('/data-karyawan-content', [KaryawanController::class, 'getContent']);
+    Route::get('/karyawan/{id}/edit', [KaryawanController::class, 'edit']);
+    Route::put('/karyawan/{id}', [KaryawanController::class, 'update'])->name('karyawan.update');
     Route::post('/karyawan/store', [KaryawanController::class, 'store'])->name('karyawan.store');
+    Route::get('/karyawan/{id}', [KaryawanController::class, 'show']);
     Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('admin.kunjungan.index');
     Route::get('/data-kunjungan-content', [AdmKunjunganController::class, 'dataKunjunganContent'])->name('admin.kunjungan.rekap');
     Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail'])

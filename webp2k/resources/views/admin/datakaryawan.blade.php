@@ -312,13 +312,92 @@
             });
         }
 
+       function openModalEdit(id) {
+            // Tambahkan /admin/ sesuai dengan prefix di Route
+            const url = `/admin/karyawan/${id}/edit`; 
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Cek kembali, apakah Anda sudah login sebagai admin?');
+                return response.json();
+            })
+            .then(data => {
+                // Isi input modal
+                document.getElementById('edit_kode_ao').value = data.kode_ao;
+                document.getElementById('edit_nama').value = data.nama;
+                document.getElementById('edit_username').value = data.username;
+                document.getElementById('edit_status').value = data.status;
+                
+                // JANGAN LUPA: Update juga action form-nya agar pakai /admin/
+                const form = document.getElementById('formEditKaryawan');
+                form.action = `/admin/karyawan/${id}`; 
+
+                // Tampilkan Modal
+                document.getElementById('modalEditKaryawan').style.display = 'flex';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Gagal mengambil data. Pastikan URL-nya adalah: ' + url);
+            });
+        }
+
+        function openModalDetail(id) {
+        // Kita panggil route 'show' dengan prefix /admin
+            fetch(`/admin/karyawan/${id}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Gagal mengambil data');
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('det_kode_ao').value = data.kode_ao;
+                document.getElementById('det_nama').value = data.nama;
+                document.getElementById('det_username').value = data.username;
+                document.getElementById('det_status').value = data.status;
+
+            
+                document.getElementById('modalDetailKaryawan').style.display = 'flex';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat memuat data detail.');
+            });
+        }
+
+        // 2. FUNGSI UNTUK MENUTUP MODAL DETAIL
+        function closeModalDetail() {
+            document.getElementById('modalDetailKaryawan').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modalDetail = document.getElementById('modalDetailKaryawan');
+            const modalEdit = document.getElementById('modalEditKaryawan');
+            
+            if (event.target == modalDetail) {
+                closeModalDetail();
+            }
+            if (event.target == modalEdit) {
+                closeModalEdit(); 
+            }
+        }
+
         function updateKaryawanDropdown() {
             $.ajax({
-                url: "/get-karyawan-list", // Kita akan buat route ini
+                url: "/get-karyawan-list", 
                 type: "GET",
                 success: function(response) {
                     let dropdown = $('select[name="karyawan_id"]');
-                    dropdown.empty(); // Kosongkan pilihan lama
+                    dropdown.empty(); 
                     dropdown.append('<option value="">-- Pilih AO --</option>');
                     
                     // Isi dengan data terbaru

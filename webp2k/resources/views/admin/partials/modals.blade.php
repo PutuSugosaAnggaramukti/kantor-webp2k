@@ -48,42 +48,42 @@
 
 
 <div id="modalEditKaryawan" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
-    <div style="background-color: #fff; padding: 30px; border-radius: 20px; width: 450px; animation: zoomInModal 0.3s ease-out;">
-        
+    <div style="background-color: #fff; padding: 30px; border-radius: 20px; width: 450px;">
         <h2 style="text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 25px;">Ubah Data Karyawan</h2>
 
-        <form id="formEditKaryawan">
-            <div style="margin-bottom: 15px;">
+        <form id="formEditKaryawan" method="POST">
+            @csrf
+            @method('PUT') <div style="margin-bottom: 15px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Kode AO*</label>
-                <input type="text" name="kode_ao" value="PG.803" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px;">
+                <input type="text" name="kode_ao" id="edit_kode_ao" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px;">
             </div>
 
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama*</label>
-                <input type="text" name="nama" value="WAHYU" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px;">
+                <input type="text" name="nama" id="edit_nama" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px;">
             </div>
 
             <div style="margin-bottom: 15px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Username*</label>
-                <input type="text" name="username" value="wahyu" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px;">
+                <input type="text" name="username" id="edit_username" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px;">
             </div>
 
             <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Password*</label>
-                <input type="password" name="password" value="********" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Password</label>
+                <input type="password" name="password" id="edit_password" placeholder="Kosongkan jika tidak diubah" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px;">
             </div>
 
             <div style="margin-bottom: 30px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Status*</label>
-                <select name="status" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #fff;">
-                    <option value="Aktif" selected>Aktif</option>
+                <select name="status" id="edit_status" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #fff;">
+                    <option value="Aktif">Aktif</option>
                     <option value="Non-Aktif">Non-Aktif</option>
                 </select>
             </div>
 
             <div style="display: flex; justify-content: space-between; gap: 20px;">
-                <button type="button" onclick="closeModalEdit()" class="btn-cancel" style="flex: 1;">Cancel</button>
-                <button type="submit" class="btn-save" style="flex: 1;">Save</button>
+                <button type="button" onclick="closeModalEdit()" class="btn-cancel" style="flex: 1; padding: 10px; border-radius: 5px; cursor: pointer;">Cancel</button>
+                <button type="submit" class="btn-save" style="flex: 1; padding: 10px; border-radius: 5px; cursor: pointer; background: #3f36b1; color: #fff; border: none;">Save Changes</button>
             </div>
         </form>
     </div>
@@ -96,17 +96,17 @@
 
         <div style="margin-bottom: 15px;">
             <label style="display: block; font-weight: 700; margin-bottom: 5px;">Kode AO*</label>
-            <input type="text" value="PG.803" readonly style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #f9f9f9; cursor: not-allowed;">
+            <input type="text" id="det_kode_ao" readonly style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #f9f9f9; cursor: not-allowed;">
         </div>
 
         <div style="margin-bottom: 15px;">
             <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama*</label>
-            <input type="text" value="WAHYU" readonly style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #f9f9f9; cursor: not-allowed;">
+            <input type="text" id="det_nama" readonly style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #f9f9f9; cursor: not-allowed;">
         </div>
 
         <div style="margin-bottom: 15px;">
             <label style="display: block; font-weight: 700; margin-bottom: 5px;">Username*</label>
-            <input type="text" value="wahyu" readonly style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #f9f9f9; cursor: not-allowed;">
+            <input type="text" id="det_username" readonly style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #f9f9f9; cursor: not-allowed;">
         </div>
 
         <div style="margin-bottom: 15px;">
@@ -116,11 +116,11 @@
 
         <div style="margin-bottom: 30px;">
             <label style="display: block; font-weight: 700; margin-bottom: 5px;">Status*</label>
-            <input type="text" value="Aktif" readonly style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #f9f9f9; cursor: not-allowed;">
+            <input type="text" id="det_status" readonly style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #f9f9f9; cursor: not-allowed;">
         </div>
 
         <div style="display: flex; justify-content: center;">
-            <button type="button" onclick="closeModalDetail()" class="btn-cancel" style="width: 100%;">Close</button>
+            <button type="button" onclick="closeModalDetail()" class="btn-cancel" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer;">Close</button>
         </div>
     </div>
 </div>

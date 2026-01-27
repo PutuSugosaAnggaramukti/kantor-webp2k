@@ -62,4 +62,43 @@ class KaryawanController extends Controller
         // Mengambil id dan nama karyawan terbaru
         return response()->json(Karyawan::select('id', 'nama')->get());
     }
+
+    public function edit($id) {
+        $karyawan = Karyawan::findOrFail($id);
+        return response()->json($karyawan);
+    }
+
+   public function update(Request $request, $id) 
+    {
+        $karyawan = Karyawan::findOrFail($id);
+
+        // 1. Siapkan data yang akan diupdate
+        $data = [
+            'kode_ao'  => $request->kode_ao,
+            'nama'     => $request->nama,
+            'username' => $request->username,
+            'status'   => $request->status,
+        ];
+
+        // 2. Cek apakah user mengisi input password
+        if ($request->filled('password')) {
+            // Jika diisi, tambahkan password yang sudah di-hash ke array data
+            $data['password'] = Hash::make($request->password);
+        }
+
+        // 3. Eksekusi update
+        $karyawan->update($data);
+
+        return redirect()->back()->with('success', 'Data karyawan berhasil diperbarui');
+    }
+
+    public function show($id)
+    {
+        // Mengambil data karyawan
+        $karyawan = Karyawan::findOrFail($id);
+        
+        // Mengirimkan sebagai JSON ke JavaScript
+        return response()->json($karyawan);
+    }
+
 }
