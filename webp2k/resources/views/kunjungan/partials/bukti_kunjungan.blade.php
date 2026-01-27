@@ -34,7 +34,7 @@
         <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 15px;">Foto Kunjungan</h3>
         <div class="photo-container" style="width: 100%; max-width: 400px; border-radius: 15px; overflow: hidden; border: 1px solid #ddd;">
             @if($detail->foto_kunjungan)
-               <img src="{{ url('storage/' . ltrim($detail->foto_kunjungan, '/')) }}" alt="Foto Rumah" style="width: 100%; display: block;">
+               <img src="{{ asset('uploads/kunjungan/' . $detail->foto_kunjungan) }}" alt="Foto Rumah" style="width: 100%; display: block;">
             @else
                 <div style="padding: 40px; text-align: center; background: #f9f9f9; color: #999;">
                     <i class="fa-solid fa-image" style="font-size: 40px; margin-bottom: 10px;"></i>

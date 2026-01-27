@@ -104,33 +104,57 @@
     </footer>
 
     <script>
-        const ctx = document.getElementById('visitChart').getContext('2d');
+      const ctx = document.getElementById('visitChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: {!! json_encode($labels) !!},
+                labels: @json($labels), 
                 datasets: [
                     {
-                        label: 'nasabah ada',
-                        data: {!! json_encode($nasabah_ada) !!},
-                        backgroundColor: '#075985',
+                        label: 'Nasabah Ada',
+                        data: @json($nasabahAda),
+                        backgroundColor: '#0E5E7E', // Biru P2K
+                        borderRadius: 6,
+                        maxBarThickness: 40
                     },
                     {
-                        label: 'nasabah tidak ada',
-                        data: {!! json_encode($nasabah_tidak_ada) !!},
-                        backgroundColor: '#f97316',
+                        label: 'Nasabah Tidak Ada',
+                        data: @json($nasabahTidakAda), // Pastikan variabel ini sama dengan di Controller
+                        backgroundColor: '#F38120', // Oranye P2K
+                        borderRadius: 6,
+                        maxBarThickness: 40
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true, // Memastikan label 'Nasabah Tidak Ada' tetap muncul di atas
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                },
                 scales: {
-                    y: { beginAtZero: true }
+                    x: {
+                        stacked: false, // Pastikan false agar batang muncul berdampingan, bukan ditumpuk
+                        grid: { display: false }
+                    },
+                    y: { 
+                        beginAtZero: true, 
+                        min: 0, // Memaksa sumbu Y mulai dari 0
+                        ticks: { 
+                            stepSize: 1,
+                            precision: 0
+                        }
+                    }
                 }
             }
         });
-
         const trigger = document.getElementById('userTrigger');
         const dropdown = document.getElementById('userDropdown');
 
@@ -235,6 +259,7 @@
             });
         }
     </script>
+    
 
 </body>
 </html>

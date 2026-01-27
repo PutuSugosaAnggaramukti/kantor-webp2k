@@ -10,6 +10,7 @@ class Kunjungan extends Model
     use HasFactory;
 
     protected $fillable = [
+        'kode_ao',
         'no_nasabah',
         'nama_nasabah',
         'keterangan_nasabah',

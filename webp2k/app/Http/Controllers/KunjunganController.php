@@ -96,26 +96,30 @@ class KunjunganController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'foto_kunjungan' => 'required|image|mimes:jpeg,png,jpg|max:5120', // Maks 5MB
-        ]);
+        // 1. Definisikan variabel dengan nilai awal null agar tidak error jika foto kosong
+        $nama_file_foto = null;
 
-        // Proses simpan file foto
+        // 2. Logika Upload Foto
         if ($request->hasFile('foto_kunjungan')) {
             $file = $request->file('foto_kunjungan');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('uploads/kunjungan', $filename, 'public');
+            
+            // Buat nama unik agar tidak bentrok (contoh: 17123456.jpg)
+            $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
+            
+            // Simpan ke folder public/uploads/kunjungan
+            $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
         }
 
-        // Simpan ke database
+        // 3. Simpan ke Database menggunakan Model Kunjungan
         Kunjungan::create([
-            'no_nasabah' => $request->no_nasabah,
-            'nama_nasabah' => $request->nama_nasabah,
+            'kode_ao'            => auth()->user()->kode_ao,
+            'no_nasabah'         => $request->no_nasabah,
+            'nama_nasabah'       => $request->nama_nasabah,
+            'ada_di_lokasi'      => $request->ada_di_lokasi,
             'keterangan_nasabah' => $request->keterangan_nasabah,
-            'ada_di_lokasi' => $request->ada_di_lokasi,
-            'catatan' => $request->catatan,
-            'foto_kunjungan' => $path,
-            'koordinat' => $request->koordinat ?? '-7.888, 110.323', // Contoh default
+            'catatan'            => $request->catatan,
+            'foto_kunjungan'     => $nama_file_foto, // Sekarang variabel ini sudah ada
+            'koordinat'          => $request->koordinat,
         ]);
 
         return redirect()->back()->with('success', 'Data kunjungan berhasil disimpan!');

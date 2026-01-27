@@ -3,27 +3,37 @@
 namespace App\Http\Controllers\Dashboard;
 
 use App\Http\Controllers\Controller;
+use App\Models\Kunjungan;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-        public function index()
+      public function index()
     {
-        // Data dummy Anda
-        $total_kunjungan = 50;
-        $sudah_dikunjungi = 33;
-        $labels = ['2025/10/15', '2025/10/16', '2025/10/17', '2025/10/18', '2025/10/19', '2025/10/20', '2025/10/21'];
-        $nasabah_ada = [5, 6, 7, 8, 9, 10, 11];
-        $nasabah_tidak_ada = [2, 3, 4, 5, 6, 7, 8];
+        $user = auth()->user();
 
-        $data = compact('total_kunjungan', 'sudah_dikunjungi', 'labels', 'nasabah_ada', 'nasabah_tidak_ada');
+        // 1. Ambil data untuk Grafik Batang
+        $dataGrafik = Kunjungan::where('kode_ao', $user->kode_ao)
+            ->where('created_at', '>=', now()->subDays(7))
+            ->selectRaw("DATE(created_at) as tgl, 
+                SUM(CASE WHEN ada_di_lokasi = 'Ada' THEN 1 ELSE 0 END) as ada,
+                SUM(CASE WHEN ada_di_lokasi = 'Tidak Ada' THEN 1 ELSE 0 END) as tidak_ada")
+            ->groupBy('tgl')
+            ->orderBy('tgl', 'asc')
+            ->get();
 
-        // Jika dipanggil via loadPage (AJAX), jangan kirim Sidebar/Header
-        if (request()->ajax()) {
-            return view('dashboard.dashboard', $data);
-        }
+        $labels = $dataGrafik->pluck('tgl');
+        $nasabahAda = $dataGrafik->pluck('ada')->map(fn($val) => (int)$val);
+        $nasabahTidakAda = $dataGrafik->pluck('tidak_ada')->map(fn($val) => (int)$val);
 
-        // Jika diakses manual (URL), kirim halaman utuh (bersama Sidebar)
-        return view('dashboard.dashboard', $data);
+        // 2. Hitung statistik untuk kotak di dashboard (WAJIB DITAMBAHKAN)
+        $total_kunjungan = Kunjungan::where('kode_ao', $user->kode_ao)->count();
+        $sudah_dikunjungi = Kunjungan::where('kode_ao', $user->kode_ao)
+                                    ->where('ada_di_lokasi', 'Ada')
+                                    ->count();
+
+        // 3. Kirim semua variabel ke view dashboard/dashboard.blade.php
+        return view('dashboard.dashboard', compact('labels', 'nasabahAda', 'nasabahTidakAda', 'total_kunjungan','sudah_dikunjungi'
+        ));
     }
 }

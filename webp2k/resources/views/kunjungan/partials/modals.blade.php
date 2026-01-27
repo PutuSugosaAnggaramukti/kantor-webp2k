@@ -10,7 +10,7 @@
             <input type="hidden" name="nama_nasabah" id="form-nama-nasabah">
 
             <div class="form-group">
-                <label>No Nasabah</label>
+                <label>Kode AO</label>
                 <input type="text" id="display-no" class="form-control" disabled>
             </div>
 
