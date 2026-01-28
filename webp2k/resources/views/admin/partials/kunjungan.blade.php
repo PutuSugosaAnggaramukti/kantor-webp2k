@@ -6,10 +6,13 @@
 </div>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <button style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; cursor: pointer;">
-        <span style="margin-right: 8px;">X</span> Export
-    </button>
-    
+    <a href="{{ route('admin.kunjungan.export') }}" class="btn-export-excel">
+        <span style="margin-right: 8px;">
+            <i class="fa-solid fa-file-excel"></i>
+        </span> 
+        Export
+    </a>
+        
     <div style="position: relative;">
         <input type="text" placeholder="Pencarian..." style="padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; width: 250px;">
     </div>

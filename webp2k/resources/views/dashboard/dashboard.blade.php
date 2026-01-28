@@ -113,14 +113,14 @@
                     {
                         label: 'Nasabah Ada',
                         data: @json($nasabahAda),
-                        backgroundColor: '#0E5E7E', // Biru P2K
+                        backgroundColor: '#0E5E7E', 
                         borderRadius: 6,
                         maxBarThickness: 40
                     },
                     {
                         label: 'Nasabah Tidak Ada',
-                        data: @json($nasabahTidakAda), // Pastikan variabel ini sama dengan di Controller
-                        backgroundColor: '#F38120', // Oranye P2K
+                        data: @json($nasabahTidakAda), 
+                        backgroundColor: '#F38120', 
                         borderRadius: 6,
                         maxBarThickness: 40
                     }
@@ -131,7 +131,7 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        display: true, // Memastikan label 'Nasabah Tidak Ada' tetap muncul di atas
+                        display: true, 
                         position: 'top',
                         labels: {
                             usePointStyle: true,
@@ -141,12 +141,12 @@
                 },
                 scales: {
                     x: {
-                        stacked: false, // Pastikan false agar batang muncul berdampingan, bukan ditumpuk
+                        stacked: false, 
                         grid: { display: false }
                     },
                     y: { 
                         beginAtZero: true, 
-                        min: 0, // Memaksa sumbu Y mulai dari 0
+                        min: 0, 
                         ticks: { 
                             stepSize: 1,
                             precision: 0

@@ -48,6 +48,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail']);
     Route::post('/datakunjungan/store', [AdmKunjunganController::class, 'store'])->name('admin.datakunjungan.store');
     Route::get('/get-karyawan-list', [KaryawanController::class, 'getList'])->name('admin.karyawan.list');
+    Route::get('/kunjungan/export', [AdmKunjunganController::class, 'exportExcel'])->name('admin.kunjungan.export');
+    Route::get('/nasabah/filter', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.filter');
+    Route::get('/nasabah/export', [NasabahController::class, 'exportExcel'])->name('admin.nasabah.export');
+    Route::get('/pelaporan/export', [PelaporanController::class, 'exportExcel'])->name('admin.pelaporan.export');
 });
 
 

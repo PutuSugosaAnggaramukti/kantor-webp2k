@@ -92,321 +92,172 @@
     @include('admin.partials.modals')
 
     <script>
-        // --- 1. GLOBAL SETUP & AJAX SECURITY ---
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
+$.ajaxSetup({
+    headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+});
+var isProcessingKaryawan = false;
+
+// --- 2. CORE FUNCTIONS ---
+window.loadAdminPage = function(pageName, element) {
+    const contentArea = document.getElementById('main-content-area');
+    if (!contentArea) return;
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    let menuToActive = element || document.getElementById(`menu-${pageName}`) || (pageName.includes('nasabah-detail') ? document.getElementById('menu-nasabah') : null);
+    if (menuToActive) menuToActive.classList.add('active');
+
+    fetch(`/admin/${pageName}-content`)
+        .then(res => res.text())
+        .then(html => {
+            contentArea.innerHTML = html;
+            history.pushState({page: pageName}, "", `/admin/${pageName.replace('-content', '')}`);
+        })
+        .catch(err => console.error("Gagal memuat:", err));
+};
+
+// --- 3. MODAL KARYAWAN (TAMBAH, EDIT, DETAIL) ---
+function openModalTambah() { document.getElementById('modalTambahKaryawan').style.display = 'flex'; }
+function closeModalTambah() { document.getElementById('modalTambahKaryawan').style.display = 'none'; }
+
+function openModalEdit(id) {
+    fetch(`/admin/karyawan/${id}/edit`, { headers: { 'Accept': 'application/json' } })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('edit_kode_ao').value = data.kode_ao;
+            document.getElementById('edit_nama').value = data.nama;
+            document.getElementById('edit_username').value = data.username;
+            document.getElementById('edit_status').value = data.status;
+            document.getElementById('formEditKaryawan').action = `/admin/karyawan/${id}`;
+            document.getElementById('modalEditKaryawan').style.display = 'flex';
         });
+}
+function closeModalEdit() { document.getElementById('modalEditKaryawan').style.display = 'none'; }
 
-        var isProcessingKaryawan = false;
-
-        window.loadAdminPage = function(pageName, element) {
-            const contentArea = document.getElementById('main-content-area');
-            if (!contentArea) return;
-
-            // Menghapus class active dari semua menu sidebar dulu
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-
-            // LOGIKA BARU: Tentukan menu mana yang harus aktif
-            let menuToActive = element; // defaultnya adalah elemen yang diklik
-
-            if (!element) {
-                // Jika dipicu tanpa klik langsung (misal dari tombol NEXT)
-                if (pageName.includes('nasabah-detail')) {
-                    menuToActive = document.getElementById('menu-nasabah');
-                } else {
-                    menuToActive = document.getElementById(`menu-${pageName}`);
-                }
-            } else {
-                // Jika klik dari sidebar, tapi kita ingin memastikan detail tetap menginduk ke nasabah
-                if (pageName.includes('nasabah-detail')) {
-                    menuToActive = document.getElementById('menu-nasabah');
-                }
-            }
-
-            // Aktifkan menu yang sesuai
-            if (menuToActive) menuToActive.classList.add('active');
-
-            // Proses fetch data seperti biasa
-            const fetchUrl = `/admin/${pageName}-content`;
-            fetch(fetchUrl)
-                .then(res => res.text())
-                .then(html => {
-                    contentArea.innerHTML = html;
-                    // Update URL browser agar rapi
-                    history.pushState({page: pageName}, "", `/admin/${pageName.replace('-content', '')}`);
-                })
-                .catch(err => console.error("Gagal memuat halaman:", err));
-        };
-                
-        $(document).off('submit', '#formTambahKaryawan').on('submit', '#formTambahKaryawan', function(e) {
-            e.preventDefault();
-
-            if (isProcessingKaryawan) return false;
-
-            const form = $(this);
-            const btn = form.find('button[type="submit"]');
-            
-            isProcessingKaryawan = true;
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
-
-            $.ajax({
-                url: "/admin/karyawan/store",
-                type: "POST",
-                data: new FormData(this),
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: response.message,
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
-                        
-                        // 1. Tutup Modal
-                        closeModalTambah();
-
-                        // 2. Reset Form secara total
-                        const formElement = document.getElementById('formTambahKaryawan');
-                        if (formElement) {
-                            formElement.reset(); // Reset inputan standar
-                            $(formElement).find('input[type="hidden"]').val(''); // Bersihkan hidden input jika ada
-                        }
-
-                        // 3. Muat ulang tabel
-                        loadAdminPage('data-karyawan'); 
-                    }
-                },
-                error: function(xhr) {
-                    if (xhr.status === 422) {
-                        let errors = xhr.responseJSON.errors;
-                        let errorMsg = Object.values(errors).flat().join('<br>');
-                        Swal.fire('Gagal!', errorMsg, 'warning');
-                    } else if (xhr.status === 419) {
-                        Swal.fire({ icon: 'error', title: 'Sesi Berakhir', text: 'Memperbarui sesi...' }).then(() => location.reload());
-                    } else {
-                        Swal.fire('Error!', 'Terjadi kesalahan server.', 'error');
-                    }
-                },
-                complete: function() {
-                    // Beri jeda sedikit sebelum unlock untuk mencegah sisa klik "ghosting"
-                    setTimeout(() => {
-                        isProcessingKaryawan = false;
-                        btn.prop('disabled', false).text('Save');
-                    }, 500);
-                }
-            });
+function openModalDetail(id) {
+    fetch(`/admin/karyawan/${id}`, { headers: { 'Accept': 'application/json' } })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('det_kode_ao').value = data.kode_ao;
+            document.getElementById('det_nama').value = data.nama;
+            document.getElementById('det_username').value = data.username;
+            document.getElementById('det_status').value = data.status;
+            document.getElementById('modalDetailKaryawan').style.display = 'flex';
         });
+}
+function closeModalDetail() { document.getElementById('modalDetailKaryawan').style.display = 'none'; }
 
-        // --- 4. UI HELPER FUNCTIONS ---
-        function openModalTambah() { document.getElementById('modalTambahKaryawan').style.display = 'flex'; }
-        function closeModalTambah() { document.getElementById('modalTambahKaryawan').style.display = 'none'; }
-        
-        function toggleDropdown() {
-            const dropdown = document.getElementById('dropdownLogout');
-            dropdown.style.display = (dropdown.style.display === 'none' || dropdown.style.display === '') ? 'block' : 'none';
+// --- 4. MODAL EXPORT & FILTER (SOLUSI MASALAHMU) ---
+
+// Untuk Modal Export di Halaman Nasabah
+function openModalExportNasabah() { 
+    document.getElementById('modalExportNasabah').style.display = 'block'; 
+}
+function closeModalExportNasabah() { 
+    document.getElementById('modalExportNasabah').style.display = 'none'; 
+}
+
+// Untuk Modal Export di Halaman Pelaporan (Tadi ini yang tidak muncul)
+function openModalExportPelaporan() { 
+    const modal = document.getElementById('modalExportPelaporan');
+    modal.style.display = 'flex'; // Pakai flex agar align-items center bekerja
+}
+function closeModalExportPelaporan() { 
+    document.getElementById('modalExportPelaporan').style.display = 'none'; 
+}
+
+// Untuk Modal Filter (Cari Data)
+function openModalFilter() { 
+    document.getElementById('modalFilterNasabah').style.display = 'block'; 
+}
+function closeModalFilter() { 
+    document.getElementById('modalFilterNasabah').style.display = 'none'; 
+}
+
+// --- 5. MODAL KUNJUNGAN ---
+function openModalKunjungan() { 
+    $('#modalTambahKunjungan').css('display', 'flex'); 
+    refreshKaryawanDropdown(); 
+}
+function closeModalKunjungan() { 
+    $('#modalTambahKunjungan').hide(); 
+    $('#formTambahKunjungan')[0].reset(); 
+}
+
+// --- 6. GLOBAL CLICK MONITOR (GABUNGAN SEMUA) ---
+window.onclick = function(event) {
+    const modalIDs = [
+        'modalTambahKaryawan', 'modalEditKaryawan', 'modalDetailKaryawan', 
+        'modalExportNasabah', 'modalFilterNasabah', 'modalExportPelaporan', 
+        'modalTambahKunjungan'
+    ];
+
+    modalIDs.forEach(id => {
+        const m = document.getElementById(id);
+        if (event.target == m) {
+            // Khusus modal yang pakai flex, set none. Yang lain juga none.
+            m.style.display = 'none'; 
         }
+    });
 
-        function confirmLogout() {
-            Swal.fire({
-                title: 'Logout?',
-                text: "Anda akan keluar dari sesi ini.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3f36b1',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Logout'
-            }).then((result) => {
-                if (result.isConfirmed) document.getElementById('logout-form').submit();
-            });
+    if (!event.target.closest('.user-profile-container')) {
+        const dd = document.getElementById('dropdownLogout');
+        if (dd) dd.style.display = 'none';
+    }
+};
+
+function refreshKaryawanDropdown() {
+    $.ajax({
+        url: "/admin/get-karyawan-list",
+        type: "GET",
+        success: function(response) {
+            let dropdown = $('select[name="karyawan_id"]');
+            dropdown.empty().append('<option value="">-- Pilih AO --</option>');
+            response.forEach(k => dropdown.append(`<option value="${k.id}">${k.nama}</option>`));
         }
+    });
+}
 
-        // Close dropdown when clicking outside
-        window.onclick = function(event) {
-            if (!event.target.closest('.user-profile-container')) {
-                const dropdown = document.getElementById('dropdownLogout');
-                if (dropdown) dropdown.style.display = 'none';
-            }
-        };
+// --- 5. FILTER AJAX (NASABAH ONLY) ---
+function applyFilterAJAX(event) {
+    if (event) event.preventDefault();
+    const targetBody = document.getElementById('isi-tabel-nasabah');
+    if (!targetBody) return; // Pengaman agar tidak error di halaman pelaporan
 
-      $(document).off('submit', '#formTambahKunjungan').on('submit', '#formTambahKunjungan', function(e) {
-            e.preventDefault();
-            
-            const form = $(this);
-            const btn = form.find('button[type="submit"]');
-            
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Saving...');
+    const tglAwal = document.getElementById('tgl_awal_filter').value;
+    const tglAkhir = document.getElementById('tgl_akhir_filter').value;
 
-            $.ajax({
-                url: "/admin/datakunjungan/store",
-                type: "POST",
-                // GUNAKAN FormData agar input 'date' dan 'month' terkirim dengan sempurna
-                data: new FormData(this), 
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire('Berhasil!', 'Data kunjungan telah disimpan.', 'success');
-                        closeModalKunjungan();
-                        
-                        // Refresh ke halaman rekap kunjungan
-                        loadAdminPage('adm-kunjungan'); 
-                    }
-                },
-                error: function(xhr) {
-                    console.error(xhr.responseText);
-                    Swal.fire('Error!', 'Gagal menyimpan data. Pastikan semua input terisi.', 'error');
-                },
-                complete: function() {
-                    btn.prop('disabled', false).text('Simpan');
-                }
-            });
-        });
+    if (!tglAwal || !tglAkhir) { alert('Silakan pilih kedua tanggal!'); return; }
 
-        function openModalKunjungan() {
-            $('#selectKaryawan').html('<option value="">Mengambil data...</option>');
-            $.ajax({
-                url: "/admin/get-karyawan-list", 
-                type: "GET",
-                success: function(response) {
-                    let options = '<option value="">-- Pilih AO --</option>';
-                    response.forEach(function(k) {
-                        options += `<option value="${k.id}">${k.nama}</option>`;
-                    });
-                    $('#selectKaryawan').html(options);
-                },
-                error: function() {
-                    $('#selectKaryawan').html('<option value="">Gagal memuat data</option>');
-                }
-            });
-            $('#modalTambahKunjungan').css('display', 'flex');
-        }
+    targetBody.style.opacity = '0.5';
+    const url = `{{ route('admin.nasabah.filter') }}?tanggal_awal=${tglAwal}&tanggal_akhir=${tglAkhir}`;
+    
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(res => res.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            targetBody.innerHTML = doc.getElementById('isi-tabel-nasabah').innerHTML;
+            targetBody.style.opacity = '1';
+            closeModalFilter();
+        })
+        .catch(err => { console.error(err); targetBody.style.opacity = '1'; });
+}
 
-        function closeModalKunjungan() {
-            $('#modalTambahKunjungan').hide();
-            $('#formTambahKunjungan')[0].reset();
-        }
+// --- 6. SINGLE WINDOW ONCLICK (GABUNGAN SEMUA) ---
+window.onclick = function(event) {
+    // Tutup Modal jika klik di luar box
+    const modalIDs = ['modalExportPelaporan', 'modalFilterNasabah', 'modalExportNasabah', 'modalDetailKaryawan', 'modalEditKaryawan', 'modalTambahKunjungan', 'modalTambahKaryawan'];
+    
+    modalIDs.forEach(id => {
+        const m = document.getElementById(id);
+        if (event.target == m) m.style.display = 'none';
+    });
 
-        function refreshKaryawanDropdown() {
-            $.ajax({
-                url: "/get-karyawan-list",
-                type: "GET",
-                success: function(response) {
-                    // Cari elemen select di dalam modal
-                    let dropdown = $('select[name="karyawan_id"]');
-                    dropdown.empty(); // Kosongkan daftar lama
-                    dropdown.append('<option value="">-- Pilih AO --</option>');
-
-                    // Masukkan data terbaru dari database
-                    response.forEach(function(karyawan) {
-                        dropdown.append(`<option value="${karyawan.id}">${karyawan.nama}</option>`);
-                    });
-                },
-                error: function() {
-                    console.error("Gagal mengambil data karyawan terbaru.");
-                }
-            });
-        }
-
-       function openModalEdit(id) {
-            // Tambahkan /admin/ sesuai dengan prefix di Route
-            const url = `/admin/karyawan/${id}/edit`; 
-
-            fetch(url, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Cek kembali, apakah Anda sudah login sebagai admin?');
-                return response.json();
-            })
-            .then(data => {
-                // Isi input modal
-                document.getElementById('edit_kode_ao').value = data.kode_ao;
-                document.getElementById('edit_nama').value = data.nama;
-                document.getElementById('edit_username').value = data.username;
-                document.getElementById('edit_status').value = data.status;
-                
-                // JANGAN LUPA: Update juga action form-nya agar pakai /admin/
-                const form = document.getElementById('formEditKaryawan');
-                form.action = `/admin/karyawan/${id}`; 
-
-                // Tampilkan Modal
-                document.getElementById('modalEditKaryawan').style.display = 'flex';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Gagal mengambil data. Pastikan URL-nya adalah: ' + url);
-            });
-        }
-
-        function openModalDetail(id) {
-        // Kita panggil route 'show' dengan prefix /admin
-            fetch(`/admin/karyawan/${id}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Gagal mengambil data');
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('det_kode_ao').value = data.kode_ao;
-                document.getElementById('det_nama').value = data.nama;
-                document.getElementById('det_username').value = data.username;
-                document.getElementById('det_status').value = data.status;
-
-            
-                document.getElementById('modalDetailKaryawan').style.display = 'flex';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan saat memuat data detail.');
-            });
-        }
-
-        // 2. FUNGSI UNTUK MENUTUP MODAL DETAIL
-        function closeModalDetail() {
-            document.getElementById('modalDetailKaryawan').style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            const modalDetail = document.getElementById('modalDetailKaryawan');
-            const modalEdit = document.getElementById('modalEditKaryawan');
-            
-            if (event.target == modalDetail) {
-                closeModalDetail();
-            }
-            if (event.target == modalEdit) {
-                closeModalEdit(); 
-            }
-        }
-
-        function updateKaryawanDropdown() {
-            $.ajax({
-                url: "/get-karyawan-list", 
-                type: "GET",
-                success: function(response) {
-                    let dropdown = $('select[name="karyawan_id"]');
-                    dropdown.empty(); 
-                    dropdown.append('<option value="">-- Pilih AO --</option>');
-                    
-                    // Isi dengan data terbaru
-                    response.forEach(function(k) {
-                        dropdown.append(`<option value="${k.id}">${k.nama}</option>`);
-                    });
-                }
-            });
-        }
+    // Tutup Dropdown Logout
+    if (!event.target.closest('.user-profile-container')) {
+        const dd = document.getElementById('dropdownLogout');
+        if (dd) dd.style.display = 'none';
+    }
+};
 
     </script>
 </body>

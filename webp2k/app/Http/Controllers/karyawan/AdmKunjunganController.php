@@ -4,6 +4,8 @@ namespace App\Http\Controllers\karyawan;
 
 use App\Http\Controllers\Controller;
 use App\Models\DataKunjunganAdm;
+use App\Exports\KunjunganExport;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Karyawan;
 use Illuminate\Http\Request;
 
@@ -69,4 +71,10 @@ class AdmKunjunganController extends Controller
 
         return view('admin.rekap_kunjungan_content', compact('rekap'));
     }
+
+    public function exportExcel()
+    {
+        return Excel::download(new KunjunganExport, 'rekap_seluruh_kunjungan.xlsx');
+    }
+
 }

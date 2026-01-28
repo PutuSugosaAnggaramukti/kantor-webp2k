@@ -128,80 +128,78 @@
 <div id="modalExportNasabah" class="modal-overlay" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
     <div class="modal-content" style="background-color: #fff; margin: 10% auto; padding: 25px; border-radius: 15px; width: 350px; font-family: 'Inter', sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
         
-        <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 25px;">Filter Data</h2>
+        <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 25px;">Filter Data Nasabah</h2>
         
-        <div style="margin-bottom: 15px;">
-            <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px;">Tanggal Awal</label>
-            <div style="display: flex; gap: 5px;">
-                <input type="date" class="form-control-modal" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+        <form action="{{ route('admin.nasabah.export') }}" method="GET">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px;">Tanggal Awal</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="date" name="tanggal_awal" class="form-control-modal" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required>
+                </div>
             </div>
-        </div>
 
-        <div style="margin-bottom: 25px;">
-            <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px;">Tanggal Akhir</label>
-            <div style="display: flex; gap: 5px;">
-                <input type="date" class="form-control-modal" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px;">Tanggal Akhir</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="date" name="tanggal_akhir" class="form-control-modal" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required>
+                </div>
             </div>
-        </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button onclick="closeModalExport()" style="background: #ff4d4d; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 12px;">Cancel</button>
-            <button class="btn-export-excel" style="background-color: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px;">
-                <i class="fa-solid fa-file-excel"></i> Export
-            </button>
-        </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeModalExportNasabah()" style="background: #ff4d4d; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 12px;">Cancel</button>
+                
+                <button type="submit" class="btn-export-excel" style="background-color: #28a745; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px;">
+                    <i class="fa-solid fa-file-excel"></i> Export
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <div id="modalFilterNasabah" class="modal-overlay" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
     <div class="modal-content" style="background-color: #fff; margin: 10% auto; padding: 25px; border-radius: 15px; width: 350px; font-family: sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-        
         <h2 style="text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 25px;">Filter Data</h2>
         
-        <div style="margin-bottom: 15px;">
-            <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px;">Tanggal Awal</label>
-            <div style="display: flex; gap: 5px;">
-                <input type="date" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+        <form id="formFilterNasabah">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Tanggal Awal</label>
+                <input type="date" id="tgl_awal_filter" name="tanggal_awal" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required>
             </div>
-        </div>
 
-        <div style="margin-bottom: 25px;">
-            <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 14px;">Tanggal Akhir</label>
-            <div style="display: flex; gap: 5px;">
-                <input type="date" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Tanggal Akhir</label>
+                <input type="date" id="tgl_akhir_filter" name="tanggal_akhir" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;" required>
             </div>
-        </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button onclick="closeModalFilter()" style="background: #ff4d4d; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-weight: 700; cursor: pointer; font-size: 12px;">Cancel</button>
-            <button class="btn-action-green" style="background-color: #28a745; color: white; border: none; padding: 8px 25px; border-radius: 20px; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12px;">
-                <i class="fa-solid fa-sliders"></i> Filter
-            </button>
-        </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeModalFilter()" style="background: #ff4d4d; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer;">Cancel</button>
+                <button type="button" onclick="applyFilterAJAX(event)" class="btn-action-green" style="background-color: #28a745; color: white; border: none; padding: 8px 25px; border-radius: 20px; font-weight: 700; cursor: pointer;">
+                    <i class="fa-solid fa-sliders"></i> Filter
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
 <div id="modalExportPelaporan" class="modal-overlay" style="display: none;">
-    <div class="modal-content-karyawan" style="width: 450px;">
-        <h2 style="text-align: center; font-weight: 800; margin-bottom: 30px;">Export Pelaporan</h2>
+    <div class="modal-content-karyawan">
+        <h2 style="text-align: center;">Export Pelaporan</h2>
         
-        <form action="#" method="GET">
+        <form action="{{ route('admin.pelaporan.export') }}" method="GET">
             <div class="form-group-karyawan">
                 <label>Tanggal Awal</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="date" name="tgl_awal" style="flex: 1;">
-                </div>
+                <input type="date" name="tanggal_awal" required style="width: 100%; padding: 8px;">
             </div>
 
             <div class="form-group-karyawan" style="margin-top: 20px;">
                 <label>Tanggal Akhir</label>
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <input type="date" name="tgl_akhir" style="flex: 1;">
-                </div>
+                <input type="date" name="tanggal_akhir" required style="width: 100%; padding: 8px;">
             </div>
 
-            <div style="display: flex; justify-content: flex-end; margin-top: 40px;">
-                <button type="submit" class="btn-tambah" style="background-color: #44c759; padding: 10px 30px; border-radius: 30px;">
+            <div style="display: flex; justify-content: flex-end; margin-top: 30px; gap: 10px;">
+                <button type="button" onclick="closeModalExportPelaporan()" style="background: #ff4d4d; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer;">Cancel</button>
+                
+                <button type="submit" id="btnExportMurni" class="btn-tambah" style="background-color: #44c759; color: white; border: none; padding: 10px 30px; border-radius: 30px; cursor: pointer;">
                     <i class="fa-solid fa-file-excel"></i> Export
                 </button>
             </div>

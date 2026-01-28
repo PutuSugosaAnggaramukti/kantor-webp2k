@@ -696,6 +696,31 @@ button:active {
     color: #c0392b !important;
 }
 
+.btn-export-excel {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 25px;
+    border-radius: 25px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    font-size: 14px;
+    transition: all 0.3s ease; /* Kunci animasi halus */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.btn-export-excel:hover {
+    background-color: #45a049; /* Warna agak gelap sedikit */
+    transform: translateY(-3px); /* Efek melayang ke atas */
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2); /* Bayangan lebih tebal */
+    color: #ffffff;
+}
+
+.btn-export-excel:active {
+    transform: translateY(-1px); /* Efek tertekan saat diklik */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
 
 /* ANIMASI MODAL */
 @keyframes fadeInOverlay {
