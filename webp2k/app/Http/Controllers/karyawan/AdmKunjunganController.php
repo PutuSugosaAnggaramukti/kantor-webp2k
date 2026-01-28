@@ -45,25 +45,40 @@ class AdmKunjunganController extends Controller
         }
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
     {
-        // Cek dulu apakah data masuk ke server atau tidak dengan ini (opsional untuk debug)
-        // dd($request->all()); 
-
-        \App\Models\DataKunjunganAdm::create([
-            'karyawan_id'  => $request->karyawan_id,
-            'nama_nasabah' => $request->nama_nasabah,
-            'alamat_nasabah' => $request->alamat_nasabah,
-            'kol'          => $request->kol,
-            'bulan'        => $request->bulan,
-            'no_angsuran'  => $request->no_angsuran,
-            'tanggal'      => $request->tanggal, 
-            'kode_ao'      => Karyawan::find($request->karyawan_id)->kode_ao ?? null,
+        // 1. Validasi input agar data yang masuk konsisten
+        $request->validate([
+            'karyawan_id'    => 'required|exists:karyawans,id',
+            'nama_nasabah'   => 'required|string|max:255',
+            'alamat_nasabah' => 'required',
+            'kol'            => 'required',
+            'bulan'          => 'required',
+            'no_angsuran'    => 'required',
+            'tanggal'        => 'required|date',
         ]);
 
-        return response()->json(['success' => true, 'message' => 'Data berhasil disimpan']);
-    }
+        // 2. Ambil data karyawan untuk mendapatkan kode_ao
+        $karyawan = \App\Models\Karyawan::find($request->karyawan_id);
 
+        // 3. Simpan data
+        \App\Models\DataKunjunganAdm::create([
+            'karyawan_id'    => $request->karyawan_id,
+            'nama_nasabah'   => $request->nama_nasabah,
+            'alamat_nasabah' => $request->alamat_nasabah,
+            'kol'            => $request->kol,
+            'bulan'          => $request->bulan,
+            'no_angsuran'    => $request->no_angsuran,
+            'tanggal'        => $request->tanggal, 
+            'kode_ao'        => $karyawan->kode_ao ?? null,
+        ]);
+
+        // 4. Respon JSON untuk ditangkap oleh SweetAlert di Frontend
+        return response()->json([
+            'success' => true, 
+            'message' => 'Jadwal kunjungan berhasil ditambahkan!'
+        ]);
+    }
     public function rekapKunjungan()
     {
         $rekap = Karyawan::withCount(['kunjungan as jumlah_kunjungan'])

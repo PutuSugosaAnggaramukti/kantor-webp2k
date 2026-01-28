@@ -1,7 +1,7 @@
 <div class="page-title" style="margin-bottom: 25px;">
     <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Input Jadwal Kunjungan</h2>
     <p style="font-size: 14px; font-weight: 600;">
-        <span onclick="loadAdminPage('dashboard')" style="cursor:pointer; color:#4e4bc1;">Dashboard</span> 
+        <span onclick="window.location.href='/admin/dashboard'" style="cursor:pointer; color:#4e4bc1;">Dashboard</span> 
         <span style="margin: 0 5px;">></span> 
         <span style="color: #007bff;">Jadwal Kunjungan</span>
     </p>

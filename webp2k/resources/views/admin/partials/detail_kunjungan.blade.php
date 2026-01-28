@@ -1,7 +1,15 @@
 <div class="page-title" style="margin-bottom: 25px;">
-    <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Data Kunjungan</h2>
+    <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Detail Kunjungan</h2>
     <p style="font-size: 14px; font-weight: 600;">
-        Dashboard > Data Kunjungan > <span style="color: #007bff;">Detail Kunjungan</span>
+        <span onclick="window.location.href='/admin/dashboard'" style="cursor:pointer; color:#4e4bc1;">Dashboard</span> 
+        
+        <span style="margin: 0 5px;">></span> 
+        
+        <span onclick="loadAdminPage('data-kunjungan')" style="cursor:pointer; color:#4e4bc1;">Data Kunjungan</span>
+        
+        <span style="margin: 0 5px;">></span> 
+        
+        <span style="color: #007bff;">Detail Kunjungan</span>
     </p>
 </div>
 

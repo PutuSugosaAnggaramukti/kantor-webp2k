@@ -2,7 +2,7 @@
     <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Data Nasabah</h2>
     <p style="font-size: 14px; font-weight: 600;">
         <span 
-            onclick="loadAdminPage('dashboard')" 
+            onclick="window.location.href='/admin/dashboard'" 
             style="cursor: pointer; color: #000; transition: color 0.2s;" 
             onmouseover="this.style.color='#007bff'" 
             onmouseout="this.style.color='#000'">

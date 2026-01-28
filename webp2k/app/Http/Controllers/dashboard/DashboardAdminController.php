@@ -10,11 +10,17 @@ use Illuminate\Http\Request;
 
 class DashboardAdminController extends Controller
 {
-    public function index()
+        public function index()
     {
+        // Statistik kotak atas: Menampilkan TOTAL SEMUA (Terjadwal + Selesai)
         $totalKunjungan = DataKunjunganAdm::count();
+
+        // Grafik: Hanya menghitung AO yang SUDAH memiliki "Hasil Kunjungan"
         $performaAO = Karyawan::where('status', 'aktif') 
-            ->withCount('kunjungan') 
+            ->withCount(['kunjungan' => function ($query) {
+                // Gunakan relasi has() karena tabel data_kunjungan_adms tidak punya kolom foto
+                $query->has('hasilKunjungan');
+            }]) 
             ->get();
 
         $labels = $performaAO->pluck('nama'); 
