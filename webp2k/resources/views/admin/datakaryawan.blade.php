@@ -19,12 +19,12 @@
    <div class="wrapper">
         <div class="sidebar">
             <h2>Menu</h2>
-            <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="nav-item">
+            <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="nav-item" id="menu-data-karyawan">
                 <i class="fa-solid fa-users"></i> Data Karyawan
             </a>
 
             <a href="javascript:void(0)" 
-                id="menu-rekap-kunjungan" onclick="loadAdminPage('data-kunjungan', this)" class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}">
+                onclick="loadAdminPage('data-kunjungan', this)" class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}" id="menu-data-kunjungan">
                 <i class="fa-solid fa-clipboard-check"></i> Data Kunjungan
             </a>
             
@@ -45,7 +45,7 @@
                 <span>Dokumen</span>
             </a>
 
-            <a href="javascript:void(0)" onclick="loadAdminPage('adm-kunjungan', this)" class="nav-item" id="menu-input-jadwal">
+            <a href="javascript:void(0)" onclick="loadAdminPage('adm-kunjungan', this)" class="nav-item" id="menu-adm-kunjungan">
                 <i class="fa-solid fa-calendar-plus"></i> Input Jadwal Kunjungan
             </a>
         </div>
@@ -92,19 +92,23 @@
     @include('admin.partials.modals')
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+     document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const targetPage = urlParams.get('page');
     
-    // Jika user datang dari dashboard dan klik menu selain karyawan
+    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+
     if (targetPage && targetPage !== 'data-karyawan') {
-        // Pastikan fungsi loadPage kamu sudah ada untuk mengambil konten AJAX
         loadAdminPage(targetPage); 
+    } else {
+        const menuKaryawan = document.getElementById('menu-data-karyawan');
+        if (menuKaryawan) {
+            menuKaryawan.classList.add('active');
+        }
     }
 });
 
 function loadAdminPage(pageName) {
-    // Pastikan getElementById memanggil ID yang SAMA dengan di atas
     const contentArea = document.getElementById('main-content-area'); 
     
     if(!contentArea) {
@@ -122,6 +126,21 @@ function loadAdminPage(pageName) {
         .then(html => {
             contentArea.innerHTML = html;
             contentArea.style.opacity = '1';
+
+            // --- TAMBAHAN LOGIKA FINISHING UNTUK SIDEBAR ---
+            // 1. Cari semua elemen menu sidebar
+            const allNavItems = document.querySelectorAll('.nav-item');
+            
+            // 2. Hapus class 'active' dari semua menu
+            allNavItems.forEach(nav => nav.classList.remove('active'));
+
+            // 3. Tambahkan class 'active' ke menu yang sesuai dengan pageName
+            // Pastikan ID di HTML sidebar kamu adalah 'menu-data-karyawan', 'menu-nasabah', dll.
+            const activeMenu = document.getElementById(`menu-${pageName}`);
+            if (activeMenu) {
+                activeMenu.classList.add('active');
+            }
+            // ----------------------------------------------
         })
         .catch(error => {
             console.error('Error:', error);
