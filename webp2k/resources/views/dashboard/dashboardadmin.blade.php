@@ -43,116 +43,94 @@
 
     <div class="breadcrumb-banner">Dashboard</div>
 
-    <main class="container-center">
-            <div id="main-content-area" style="transition: opacity 0.3s ease;">
+   <main class="container-center">
+        <div id="main-content-area" style="transition: opacity 0.3s ease;">
+            
+            <div id="dashboard-default-view">
                 <h3 style="margin-bottom: 1.5rem;">Statistik</h3>
-            
-            <div class="stats-container">
-                <div class="card-stats bg-purple">
-                    <div style="font-size: 1.1rem; opacity: 0.9;">Total Kunjungan</div>
-                    <div style="font-size: 3.5rem; font-weight: bold; margin-top: 10px;">50</div>
-                </div>
                 
-            
-            </div>
+                <div class="stats-container">
+                    <div class="card-stats bg-purple">
+                        <div style="font-size: 1.1rem; opacity: 0.9;">Total Kunjungan</div>
+                        <div style="font-size: 3.5rem; font-weight: bold; margin-top: 10px;">
+                            {{ $totalKunjungan ?? 0 }}
+                        </div>
+                    </div>
+                </div>
 
-            <div class="chart-box">
-                <canvas id="myChart" height="120"></canvas>
-            </div>
+                <div class="chart-box">
+                    <canvas id="myChart" height="120"></canvas>
+                </div>
 
-            <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
-            
-            <div class="menu-grid">
-                <a href="{{ route('karyawan.index') }}" class="menu-item">
-                    <i class="fa-solid fa-users"></i>
-                    <span>Data Karyawan</span>
-                </a>
+                <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
+                
+                <div class="menu-grid">
+                    <a href="javascript:void(0)" onclick="transitionToAdminPage('data-karyawan')" class="menu-item">
+                        <i class="fa-solid fa-users"></i>
+                        <span>Data Karyawan</span>
+                    </a>
 
-                <a href="javascript:void(0)" onclick="loadAdminPage('adm-kunjungan', this)" class="menu-item">
-                    <i class="fas fa-clipboard-list"></i>
-                    <span>Data Kunjungan</span>
-                </a>
+                    <a href="javascript:void(0)" onclick="transitionToAdminPage('data-kunjungan')" class="menu-item">
+                        <i class="fas fa-clipboard-list"></i>
+                        <span>Data Kunjungan</span>
+                    </a>
 
-                <a href="javascript:void(0)" onclick="loadAdminPage('nasabah', this)" class="menu-item">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Data Nasabah</span>
-                </a>
+                    <a href="javascript:void(0)" onclick="transitionToAdminPage('nasabah')" class="menu-item">
+                        <i class="fas fa-user-friends"></i>
+                        <span>Data Nasabah</span>
+                    </a>
 
-                <a href="javascript:void(0)" onclick="loadAdminPage('pelaporan', this)" class="menu-item">
-                    <i class="fas fa-edit"></i>
-                    <span>Pelaporan</span>
-                </a>
+                    <a href="javascript:void(0)" onclick="transitionToAdminPage('pelaporan')" class="menu-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Pelaporan</span>
+                    </a>
 
-                <a href="javascript:void(0)" onclick="loadAdminPage('dokumen', this)" class="menu-item">
-                    <i class="fas fa-file-alt"></i>
-                    <span>Dokumen</span>
-                </a>
+                    <a href="javascript:void(0)" onclick="transitionToAdminPage('dokumen')" class="menu-item">
+                        <i class="fas fa-file-word"></i>
+                        <span>Dokumen</span>
+                    </a>
 
-                <a href="javascript:void(0)" onclick="loadAdminPage('input-data-kunjungan', this)" class="menu-item">
-                    <i class="fas fa-folder-plus"></i>
-                    <span>Input Data Kunjungan</span>
-                </a>
+                    <a href="javascript:void(0)" onclick="transitionToAdminPage('adm-kunjungan')" class="menu-item">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Input Jadwal Kunjungan</span>
+                    </a>
 
-                <a href="javascript:void(0)" onclick="loadAdminPage('jadwal-kunjungan', this)" class="menu-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Jadwal Kunjungan</span>
-                </a>
+                </div>
             </div>
         </div>
-    </main>
+</main>
 
     <footer class="footer-admin">
         Sistem Aplikasi P2K
     </footer>
 
     <script>
-    function loadAdminPage(pageName, element) {
-        // 1. Tentukan target container (sesuaikan ID dengan div di HTML Anda)
-        const contentArea = document.getElementById('main-content-area');
+    function transitionToAdminPage(targetPage) {
+        const loader = document.getElementById('loginLoading');
+        const loadingText = loader.querySelector('p');
         
-        if (!contentArea) {
-            console.error("Target ID 'main-content-area' tidak ditemukan!");
-            return;
+        const labels = {
+            'data-karyawan': 'Memuat Data Karyawan...',
+            'adm-kunjungan': 'Memuat Data Kunjungan...',
+            'pelaporan': 'Memuat Laporan...',
+            'nasabah': 'Memuat Data Nasabah...',
+            'dokumen': 'Memuat Dokumen...',
+            'data-kunjungan': 'Memuat Input Kunjungan...'
+        };
+
+        if (loadingText) {
+            loadingText.innerText = labels[targetPage] || 'Memuat Halaman...';
         }
 
-        // 2. Beri efek visual sedang memuat
-        contentArea.style.opacity = '0.3';
-        contentArea.style.transition = 'opacity 0.3s ease';
+        loader.classList.add('active');
+        loader.style.display = 'flex';
 
-        // 3. Tentukan URL (mengarah ke controller yang hanya return view partial/tabel)
-        const url = `/admin/${pageName}-content`;
-
-        // 4. Lakukan Fetch data
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Halaman gagal dimuat (Error: ' + response.status + ')');
-            return response.text();
-        })
-        .then(html => {
-            // 5. Masukkan konten ke dalam area putih
-            contentArea.innerHTML = html;
-            contentArea.style.opacity = '1';
-
-            // 6. Atur class 'active' agar menu yang diklik berwarna ungu
-            updateActiveClass(element);
-        })
-        .catch(error => {
-            console.error('Fetch Error:', error);
-            contentArea.innerHTML = `
-                <div style="text-align:center; padding:50px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size:48px; color:#e74c3c;"></i>
-                    <p style="margin-top:15px; font-weight:bold;">Gagal memuat konten.</p>
-                    <small style="color:#666;">${error.message}</small>
-                </div>
-            `;
-            contentArea.style.opacity = '1';
-        });
+        setTimeout(() => {
+            // SEMUA dialihkan ke route karyawan.index agar sidebar biru muncul
+            // Kita selipkan parameter ?page= untuk menentukan konten mana yang di-load
+            window.location.href = "{{ route('karyawan.index') }}?page=" + targetPage;
+        }, 1000); 
     }
-
     /**
      * Fungsi pembantu untuk mengelola status 'active' di Sidebar & Grid
      */
@@ -169,51 +147,37 @@
 </script>
 
     <script>
-        const ctx = document.getElementById('myChart').getContext('2d');
-        
-        new Chart(ctx, {
+      const ctx = document.getElementById('myChart').getContext('2d');
+        const myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['2025/10/15', '2025/10/16', '2025/10/17', '2025/10/18', '2025/10/19', '2025/10/20', '2025/10/21'],
-                datasets: [
-                    { 
-                        label: 'nasabah ada', 
-                        data: [5, 6, 7, 8, 9, 10, 11], 
-                        backgroundColor: '#1e3a8a',
-                        borderRadius: 5
-                    },
-                    { 
-                        label: 'nasabah tidak ada', 
-                        data: [2, 3, 4, 5, 6, 7, 8], 
-                        backgroundColor: '#ea580c',
-                        borderRadius: 5
-                    }
-                ]
+                // Label diambil dari data nama AO
+                labels: {!! json_encode($labels) !!}, 
+                datasets: [{
+                    label: 'Jumlah Kunjungan Selesai',
+                    // Data diambil dari jumlah kunjungan masing-masing AO
+                    data: {!! json_encode($counts) !!},
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)', // Warna Biru
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5
+                }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: true,
-                animation: {
-                    duration: 2000,        // Durasi animasi 2 detik
-                    easing: 'easeOutQuart' // Efek smooth/tumbuh ke atas
-                },
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
-                },
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: {
-                            display: true,
-                            color: '#f0f0f0'
+                        ticks: {
+                            stepSize: 1 // Agar skala y selalu angka bulat
                         }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
                     }
                 }
             }

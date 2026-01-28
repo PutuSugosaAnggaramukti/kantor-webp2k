@@ -92,6 +92,44 @@
     @include('admin.partials.modals')
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetPage = urlParams.get('page');
+    
+    // Jika user datang dari dashboard dan klik menu selain karyawan
+    if (targetPage && targetPage !== 'data-karyawan') {
+        // Pastikan fungsi loadPage kamu sudah ada untuk mengambil konten AJAX
+        loadAdminPage(targetPage); 
+    }
+});
+
+function loadAdminPage(pageName) {
+    // Pastikan getElementById memanggil ID yang SAMA dengan di atas
+    const contentArea = document.getElementById('main-content-area'); 
+    
+    if(!contentArea) {
+        console.error("ID main-content-area tidak ditemukan!");
+        return;
+    }
+
+    contentArea.style.opacity = '0.3';
+
+    fetch(`/admin/${pageName}-content`) 
+        .then(response => {
+            if (!response.ok) throw new Error('Route tidak ditemukan atau server error');
+            return response.text();
+        })
+        .then(html => {
+            contentArea.innerHTML = html;
+            contentArea.style.opacity = '1';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            contentArea.style.opacity = '1';
+            contentArea.innerHTML = `<div class="alert alert-danger">Gagal memuat halaman ${pageName}</div>`;
+        });
+}
+
 $.ajaxSetup({
     headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
 });
