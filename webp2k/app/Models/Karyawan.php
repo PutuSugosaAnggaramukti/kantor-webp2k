@@ -21,6 +21,8 @@ class Karyawan extends Authenticatable
 
     public function kunjungan()
     {
-        return $this->hasMany(DataKunjunganAdm::class, 'karyawan_id', 'id');
+        // Kita hubungkan 'id' di tabel karyawans 
+        // ke kolom 'karyawan_id' di tabel data_kunjungan_adms
+        return $this->hasMany(Kunjungan::class, 'karyawan_id', 'id');
     }
 }

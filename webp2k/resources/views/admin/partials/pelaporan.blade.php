@@ -24,30 +24,35 @@
                 <th style="padding: 15px;">Nama AO</th>
             </tr>
         </thead>
-        <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
+       <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
             @forelse($pelaporan_all as $index => $item)
             <tr style="border-bottom: 2px solid #000;">
                 <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                
+                {{-- Mengambil tanggal dari kunjungan_terbaru yang dibuat di controller --}}
                 <td style="padding: 12px; border-right: 2px solid #000;">
-                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') : '-' }}
+                    {{ $item->kunjungan_terbaru ? \Carbon\Carbon::parse($item->kunjungan_terbaru->tanggal)->format('d-m-Y') : '-' }}
                 </td>
+                
                 <td style="padding: 12px; border-right: 2px solid #000;">
-                    {{ $item->karyawan->kode_ao ?? $item->kode_ao }}
+                    {{ $item->kode_ao }}
                 </td>
+                
                 <td style="padding: 12px; text-align: left; padding-left: 20px;">
                     <span 
-                        onclick="loadAdminPage('pelaporan-detail/{{ $item->karyawan_id ?? $item->kode_ao }}')" 
+                        onclick="loadAdminPage('pelaporan-detail/{{ $item->id }}')" 
                         style="cursor: pointer; color: #000; text-decoration: underline;"
                         onmouseover="this.style.color='#007bff'" 
                         onmouseout="this.style.color='#000'">
-                        {{ $item->karyawan->nama ?? 'Nama Tidak Terdeteksi' }}
+                        {{-- LANGSUNG PANGGIL $item->nama --}}
+                        {{ $item->nama ?? 'Nama Tidak Ada' }}
                     </span>
                 </td>
             </tr>
             @empty
             <tr>
                 <td colspan="4" style="padding: 30px; text-align: center; color: #888;">
-                    Tidak ada data kunjungan yang tersedia untuk dilaporkan.
+                    Tidak ada data kunjungan yang tersedia.
                 </td>
             </tr>
             @endforelse

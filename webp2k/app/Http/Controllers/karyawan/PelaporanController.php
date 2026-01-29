@@ -13,13 +13,22 @@ use App\Exports\PelaporanExport;
 class PelaporanController extends Controller
 {
    public function index()
-    {
-        $pelaporan_all = DataKunjunganAdm::with('karyawan')
-            ->orderBy('tanggal', 'desc')
-            ->get();
+{
+    // Kita ambil data Karyawan yang punya kunjungan
+    $pelaporan_all = Karyawan::whereHas('kunjungan')
+        ->with(['kunjungan' => function($query) {
+            $query->orderBy('tanggal', 'desc');
+        }])
+        ->get();
 
-        return view('admin.partials.pelaporan', compact('pelaporan_all'));
-    }
+    $pelaporan_all = $pelaporan_all->map(function ($karyawan) {
+        // Kita simpan kunjungan terbaru ke dalam attribute baru
+        $karyawan->kunjungan_terbaru = $karyawan->kunjungan->first();
+        return $karyawan;
+    });
+
+    return view('admin.partials.pelaporan', compact('pelaporan_all'));
+}
 
     public function detailAo($id_ao)
     {

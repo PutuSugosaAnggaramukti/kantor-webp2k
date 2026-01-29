@@ -94,52 +94,53 @@ class KunjunganController extends Controller
         ]);
     }
 
-   public function store(Request $request)
-    {
-        $nama_file_foto = null;
-        // Ambil koordinat browser sebagai cadangan terakhir
-        $koordinat_final = $request->koordinat; 
+ public function store(Request $request)
+{
+    $nama_file_foto = null;
+    $koordinat_final = $request->koordinat; 
 
-        if ($request->hasFile('foto_kunjungan')) {
-            $file = $request->file('foto_kunjungan');
-            $path = $file->getRealPath();
+    if ($request->hasFile('foto_kunjungan')) {
+        $file = $request->file('foto_kunjungan');
+        $path = $file->getRealPath();
 
-            try {
-                // Cek apakah ekstensi EXIF aktif
-                if (function_exists('exif_read_data')) {
-                    $exif = @exif_read_data($path);
+        try {
+            if (function_exists('exif_read_data')) {
+                $exif = @exif_read_data($path);
+                
+                if ($exif && isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
+                    $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+                    $lng = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
                     
-                    if ($exif && isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
-                        $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-                        $lng = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
-                        
-                        // VALIDASI: Hanya timpa koordinat browser jika data foto ketemu & bukan 0
-                        if ($lat != 0 && $lng != 0) {
-                            $koordinat_final = "$lat, $lng";
-                        }
+                    if ($lat != 0 && $lng != 0) {
+                        $koordinat_final = "$lat, $lng";
                     }
                 }
-            } catch (\Exception $e) {
-                // Jika gagal, log error atau biarkan pakai koordinat_final asli
             }
-
-            $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
+        } catch (\Exception $e) {
+            // Error log jika diperlukan
         }
 
-        Kunjungan::create([
-            'kode_ao'            => auth()->user()->kode_ao,
-            'no_nasabah'         => $request->no_nasabah,
-            'nama_nasabah'       => $request->nama_nasabah,
-            'ada_di_lokasi'      => $request->ada_di_lokasi,
-            'keterangan_nasabah' => $request->keterangan_nasabah,
-            'catatan'            => $request->catatan,
-            'foto_kunjungan'     => $nama_file_foto, 
-            'koordinat'          => $koordinat_final, 
-        ]);
-
-        return redirect()->back()->with('success', 'Data kunjungan berhasil disimpan!');
+        $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
     }
+
+    // PERBAIKAN: Gunakan DB::table agar data masuk ke tabel 'kunjungans'
+    // Bukan ke tabel 'data_kunjungan_adms'
+    \DB::table('kunjungans')->insert([
+        'kode_ao'            => auth()->user()->kode_ao,
+        'no_nasabah'         => $request->no_nasabah,
+        'nama_nasabah'       => $request->nama_nasabah,
+        'ada_di_lokasi'      => $request->ada_di_lokasi,
+        'keterangan_nasabah' => $request->keterangan_nasabah,
+        'catatan'            => $request->catatan,
+        'foto_kunjungan'     => $nama_file_foto, 
+        'koordinat'          => $koordinat_final, 
+        'created_at'         => now(),
+        'updated_at'         => now(),
+    ]);
+
+    return redirect()->back()->with('success', 'Data kunjungan berhasil disimpan!');
+}
 
     private function getGps($exifCoord, $hemi) 
     {
@@ -215,7 +216,7 @@ class KunjunganController extends Controller
         $textTable = $section->addTable();
         $textTable->addRow();
         $textTable->addCell(2500)->addText("Tanggal Input");
-        $textTable->addCell(7000)->addText(": " . $detail->created_at->format('d/m/Y H:i') . " WIB");
+        $textTable->addCell(7000)->addText(": " . \Carbon\Carbon::parse($detail->created_at)->locale('id')->translatedFormat('l, d F Y'));
         
         $textTable->addRow();
         $textTable->addCell(2500)->addText("Koordinat Lokasi");
@@ -225,21 +226,27 @@ class KunjunganController extends Controller
         $textTable->addCell(2500)->addText("Catatan AO");
         $textTable->addCell(7000)->addText(": " . $detail->catatan);
 
-        if ($detail->foto_kunjungan) {
+       if ($detail->foto_kunjungan) {
             $section->addTextBreak(1);
             $section->addText("Dokumentasi Foto:", ['bold' => true]);
-            $path = public_path('storage/' . $detail->foto_kunjungan);
+            
+            // Perbaikan path: arahkan ke folder 'uploads/kunjungan'
+            $path = public_path('uploads/kunjungan/' . $detail->foto_kunjungan);
+            
             if (file_exists($path)) {
                 $section->addImage($path, [
-                    'width' => 280, 
-                    'height' => 200, 
+                    'width'     => 280, 
+                    'height'    => 200, 
                     'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER
                 ]);
+            } else {
+                // Tambahkan keterangan jika file tidak ditemukan secara fisik di folder
+                $section->addText("(File foto tidak ditemukan di server)", ['italic' => true, 'color' => 'FF0000']);
             }
         }
-
+        
         $section->addTextBreak(2);
-        $section->addText("Dicetak pada: " . date('d/m/Y H:i:s'), ['size' => 9], ['alignment' => 'right']);
+        $section->addText(\Carbon\Carbon::now()->locale('id')->translatedFormat('l, d F Y'), ['size' => 10], ['alignment' => 'right']);
         $section->addTextBreak(2);
         $section->addText("( " . strtoupper($namaAO) . " )", ['bold' => true, 'underline' => 'single'], ['alignment' => 'right']);
         $section->addText("Account Officer", [], ['alignment' => 'right']);

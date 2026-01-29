@@ -10,21 +10,24 @@ use Illuminate\Http\Request;
 
 class DashboardAdminController extends Controller
 {
-        public function index()
+       public function index()
     {
-        // Statistik kotak atas: Menampilkan TOTAL SEMUA (Terjadwal + Selesai)
+        // Total jadwal yang diinput admin
         $totalKunjungan = DataKunjunganAdm::count();
 
-        // Grafik: Hanya menghitung AO yang SUDAH memiliki "Hasil Kunjungan"
-        $performaAO = Karyawan::where('status', 'aktif') 
-            ->withCount(['kunjungan' => function ($query) {
-                // Gunakan relasi has() karena tabel data_kunjungan_adms tidak punya kolom foto
-                $query->has('hasilKunjungan');
-            }]) 
-            ->get();
+        // Hitung performa AO berdasarkan data yang SUDAH diupload di tabel 'kunjungans'
+        $performaAO = Karyawan::where('status', 'aktif')
+            ->get()
+            ->map(function ($karyawan) {
+                // Kita hitung berapa kali kode_ao ini muncul di tabel hasil kunjungan
+                $karyawan->kunjungan_selesai = \DB::table('kunjungans')
+                    ->where('kode_ao', $karyawan->kode_ao)
+                    ->count();
+                return $karyawan;
+            });
 
         $labels = $performaAO->pluck('nama'); 
-        $counts = $performaAO->pluck('kunjungan_count'); 
+        $counts = $performaAO->pluck('kunjungan_selesai'); 
 
         return view('dashboard.dashboardadmin', compact('totalKunjungan', 'labels', 'counts'));
     }

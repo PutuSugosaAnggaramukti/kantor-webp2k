@@ -57,8 +57,9 @@
     <div class="detail-box">
         <table style="border: none;">
             <tr style="border: none;">
-                <td style="border: none; text-align: left; width: 30%;"><strong>Tanggal Input</strong></td>
-                <td style="border: none; text-align: left;">: {{ $detail->created_at->format('d/m/Y H:i') }} WIB</td>
+                <td style="border: none; text-align: left;"><strong>Tanggal Input</strong></td>
+                <td style="border: none; text-align: left;">: {{ \Carbon\Carbon::parse($detail->created_at)->locale('id')->settings(['formatFunction' => 'translatedFormat'])->format('l , d F Y') }}</td>
+                </p>
             </tr>
             <tr style="border: none;">
                 <td style="border: none; text-align: left;"><strong>Koordinat Lokasi</strong></td>
@@ -70,23 +71,36 @@
             </tr>
         </table>
 
-        <div class="foto-kunjungan">
+       <div class="foto-kunjungan">
             <p style="text-align: left;"><strong>Dokumentasi Foto:</strong></p>
             @if($detail->foto_kunjungan)
-                {{-- Gunakan public_path agar gambar terbaca sistem PDF --}}
-                <img src="{{ public_path('storage/' . $detail->foto_kunjungan) }}" class="img-bukti">
+                @php
+                    $pathFoto = public_path('uploads/kunjungan/' . $detail->foto_kunjungan);
+                @endphp
+
+                @if(file_exists($pathFoto))
+                    <img src="{{ $pathFoto }}" class="img-bukti" style="width: 100%; max-width: 400px; height: auto; border: 1px solid #000; padding: 5px;">
+                @else
+                    <p style="color: red; font-style: italic;">(File fisik foto tidak ditemukan di server)</p>
+                @endif
             @else
                 <p style="color: #999; font-style: italic;">(Tidak ada foto terlampir)</p>
             @endif
         </div>
     </div>
 
-    <div class="footer">
-        <p>Dicetak pada: {{ date('d/m/Y H:i:s') }}</p>
-        <br><br><br>
-        <p>(__________________________)</p>
-        <p>Account Officer</p>
+   <div class="footer" style="margin-top: 50px; text-align: right; width: 100%;">
+        <div style="display: inline-block; text-align: center; min-width: 250px;">
+            <p style="margin-bottom: 60px; font-size: 12px;">
+                {{ \Carbon\Carbon::now()->locale('id')->translatedFormat('l , d F  Y') }}
+            </p>
+            
+            <p style="margin-bottom: 0; font-weight: bold; text-decoration: underline; font-size: 13px; color: #000;">
+                {{-- Langsung panggil $namaAO yang dikirim dari Controller --}}
+                {{ strtoupper($namaAO ?? '__________________________') }}
+            </p>
+            <p style="margin-top: 0; font-size: 12px;">Account Officer</p>
+        </div>
     </div>
-
 </body>
 </html>
