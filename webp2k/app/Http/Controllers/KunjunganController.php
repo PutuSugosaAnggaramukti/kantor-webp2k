@@ -94,23 +94,39 @@ class KunjunganController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
     {
-        // 1. Definisikan variabel dengan nilai awal null agar tidak error jika foto kosong
         $nama_file_foto = null;
+        // Ambil koordinat browser sebagai cadangan terakhir
+        $koordinat_final = $request->koordinat; 
 
-        // 2. Logika Upload Foto
         if ($request->hasFile('foto_kunjungan')) {
             $file = $request->file('foto_kunjungan');
-            
-            // Buat nama unik agar tidak bentrok (contoh: 17123456.jpg)
+            $path = $file->getRealPath();
+
+            try {
+                // Cek apakah ekstensi EXIF aktif
+                if (function_exists('exif_read_data')) {
+                    $exif = @exif_read_data($path);
+                    
+                    if ($exif && isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
+                        $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+                        $lng = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+                        
+                        // VALIDASI: Hanya timpa koordinat browser jika data foto ketemu & bukan 0
+                        if ($lat != 0 && $lng != 0) {
+                            $koordinat_final = "$lat, $lng";
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Jika gagal, log error atau biarkan pakai koordinat_final asli
+            }
+
             $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
-            
-            // Simpan ke folder public/uploads/kunjungan
             $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
         }
 
-        // 3. Simpan ke Database menggunakan Model Kunjungan
         Kunjungan::create([
             'kode_ao'            => auth()->user()->kode_ao,
             'no_nasabah'         => $request->no_nasabah,
@@ -118,11 +134,29 @@ class KunjunganController extends Controller
             'ada_di_lokasi'      => $request->ada_di_lokasi,
             'keterangan_nasabah' => $request->keterangan_nasabah,
             'catatan'            => $request->catatan,
-            'foto_kunjungan'     => $nama_file_foto, // Sekarang variabel ini sudah ada
-            'koordinat'          => $request->koordinat,
+            'foto_kunjungan'     => $nama_file_foto, 
+            'koordinat'          => $koordinat_final, 
         ]);
 
         return redirect()->back()->with('success', 'Data kunjungan berhasil disimpan!');
+    }
+
+    private function getGps($exifCoord, $hemi) 
+    {
+        $degrees = count($exifCoord) > 0 ? $this->getFraction($exifCoord[0]) : 0;
+        $minutes = count($exifCoord) > 1 ? $this->getFraction($exifCoord[1]) : 0;
+        $seconds = count($exifCoord) > 2 ? $this->getFraction($exifCoord[2]) : 0;
+        
+        $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
+        return $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
+    }
+
+    private function getFraction($fraction) 
+    {
+        $parts = explode('/', $fraction);
+        if (count($parts) < 2) return floatval($fraction);
+        if (floatval($parts[1]) == 0) return 0;
+        return floatval($parts[0]) / floatval($parts[1]);
     }
 
     public function exportPDF($id)

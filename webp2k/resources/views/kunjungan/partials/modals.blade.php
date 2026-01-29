@@ -42,7 +42,11 @@
                 <input type="file" name="foto_kunjungan" class="form-control" required>
             </div>
 
-            <input type="hidden" name="koordinat" id="form-koordinat" value="-7.888581, 110.3239571">
+           <input type="hidden" name="koordinat" id="form-koordinat">
+
+            <p id="location-status" style="font-size: 11px; color: #888; margin-top: -10px;">
+                <i class="fas fa-spinner fa-spin"></i> Mendeteksi lokasi GPS...
+            </p>
 
             <div class="modal-footer">
                 <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>

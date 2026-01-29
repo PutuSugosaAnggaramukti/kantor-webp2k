@@ -126,20 +126,13 @@
         loader.style.display = 'flex';
 
         setTimeout(() => {
-            // SEMUA dialihkan ke route karyawan.index agar sidebar biru muncul
-            // Kita selipkan parameter ?page= untuk menentukan konten mana yang di-load
             window.location.href = "{{ route('karyawan.index') }}?page=" + targetPage;
         }, 1000); 
     }
-    /**
-     * Fungsi pembantu untuk mengelola status 'active' di Sidebar & Grid
-     */
     function updateActiveClass(element) {
-        // Hapus class active dari semua menu (sidebar & grid)
         const allMenus = document.querySelectorAll('.nav-item, .menu-item, .sub-nav-item');
         allMenus.forEach(menu => menu.classList.remove('active'));
 
-        // Jika elemen diklik ada, tambahkan class active
         if (element) {
             element.classList.add('active');
         }
