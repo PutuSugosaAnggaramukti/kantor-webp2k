@@ -266,3 +266,46 @@
         </form>
     </div>
 </div>
+
+<div id="modalTambahNasabah" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+    <div style="background-color: #fff; padding: 30px; border-radius: 20px; width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;">
+        
+        <h2 style="text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 25px;">Tambah Data Nasabah</h2>
+
+       <form action="{{ route('nasabah.store') }}" method="POST">
+            @csrf
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota*</label>
+                <input type="text" name="no_angsuran" required placeholder="Masukkan nomor angsuran" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama Nasabah*</label>
+                <input type="text" name="nasabah" required placeholder="Nama lengkap nasabah" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Alamat*</label>
+                <textarea name="alamat" required placeholder="Alamat lengkap" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px; height: 80px;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">KOL*</label>
+                <select name="kol" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px; background: white;">
+                    <option value="">-- Pilih KOL --</option>
+                    <option value="1">KOL 1</option>
+                    <option value="2">KOL 2</option>
+                    <option value="3">KOL 3</option>
+                    <option value="4">KOL 4</option>
+                    <option value="5">KOL 5</option>
+                </select>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; gap: 20px;">
+                <button type="button" onclick="closeModalTambahNasabah()" style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ccc; background: #eee;">Batal</button>
+                <button type="submit" style="flex: 1; padding: 12px; border-radius: 10px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: 700;">Simpan Data</button>
+            </div>
+        </form>
+    </div>
+</div>
+

@@ -50,3 +50,53 @@
         </tbody>
     </table>
 </div>
+
+<div id="modalTambahNasabah" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+    
+    <div class="modal-dialog modal-dialog-centered" role="document" style="width: 100%; max-width: 500px;"> 
+        <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            
+            <div class="modal-header" style="background-color: #4CAF50; color: white; border-top-left-radius: 15px; border-top-right-radius: 15px; display: flex; justify-content: space-between; align-items: center; padding: 15px 20px;">
+                <h5 class="modal-title" style="font-weight: 700; margin: 0;">
+                    <i class="fa fa-user-plus" style="margin-right: 10px;"></i>Input Nasabah Baru
+                </h5>
+                <button type="button" onclick="closeModalTambahNasabah()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+
+            <form action="{{ route('nasabah.store') }}" method="POST" id="formTambahNasabah">
+                @csrf
+                <div class="modal-body" style="padding: 25px;">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="font-weight: 700; color: #333;">No. Anggota</label>
+                        <input type="text" name="no_angsuran" class="form-control" style="border-radius: 8px;" placeholder="Contoh: 821.22.0001" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="font-weight: 700; color: #333;">Nama Nasabah</label>
+                        <input type="text" name="nama_nasabah" class="form-control" style="border-radius: 8px;" placeholder="Masukkan nama lengkap" required>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="font-weight: 700; color: #333;">Alamat</label>
+                        <textarea name="alamat_nasabah" class="form-control" rows="3" style="border-radius: 8px;" placeholder="Alamat domisili nasabah" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: 700; color: #333;">KOL (Kolektibilitas)</label>
+                        <select name="kol" class="form-control" style="border-radius: 8px;" required>
+                            <option value="" disabled selected>-- Pilih Status KOL --</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; background-color: #f8f9fa; display: flex; justify-content: flex-end; gap: 10px; padding: 15px;">
+                    <button type="button" onclick="closeModalTambahNasabah()" class="btn btn-secondary" style="border-radius: 8px; font-weight: 600; padding: 8px 20px;">Batal</button>
+                    <button type="submit" class="btn btn-success" style="border-radius: 8px; font-weight: 600; background-color: #4CAF50; border: none; padding: 8px 25px; color: white; cursor: pointer;">
+                        Simpan Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

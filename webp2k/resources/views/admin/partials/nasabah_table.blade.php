@@ -18,6 +18,11 @@
             </span> 
             Filter Data
         </button>
+        <button onclick="openModalTambahNasabah()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#45a049'; this.style.transform='translateY(-2px)'" onmouseout="this.style.backgroundColor='#4CAF50'; this.style.transform='translateY(0)'">
+            <span style="margin-right: 8px;">
+                <i class="fa fa-plus"></i>
+            </span> Tambah Nasabah
+        </button>
     </div>
     
     <input type="text" placeholder="Pencarian.." class="search-input" style="padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; width: 250px;">

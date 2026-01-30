@@ -23,17 +23,11 @@ class Nasabah extends Model
         'sudah_kunjung'
     ];
 
-    /**
-     * Accessor untuk format Rupiah Nominal
-     */
     public function getNominalRupiahAttribute()
     {
         return 'Rp ' . number_format($this->nominal, 0, ',', '.');
     }
 
-    /**
-     * Accessor untuk format Rupiah Sisa Pokok
-     */
     public function getSisaRupiahAttribute()
     {
         return 'Rp ' . number_format($this->sisa_pokok, 0, ',', '.');

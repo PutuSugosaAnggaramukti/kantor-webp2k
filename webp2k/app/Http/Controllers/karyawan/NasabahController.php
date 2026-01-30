@@ -5,28 +5,20 @@ namespace App\Http\Controllers\karyawan;
 use App\Http\Controllers\Controller;
 use App\Exports\NasabahExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\Nasabah;
 use App\Models\DataKunjunganAdm;
 use Illuminate\Http\Request;
 
 class NasabahController extends Controller
 {
 
-  public function nasabahContent(Request $request)
+    public function nasabahContent(Request $request)
     {
-        $query = DataKunjunganAdm::query();
+        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
 
-        if ($request->filled('tanggal_awal') && $request->filled('tanggal_akhir')) {
-            $query->whereBetween('tanggal', [$request->tanggal_awal, $request->tanggal_akhir]);
+        if ($request->ajax()) {
+            return view('admin.partials.nasabah_table', compact('nasabah_all'))->render();
         }
-
-        $nasabah_all = $query->select(
-                'no_angsuran', 
-                'nama_nasabah', 
-                \DB::raw('count(karyawan_id) as jml_pengunjung')
-            )
-            ->groupBy('no_angsuran', 'nama_nasabah')
-            ->orderBy('nama_nasabah', 'asc')
-            ->get();
 
         return view('admin.partials.nasabah_table', compact('nasabah_all'));
     }
@@ -41,15 +33,35 @@ class NasabahController extends Controller
         return view('admin.partials.pengunjung_nasabah', compact('histori_kunjungan'));
     }
 
-    public function exportExcel(Request $request)
+    public function store(Request $request)
     {
-        $tglAwal = $request->tanggal_awal;
-        $tglAkhir = $request->tanggal_akhir;
+        // 1. Validasi input dari modal
+        $request->validate([
+            'no_angsuran' => 'required|unique:nasabahs,no_angsuran',
+            'nasabah'     => 'required',
+            'alamat'      => 'required',
+            'kol'         => 'required'
+        ]);
 
-        // Nama file rapi berdasarkan rentang waktu
-        $namaFile = 'Rekap_Nasabah_' . $tglAwal . '_sd_' . $tglAkhir . '.xlsx';
+        try {
+            // 2. Simpan dengan nilai default untuk kolom yang wajib diisi di DB
+            Nasabah::create([
+                'no_angsuran'   => $request->no_angsuran,
+                'nasabah'       => $request->nasabah,
+                'alamat'        => $request->alamat,
+                'kol'           => $request->kol,
+                // Nilai di bawah ini ditambahkan agar database tidak error 500 (NOT NULL constraint)
+                'kode'          => '-', 
+                'nominal'       => 0,
+                'sisa_pokok'    => 0,
+                'sudah_kunjung' => 0,
+                'bulan'         => now()->format('Y-m'),
+            ]);
 
-        return Excel::download(new NasabahExport($tglAwal, $tglAkhir), $namaFile);
+            return response()->json(['success' => 'Data berhasil disimpan!']);
+        } catch (\Exception $e) {
+            // Jika masih error, ini akan menampilkan pesan error database di SweetAlert
+            return response()->json(['errors' => ['db' => [$e->getMessage()]]], 500);
+        }
     }
-
 }

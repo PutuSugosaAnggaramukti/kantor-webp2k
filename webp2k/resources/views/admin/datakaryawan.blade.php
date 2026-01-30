@@ -11,6 +11,8 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
@@ -278,6 +280,58 @@ function closeModalExportPelaporan() {
     }
 }
 
+function openModalTambahNasabah() {
+    const modal = document.getElementById('modalTambahNasabah');
+    if (modal) {
+        modal.style.display = 'flex'; 
+        console.log("Modal Nasabah Terbuka");
+    } else {
+        console.error("Gagal! Elemen modalTambahNasabah tidak ditemukan di DOM halaman ini.");
+    }
+}
+
+function closeModalTambahNasabah() {
+    const modal = document.getElementById('modalTambahNasabah');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+$(document).on('submit', '#modalTambahNasabah form', function(e) {
+    e.preventDefault();
+    let form = $(this);
+    let btnSave = form.find('button[type="submit"]');
+
+    btnSave.prop('disabled', true).html('Menyimpan...');
+    
+    $.ajax({
+        type: "POST",
+        url: form.attr('action'),
+        data: form.serialize(),
+        success: function(response) {
+            closeModalTambahNasabah();
+            form.trigger('reset');
+            Swal.fire({ icon: 'success', title: 'Berhasil!', text: 'Nasabah berhasil ditambahkan', timer: 2000, showConfirmButton: false });
+            loadAdminPage('nasabah'); 
+        },
+        error: function(xhr) {
+            let errorMessage = 'Terjadi kesalahan sistem (Error ' + xhr.status + ')';
+            
+            // Ambil pesan error dari Laravel secara dinamis
+            if (xhr.responseJSON && xhr.responseJSON.errors) {
+                errorMessage = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+
+            Swal.fire({ icon: 'error', title: 'Oops!', html: errorMessage });
+        },
+        complete: function() {
+            btnSave.prop('disabled', false).html('Simpan Data');
+        }
+    });
+});
+
 // 4. HANDLING SUBMIT (Hanya Satu Handler Utama)
 document.addEventListener('submit', function(e) {
     if (e.target && e.target.id === 'formTambahKaryawan') {
@@ -372,7 +426,7 @@ document.addEventListener('submit', function(e) {
 // 5. GLOBAL CLICK MONITOR (Menutup Modal & Dropdown Logout)
 window.onclick = function(event) {
     const modalIDs = ['modalExportPelaporan', 'modalFilterNasabah', 'modalExportNasabah', 'modalDetailKaryawan', 'modalEditKaryawan', 'modalTambahKunjungan', 'modalTambahKaryawan','modalTambahKunjungan'
-        ,'modalExportNasabah','modalFilter','modalExportPelaporan'];
+        ,'modalExportNasabah','modalFilter','modalExportPelaporan','modalTambahNasabah'];
     
     modalIDs.forEach(id => {
         const m = document.getElementById(id);
