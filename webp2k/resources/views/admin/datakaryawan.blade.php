@@ -218,6 +218,7 @@ function closeModalDetail() { document.getElementById('modalDetailKaryawan').sty
 function openModalKunjungan() {
     // 1. Panggil fungsi untuk mengambil daftar karyawan terbaru
     refreshKaryawanDropdown();
+    refreshNoAnggotaDropdown();
     
     // 2. Tampilkan modal dengan flex agar posisi di tengah
     const modal = document.getElementById('modalTambahKunjungan');
@@ -230,8 +231,9 @@ function closeModalKunjungan() {
     const modal = document.getElementById('modalTambahKunjungan');
     if (modal) {
         modal.style.display = 'none';
-        // Reset form agar inputan bersih saat dibuka kembali
+        // Reset form dan field readonly
         document.getElementById('formTambahKunjungan').reset();
+        resetFormKunjungan(); 
     }
 }
 
@@ -504,6 +506,63 @@ function confirmLogout() {
                 console.error("Form logout tidak ditemukan!");
             }
         }
+    });
+}
+
+// FUNGSI AUTO-FILL NASABAH BERDASARKAN NO ANGSURAN
+// 1. FUNGSI AUTO-FILL SAAT DROPDOWN DIPILIH
+$(document).on('change', '#dropdown_no_angsuran', function() {
+    let noAngsuran = $(this).val();
+    
+    if (noAngsuran) {
+        $('#display_nama').val('Memuat data...');
+
+        $.ajax({
+            url: '/admin/get-nasabah/' + noAngsuran,
+            type: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    $('#display_nama').val(response.data.nasabah);
+                    $('#display_alamat').val(response.data.alamat);
+                    $('#display_kol').val(response.data.kol);
+                } else {
+                    Swal.fire('Info', 'Data nasabah tidak ditemukan', 'info');
+                    resetFormKunjungan();
+                }
+            },
+            error: function() {
+                Swal.fire('Error', 'Gagal menghubungi server', 'error');
+                resetFormKunjungan();
+            }
+        });
+    } else {
+        resetFormKunjungan();
+    }
+});
+
+// 2. FUNGSI RESET INPUTAN MODAL
+function resetFormKunjungan() {
+    $('#display_nama').val('');
+    $('#display_alamat').val('');
+    $('#display_kol').val('');
+    $('#dropdown_no_angsuran').val('');
+}
+
+// 3. FUNGSI LOAD DAFTAR NOMOR ANGGOTA (Panggil saat modal dibuka)
+function refreshNoAnggotaDropdown() {
+    $.get("/admin/get-daftar-no-anggota", function(data) {
+        let dropdown = $('#dropdown_no_angsuran');
+        dropdown.empty().append('<option value="">-- Pilih No. Anggota --</option>');
+        
+        if (data && data.length > 0) {
+            data.forEach(n => {
+                dropdown.append(`<option value="${n.no_angsuran}">${n.no_angsuran} - ${n.nasabah}</option>`);
+            });
+            console.log("Data nasabah berhasil dimuat ke dropdown");
+        }
+    }).fail(function(xhr) {
+        console.error("Gagal memuat daftar nasabah:", xhr.statusText);
     });
 }
 

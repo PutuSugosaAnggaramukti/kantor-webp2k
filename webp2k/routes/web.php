@@ -40,6 +40,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
     Route::get('/nasabah-content', [NasabahController::class, 'nasabahContent']);
     Route::post('/nasabah/store', [NasabahController::class, 'store'])->name('nasabah.store');
+    Route::get('/get-daftar-no-anggota', [NasabahController::class, 'getDaftarNoAnggota']);
+    Route::get('/get-nasabah/{no_angsuran}', [NasabahController::class, 'getNasabah']);
     Route::get('/nasabah-detail/{no_angsuran}-content', [NasabahController::class, 'detail']);
     Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
     Route::get('/pelaporan-detail/{id_ao}-content', [PelaporanController::class, 'detailAo'])->name('pelaporan.detail');

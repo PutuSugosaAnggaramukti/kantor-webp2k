@@ -20,11 +20,6 @@
             </div>
 
             <div class="form-group">
-                <label>Keterangan Nasabah</label>
-                <input type="text" name="keterangan_nasabah" class="form-control">
-            </div>
-
-            <div class="form-group">
                 <label>Apakah nasabah ada di lokasi?</label>
                 <select name="ada_di_lokasi" class="form-control">
                     <option value="Ada">Ada</option>
@@ -33,7 +28,7 @@
             </div>
 
             <div class="form-group">
-                <label>Catatan</label>
+                <label>Hasil Kunjungan</label>
                 <textarea name="catatan" class="form-control"></textarea>
             </div>
 

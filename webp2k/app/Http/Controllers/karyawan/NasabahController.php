@@ -33,9 +33,8 @@ class NasabahController extends Controller
         return view('admin.partials.pengunjung_nasabah', compact('histori_kunjungan'));
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
     {
-        // 1. Validasi input dari modal
         $request->validate([
             'no_angsuran' => 'required|unique:nasabahs,no_angsuran',
             'nasabah'     => 'required',
@@ -44,13 +43,14 @@ class NasabahController extends Controller
         ]);
 
         try {
-            // 2. Simpan dengan nilai default untuk kolom yang wajib diisi di DB
             Nasabah::create([
                 'no_angsuran'   => $request->no_angsuran,
                 'nasabah'       => $request->nasabah,
                 'alamat'        => $request->alamat,
                 'kol'           => $request->kol,
-                // Nilai di bawah ini ditambahkan agar database tidak error 500 (NOT NULL constraint)
+                
+                'kode_ao'       => '-',  
+                'nama_ao'       => '-',  
                 'kode'          => '-', 
                 'nominal'       => 0,
                 'sisa_pokok'    => 0,
@@ -58,10 +58,31 @@ class NasabahController extends Controller
                 'bulan'         => now()->format('Y-m'),
             ]);
 
-            return response()->json(['success' => 'Data berhasil disimpan!']);
+            return response()->json(['success' => 'Nasabah berhasil ditambahkan!']);
         } catch (\Exception $e) {
-            // Jika masih error, ini akan menampilkan pesan error database di SweetAlert
             return response()->json(['errors' => ['db' => [$e->getMessage()]]], 500);
         }
+    }
+
+    public function getDaftarNoAnggota()
+    {
+        return response()->json(Nasabah::select('no_angsuran', 'nasabah')->get());
+    }
+
+    public function getNasabah($no_angsuran)
+    {
+        $nasabah = Nasabah::where('no_angsuran', $no_angsuran)->first();
+
+        if ($nasabah) {
+            return response()->json([
+                'success' => true,
+                'data'    => $nasabah
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Data tidak ditemukan'
+        ]);
     }
 }

@@ -30,17 +30,17 @@
 
 <div id="container-nasabah">
     <div class="table-responsive">
-        <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background-color: #fff;">
+       <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background-color: #fff;">
             <thead>
                 <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #fcfcfc;">
                     <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
-                    <th style="padding: 15px; border-right: 2px solid #000; width: 120px;">No.Ang</th>
+                    <th style="padding: 15px; border-right: 2px solid #000; width: 120px;">No. Ang</th>
                     <th style="padding: 15px; border-right: 2px solid #000;">Nama</th>
-                    <th style="padding: 15px; border-right: 2px solid #000; width: 180px;">Jml Pengunjung</th>
-                    <th style="padding: 15px; width: 150px;">Option</th>
+                    <th style="padding: 15px; border-right: 2px solid #000;">Alamat</th>
+                    <th style="padding: 15px; width: 100px;">KOL</th>
                 </tr>
             </thead>
-        <tbody id="isi-tabel-nasabah">
+            <tbody id="isi-tabel-nasabah">
                 @forelse($nasabah_all as $nasabah)
                 <tr style="border-bottom: 2px solid #000; font-weight: 700; text-align: center;">
                     <td style="padding: 15px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
@@ -50,23 +50,21 @@
                     </td>
                     
                     <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
-                        {{ $nasabah->nama_nasabah }}
+                        {{ $nasabah->nasabah }} {{-- Sesuaikan jika kolom di DB namanya 'nasabah' --}}
                     </td>
-                    
-                    <td style="padding: 15px; border-right: 2px solid #000;">
-                        {{ $nasabah->jml_pengunjung }}
+
+                    <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
+                        {{ $nasabah->alamat }}
                     </td>
                     
                     <td style="padding: 15px;">
-                        <button class="btn-next" onclick="loadAdminPage('nasabah-detail/{{ trim($nasabah->no_angsuran) }}')" style="background: #3f36b1; color: #fff; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer;">
-                            NEXT →
-                        </button>
+                        {{ $nasabah->kol }}
                     </td>
                 </tr>
                 @empty
                 <tr>
                     <td colspan="5" style="padding: 30px; text-align: center; font-weight: bold; color: #888;">
-                        Belum ada data nasabah. Silakan input kunjungan terlebih dahulu.
+                        Belum ada data nasabah.
                     </td>
                 </tr>
                 @endforelse

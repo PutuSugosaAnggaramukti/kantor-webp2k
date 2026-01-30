@@ -94,54 +94,52 @@ class KunjunganController extends Controller
         ]);
     }
 
- public function store(Request $request)
-{
-    $nama_file_foto = null;
-    $koordinat_final = $request->koordinat; 
+    public function store(Request $request)
+    {
+        $nama_file_foto = null;
+        $koordinat_final = $request->koordinat; 
 
-    if ($request->hasFile('foto_kunjungan')) {
-        $file = $request->file('foto_kunjungan');
-        $path = $file->getRealPath();
+        if ($request->hasFile('foto_kunjungan')) {
+            $file = $request->file('foto_kunjungan');
+            $path = $file->getRealPath();
 
-        try {
-            if (function_exists('exif_read_data')) {
-                $exif = @exif_read_data($path);
-                
-                if ($exif && isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
-                    $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-                    $lng = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+            try {
+                if (function_exists('exif_read_data')) {
+                    $exif = @exif_read_data($path);
                     
-                    if ($lat != 0 && $lng != 0) {
-                        $koordinat_final = "$lat, $lng";
+                    if ($exif && isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
+                        $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+                        $lng = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+                        
+                        if ($lat != 0 && $lng != 0) {
+                            $koordinat_final = "$lat, $lng";
+                        }
                     }
                 }
+            } catch (\Exception $e) {
+                // Error log jika diperlukan
             }
-        } catch (\Exception $e) {
-            // Error log jika diperlukan
+
+            $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
         }
 
-        $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
-        $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
+        // Prosedur Simpan: Field 'keterangan_nasabah' sudah dihapus
+        \DB::table('kunjungans')->insert([
+            'kode_ao'        => auth()->user()->kode_ao,
+            'no_nasabah'     => $request->no_nasabah,
+            'nama_nasabah'   => $request->nama_nasabah,
+            'ada_di_lokasi'  => $request->ada_di_lokasi,
+            'catatan'        => $request->catatan, 
+            'foto_kunjungan' => $nama_file_foto, 
+            'koordinat'      => $koordinat_final, 
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Data kunjungan berhasil disimpan!');
     }
-
-    // PERBAIKAN: Gunakan DB::table agar data masuk ke tabel 'kunjungans'
-    // Bukan ke tabel 'data_kunjungan_adms'
-    \DB::table('kunjungans')->insert([
-        'kode_ao'            => auth()->user()->kode_ao,
-        'no_nasabah'         => $request->no_nasabah,
-        'nama_nasabah'       => $request->nama_nasabah,
-        'ada_di_lokasi'      => $request->ada_di_lokasi,
-        'keterangan_nasabah' => $request->keterangan_nasabah,
-        'catatan'            => $request->catatan,
-        'foto_kunjungan'     => $nama_file_foto, 
-        'koordinat'          => $koordinat_final, 
-        'created_at'         => now(),
-        'updated_at'         => now(),
-    ]);
-
-    return redirect()->back()->with('success', 'Data kunjungan berhasil disimpan!');
-}
-
+    
     private function getGps($exifCoord, $hemi) 
     {
         $degrees = count($exifCoord) > 0 ? $this->getFraction($exifCoord[0]) : 0;

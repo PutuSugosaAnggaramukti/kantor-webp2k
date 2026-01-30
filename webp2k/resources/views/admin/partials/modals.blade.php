@@ -208,60 +208,54 @@
 </div>
 
 <div id="modalTambahKunjungan" class="modal-custom" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
-    <div style="background-color: white; padding: 25px; border-radius: 15px; width: 500px; max-width: 90%; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+    <div style="background-color: white; padding: 25px; border-radius: 15px; width: 500px; max-width: 90%; box-shadow: 0 5px 15px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
             <h3 style="margin: 0; font-weight: 800;">Tambah Jadwal Kunjungan</h3>
             <button onclick="closeModalKunjungan()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
         
-       <form id="formTambahKunjungan">
-            @csrf
-            <div style="margin-bottom: 15px;">
+       <form id="formTambahKunjungan" style="padding-bottom: 15px;"> @csrf
+            <div style="margin-bottom: 12px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama AO (Karyawan)</label>
                 <select name="karyawan_id" id="selectKaryawan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
                     <option value="">-- Pilih AO --</option>
                 </select>
             </div>
 
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama Nasabah</label>
-                <input type="text" name="nama_nasabah" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Alamat</label>
-                <input type="text" name="alamat_nasabah" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">KOL</label>
-                <select name="kol" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
-                    <option value="1">KOL 1</option>
-                    <option value="2">KOL 2</option>
-                    <option value="3">KOL 3</option>
-                    <option value="4">KOL 4</option>
-                    <option value="5">KOL 5</option>
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota</label>
+                <select name="no_angsuran" id="dropdown_no_angsuran" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px; background-color: #fff9c4;">
+                    <option value="">-- Pilih No. Anggota --</option>
                 </select>
             </div>
 
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Bulan</label>
-                <input type="month" name="bulan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama Nasabah</label>
+                <input type="text" name="nama_nasabah" id="display_nama" readonly style="width: 100%; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #e9ecef;">
             </div>
 
-           <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Tanggal Kunjungan</label>
-                <input type="date" name="tanggal" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Alamat</label>
+                <input type="text" name="alamat_nasabah" id="display_alamat" readonly style="width: 100%; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #e9ecef;">
             </div>
 
-            <div style="margin-bottom: 15px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Angsuran</label>
-                <input type="text" name="no_angsuran" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">KOL</label>
+                <input type="text" name="kol" id="display_kol" readonly style="width: 100%; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #e9ecef;">
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-                <button type="button" onclick="closeModalKunjungan()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #000; background: #fff; font-weight: 700; cursor: pointer;">Batal</button>
-                <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: #28a745; color: #fff; border: 2px solid #000; font-weight: 700; cursor: pointer;">Simpan</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;"> <div style="flex: 1;">
+                    <label style="display: block; font-weight: 700; margin-bottom: 5px;">Bulan</label>
+                    <input type="month" name="bulan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; font-weight: 700; margin-bottom: 5px;">Tanggal Kunjungan</label>
+                    <input type="date" name="tanggal" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; padding-bottom: 10px;"> <button type="button" onclick="closeModalKunjungan()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #000; background: #fff; font-weight: 700; cursor: pointer;">Batal</button>
+                <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: #28a745; color: #fff; border: 2px solid #000; font-weight: 700; cursor: pointer;">Simpan Jadwal</button>
             </div>
         </form>
     </div>
