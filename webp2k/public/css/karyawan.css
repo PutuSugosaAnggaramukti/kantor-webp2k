@@ -722,6 +722,42 @@ button:active {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
+/* --- KODE LAMA KAMU (TETAP PERTAHANKAN) --- */
+.pagination {
+    display: flex;
+    list-style: none;
+    gap: 5px;
+    justify-content: center;
+    padding: 20px 0;
+}
+.pagination li a, .pagination li span {
+    padding: 8px 16px;
+    border: 2px solid #000; /* Saya tebalkan sedikit biar mantap */
+    text-decoration: none;
+    color: #000;
+    font-weight: bold;
+    background: #fff;
+    border-radius: 4px;
+}
+.pagination li.active span {
+    background: #000;
+    color: #fff;
+}
+
+/* --- TAMBAHAN BARU UNTUK MENGHILANGKAN PREVIOUS/NEXT --- */
+
+/* 1. Hilangkan elemen teks info "Showing 1 to 10..." */
+nav .flex.justify-between.flex-1.sm\:hidden,
+nav div.hidden.sm\:flex-1.sm\:flex.sm\:items-center.sm\:justify-between div:first-child {
+    display: none !important;
+}
+
+/* 2. Hilangkan tombol Previous (<) dan Next (>) di dalam list angka */
+.pagination li:first-child, 
+.pagination li:last-child {
+    display: none !important;
+}
+
 /* ANIMASI MODAL */
 @keyframes fadeInOverlay {
     from { opacity: 0; }

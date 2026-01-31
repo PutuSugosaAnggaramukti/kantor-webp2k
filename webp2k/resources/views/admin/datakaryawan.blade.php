@@ -580,6 +580,23 @@ function refreshNoAnggotaDropdown() {
         }
     }
 
+$(document).on('click', '.pagination a', function(e) {
+    e.preventDefault();
+    let url = $(this).attr('href');
+
+    $.ajax({
+        url: url,
+        success: function(data) {
+            // Kita ganti seluruh isi container agar tidak double
+            // 'data' di sini adalah hasil render dari nasabah_table.blade.php
+            $('#container-nasabah').html(data);
+            
+            // Scroll ke atas tabel agar rapi
+            $('html, body').animate({ scrollTop: $("#container-nasabah").offset().top - 100 }, 100);
+        }
+    });
+});
+
 </script>
 </body>
 </html>

@@ -52,7 +52,9 @@
             <tbody id="isi-tabel-nasabah">
                 @forelse($nasabah_all as $nasabah)
                 <tr style="border-bottom: 2px solid #000; font-weight: 700; text-align: center;">
-                    <td style="padding: 15px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
+                    <td style="padding: 15px; border-right: 2px solid #000;">
+                        {{ ($nasabah_all->currentPage() - 1) * $nasabah_all->perPage() + $loop->iteration }}
+                    </td>
                     
                     <td style="padding: 15px; border-right: 2px solid #000;">
                         {{ $nasabah->no_angsuran }}
@@ -79,6 +81,9 @@
                 @endforelse
             </tbody>
         </table>
+            <div class="mt-4">
+                {{ $nasabah_all->links() }}
+            </div>
     </div>
 </div>
 

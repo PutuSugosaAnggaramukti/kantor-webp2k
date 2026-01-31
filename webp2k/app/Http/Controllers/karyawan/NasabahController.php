@@ -13,14 +13,17 @@ use Illuminate\Http\Request;
 class NasabahController extends Controller
 {
 
-    public function nasabahContent(Request $request)
+  public function nasabahContent(Request $request)
     {
-        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
+        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->paginate(10)->withQueryString();
 
+        // Jika lewat AJAX (klik pagination)
         if ($request->ajax()) {
+            // Render HANYA isi tabel dan link paginationnya saja
             return view('admin.partials.nasabah_table', compact('nasabah_all'))->render();
         }
 
+        // Jika akses pertama kali (bukan AJAX)
         return view('admin.partials.nasabah_table', compact('nasabah_all'));
     }
 
@@ -87,22 +90,18 @@ class NasabahController extends Controller
         ]);
     }
 
-   public function importExcel(Request $request) 
+    public function importExcel(Request $request) 
     {
-        $request->validate([
-            'file' => 'required|mimes:xlsx,xls,csv'
-        ]);
+        $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         try {
-            Excel::import(new NasabahImport, $request->file('file'));
+            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\NasabahImport, $request->file('file'));
             
-            // GANTI back() dengan redirect ke route dashboard + parameter page
             return redirect()->route('admin.dashboard', ['page' => 'nasabah'])
                             ->with('success', 'Data Nasabah berhasil diimport!');
         } catch (\Exception $e) {
-            // Jika error, tetap kembalikan ke halaman nasabah agar modal tidak hilang sia-sia
-            return redirect()->route('admin.dashboard', ['page' => 'nasabah'])
-                            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            // Jika masih ada error field lain, ini akan menampilkannya
+            return "Terjadi Error Database: " . $e->getMessage(); 
         }
     }
 }

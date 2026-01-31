@@ -11,13 +11,20 @@ class NasabahImport implements ToModel, WithHeadingRow
     public function model(array $row)
     {
         return new Nasabah([
-            'no_angsuran' => $row['no_ang'], 
-            'nasabah'     => $row['nama'],   
-            'alamat'      => $row['alamat'],  
-            'kol'         => $row['kol'],     
-            'bulan'       => date('Y-m'),    
-            'nominal'     => 0,              
-            'sisa_pokok'  => 0,              
+            // Gunakan round() untuk menghilangkan .0 dari Excel
+            'no_angsuran'   => (string) round($row['no_ang']),   
+            'nasabah'       => $row['nama'],     
+            'alamat'        => $row['alamat'],   
+            'kol'           => (int) $row['kol'],      
+            'nominal'       => 0,                
+            'sisa_pokok'    => 0,               
+            'bulan'         => date('Y-m'),      
+            'kode'          => '-',              
+            'sudah_kunjung' => 0,
+            
+            // TAMBAHKAN INI untuk mengatasi error 1364
+            'kode_ao'       => '-', 
+            'nama_ao'       => '-'
         ]);
     }
 }
