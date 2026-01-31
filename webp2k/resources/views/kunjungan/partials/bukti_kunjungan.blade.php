@@ -59,13 +59,28 @@
         @endif
     </div>
 
-    {{-- Catatan --}}
+   {{-- Catatan --}}
     <div class="content-section">
-        <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 10px;">Catatan</h3>
-        <div style="width: 100%; min-height: 150px; border: 1.5px solid #333; border-radius: 10px; padding: 15px; background-color: #fff;">
-            <p style="margin: 0; color: #333; font-weight: 500;">
-                {{ $detail->catatan ?? 'Tidak ada catatan kunjungan.' }}
+        <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 15px;">Catatan Kunjungan</h3>
+        <div style="width: 100%; min-height: 150px; border: 1.5px solid #333; border-radius: 15px; padding: 20px; background-color: #fff; position: relative;">
+            
+            {{-- Teks Catatan Utama --}}
+            <p style="margin: 0; color: #333; font-weight: 500; line-height: 1.6; font-size: 16px;">
+                {!! nl2br(e($detail->catatan ?? 'Tidak ada catatan kunjungan.')) !!}
             </p>
+
+            {{-- Label Janji Bayar Khusus (Jika field tanggal diisi) --}}
+            @if($detail->tgl_janji_bayar)
+                <div style="margin-top: 20px; padding: 12px 15px; background-color: #fff9f0; border-left: 4px solid #e67e22; border-radius: 5px;">
+                    <span style="display: block; font-size: 12px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">
+                        <i class="fa-solid fa-clock"></i> Status Kesanggupan
+                    </span>
+                    <p style="margin: 0; color: #2c3e50; font-weight: 700; font-size: 15px;">
+                        Nasabah menyanggupi akan membayar pada tanggal: 
+                        <span style="color: #e67e22;">{{ \Carbon\Carbon::parse($detail->tgl_janji_bayar)->translatedFormat('d F Y') }}</span>
+                    </p>
+                </div>
+            @endif
         </div>
     </div>
 

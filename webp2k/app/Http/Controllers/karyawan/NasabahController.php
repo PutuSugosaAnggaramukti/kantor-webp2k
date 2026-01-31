@@ -4,6 +4,7 @@ namespace App\Http\Controllers\karyawan;
 
 use App\Http\Controllers\Controller;
 use App\Exports\NasabahExport;
+use App\Imports\NasabahImport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Nasabah;
 use App\Models\DataKunjunganAdm;
@@ -84,5 +85,24 @@ class NasabahController extends Controller
             'success' => false,
             'message' => 'Data tidak ditemukan'
         ]);
+    }
+
+   public function importExcel(Request $request) 
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            Excel::import(new NasabahImport, $request->file('file'));
+            
+            // GANTI back() dengan redirect ke route dashboard + parameter page
+            return redirect()->route('admin.dashboard', ['page' => 'nasabah'])
+                            ->with('success', 'Data Nasabah berhasil diimport!');
+        } catch (\Exception $e) {
+            // Jika error, tetap kembalikan ke halaman nasabah agar modal tidak hilang sia-sia
+            return redirect()->route('admin.dashboard', ['page' => 'nasabah'])
+                            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 }

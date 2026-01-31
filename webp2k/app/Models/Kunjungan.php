@@ -21,6 +21,7 @@ class Kunjungan extends Model
         'catatan',
         'foto_kunjungan',
         'koordinat',
+        'tgl_janji_bayar',
     ];
 
     public function karyawan()

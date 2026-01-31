@@ -198,8 +198,18 @@
     }
 
         function closeModal() {
-            document.getElementById('visitModal').style.display = 'none';
+        const modal = document.getElementById('visitModal');
+        if (modal) {
+            modal.style.display = 'none';
+            // Reset form agar tidak ada data nyangkut jika dibuka lagi
+            const form = modal.querySelector('form');
+            if (form) form.reset();
+            
+            // Bersihkan status lokasi
+            const statusText = document.getElementById('location-status');
+            if (statusText) statusText.innerHTML = '';
         }
+    }
 
         function openDetailModal(kode, angsuran, nama, alamat, nominal, sisa, kol, kodeAo, namaAo) {
             try {
@@ -255,6 +265,15 @@
                 btnAkun.style.color = '#64748b';
             }
         }
+    </script>
+
+    <script>
+        window.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeModal();
+            closeDetailModal();
+        }
+    });
     </script>
 
     <script>
@@ -328,6 +347,34 @@
                 }
             });
         }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        @if(session('success'))
+            const modal = document.getElementById('visitModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: "{{ session('success') }}",
+                showConfirmButton: false,
+                timer: 2500,
+                timerProgressBar: true
+            });
+        @endif
+        
+        @if($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: 'Pastikan semua field terisi dengan benar (Foto maks 5MB)',
+            });
+        @endif
     });
 </script>
     

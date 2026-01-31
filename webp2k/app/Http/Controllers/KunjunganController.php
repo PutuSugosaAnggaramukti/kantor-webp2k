@@ -131,6 +131,7 @@ class KunjunganController extends Controller
             'nama_nasabah'   => $request->nama_nasabah,
             'ada_di_lokasi'  => $request->ada_di_lokasi,
             'catatan'        => $request->catatan, 
+            'tgl_janji_bayar'=> $request->tgl_janji_bayar,
             'foto_kunjungan' => $nama_file_foto, 
             'koordinat'      => $koordinat_final, 
             'created_at'     => now(),

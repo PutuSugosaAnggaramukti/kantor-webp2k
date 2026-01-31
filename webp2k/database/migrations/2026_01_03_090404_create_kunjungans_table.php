@@ -19,7 +19,7 @@ return new class extends Migration
             $table->enum('ada_di_lokasi', ['Ada', 'Tidak Ada']);
             $table->text('catatan')->nullable();
             $table->string('foto_kunjungan'); // Menyimpan path file gambar
-            $table->string('koordinat')->nullable(); // Untuk menyimpan latitude, longitude
+            $table->string('koordinat')->nullable(); 
             $table->timestamps();
         });
     }

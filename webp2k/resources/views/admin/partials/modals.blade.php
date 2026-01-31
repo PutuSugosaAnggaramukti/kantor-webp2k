@@ -303,3 +303,23 @@
     </div>
 </div>
 
+<div id="importNasabahModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="modal-content" style="background: white; padding: 30px; border-radius: 20px; width: 400px; position: relative;">
+        <h2 style="margin-top: 0; margin-bottom: 20px; font-weight: 700;">Import Data Nasabah</h2>
+        
+        <form action="{{ route('admin.nasabah.import') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Pilih File (Excel/CSV)</label>
+                <input type="file" name="file" accept=".xlsx, .xls, .csv" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
+                <small style="color: #666; display: block; mt-2;">Format: No_Ang, Nama, Alamat, Kol</small>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeModalImportNasabah()" style="background: #eee; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer;">Batal</button>
+                <button type="submit" style="background: #2196F3; color: white; border: none; padding: 8px 20px; border-radius: 10px; font-weight: 600; cursor: pointer;">Mulai Import</button>
+            </div>
+        </form>
+    </div>
+</div>
+

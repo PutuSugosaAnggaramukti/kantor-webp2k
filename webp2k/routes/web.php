@@ -54,6 +54,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/kunjungan/export', [AdmKunjunganController::class, 'exportExcel'])->name('admin.kunjungan.export');
     Route::get('/nasabah/filter', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.filter');
     Route::get('/nasabah/export', [NasabahController::class, 'exportExcel'])->name('admin.nasabah.export');
+    Route::post('/nasabah/import', [NasabahController::class, 'importExcel'])->name('admin.nasabah.import');
     Route::get('/pelaporan/export', [PelaporanController::class, 'exportExcel'])->name('admin.pelaporan.export');
 });
 

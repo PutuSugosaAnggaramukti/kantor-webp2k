@@ -566,6 +566,20 @@ function refreshNoAnggotaDropdown() {
     });
 }
 
+    function openModalImportNasabah() {
+        const modal = document.getElementById('importNasabahModal');
+        if (modal) {
+            modal.style.display = 'flex';
+        }
+    }
+
+    function closeModalImportNasabah() {
+        const modal = document.getElementById('importNasabahModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
 </script>
 </body>
 </html>

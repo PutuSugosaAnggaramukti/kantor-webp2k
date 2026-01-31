@@ -9,15 +9,24 @@
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <div style="display: flex; gap: 10px;">
-       <button onclick="openModalExportNasabah()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer;">
+        <button onclick="openModalExportNasabah()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer;">
             <span style="margin-right: 8px;">X</span> Export
         </button>
-       <button onclick="openModalFilter()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#45a049'; this.style.transform='translateY(-2px)'" onmouseout="this.style.backgroundColor='#4CAF50'; this.style.transform='translateY(0)'">
+
+        <button onclick="openModalImportNasabah()" style="background-color: #2196F3; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#1e88e5'; this.style.transform='translateY(-2px)'" onmouseout="this.style.backgroundColor='#2196F3'; this.style.transform='translateY(0)'">
+            <span style="margin-right: 8px;">
+                <i class="fa-solid fa-file-import"></i>
+            </span> 
+            Import Data
+        </button>
+
+        <button onclick="openModalFilter()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#45a049'; this.style.transform='translateY(-2px)'" onmouseout="this.style.backgroundColor='#4CAF50'; this.style.transform='translateY(0)'">
             <span style="margin-right: 8px;">
                 <i class="fa-solid fa-sliders"></i>
             </span> 
             Filter Data
         </button>
+
         <button onclick="openModalTambahNasabah()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; cursor: pointer; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#45a049'; this.style.transform='translateY(-2px)'" onmouseout="this.style.backgroundColor='#4CAF50'; this.style.transform='translateY(0)'">
             <span style="margin-right: 8px;">
                 <i class="fa fa-plus"></i>
@@ -72,3 +81,4 @@
         </table>
     </div>
 </div>
+
