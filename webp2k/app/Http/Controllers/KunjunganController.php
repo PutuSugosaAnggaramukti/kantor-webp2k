@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\DataKunjunganAdm;
 use App\Models\HasilKunjungan;
 use App\Models\Nasabah;
+use App\Helpers\ExifHelper;
 use App\Models\Karyawan;
 use App\Models\Kunjungan;
 use Illuminate\Http\Request;
@@ -32,13 +33,40 @@ class KunjunganController extends Controller
         return view('kunjungan.datakunjungan', compact('data'));
     }
 
-    public function dataKunjunganContent()
-    {
-        $karyawanId = Auth::guard('karyawan')->id();
-        $data = DataKunjunganAdm::where('karyawan_id', $karyawanId)->get();
-    
-        return view('kunjungan.partials.data_table', compact('data'));
+   public function dataKunjunganContent()
+{
+    $karyawanId = Auth::guard('karyawan')->id();
+    $data = DataKunjunganAdm::where('karyawan_id', $karyawanId)->get();
+
+    foreach ($data as $item) {
+        // 1. PASTIKAN KOLOMNYA BENAR (foto vs foto_kunjungan)
+        $namaFile = $item->foto_kunjungan ?? $item->foto; 
+        $path = public_path('uploads/kunjungan/' . $namaFile); 
+        
+        $item->waktu_foto = "Waktu tidak terdeteksi";
+
+        if (!empty($namaFile) && file_exists($path)) {
+            // 2. Cek apakah extension EXIF aktif
+            if (function_exists('exif_read_data')) {
+                $exif = @exif_read_data($path);
+                
+                if ($exif && isset($exif['DateTimeOriginal'])) {
+                    $date = new \DateTime($exif['DateTimeOriginal']);
+                    $item->waktu_foto = $date->format('d-m-Y H:i:s');
+                } else {
+                    // Cadangan: Ambil waktu modifikasi file jika metadata hilang
+                    $item->waktu_foto = date("d-m-Y H:i:s", filemtime($path)) . " (System)";
+                }
+            } else {
+                $item->waktu_foto = "Fungsi EXIF Off";
+            }
+        } else {
+            $item->waktu_foto = "File tidak ditemukan";
+        }
     }
+
+    return view('kunjungan.partials.data_table', compact('data'));
+}
 
     public function laporanKunjunganContent()
     {
@@ -80,17 +108,17 @@ class KunjunganController extends Controller
         return view('kunjungan.partials.bukti_kunjungan', compact('detail'));
     }
 
-   public function showBukti($id)
+    public function showBukti($id)
     {
-        $dataKunjungan = Kunjungan::findOrFail($id);
+        $detail = Kunjungan::findOrFail($id);
 
         if (request()->ajax()) {
-            return view('kunjungan.partials.bukti_kunjungan', compact('dataKunjungan'));
+            return view('kunjungan.partials.bukti_kunjungan', compact('detail'))->render();
         }
 
         return view('kunjungan.datakunjungan', [
             'data' => Kunjungan::all(), 
-            'content' => view('kunjungan.partials.bukti_kunjungan', compact('dataKunjungan'))->render()
+            'content' => view('kunjungan.partials.bukti_kunjungan', compact('detail'))->render()
         ]);
     }
 

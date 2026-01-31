@@ -1,134 +1,144 @@
+@php
+    $pathFoto = public_path('uploads/kunjungan/' . $detail->foto_kunjungan);
+    $waktuFoto = null;
+    $isOldPhoto = false;
+
+    if (!empty($detail->foto_kunjungan) && file_exists($pathFoto)) {
+        // Gunakan @ untuk meredam error jika file bukan JPEG murni
+        $exif = @exif_read_data($pathFoto);
+        
+        // 1. Ambil Waktu (Coba beberapa tag sekaligus)
+        $dateTag = $exif['DateTimeOriginal'] ?? $exif['DateTime'] ?? $exif['FileDateTime'] ?? null;
+        
+        if ($dateTag) {
+            $waktuFoto = \Carbon\Carbon::parse($dateTag);
+            $waktuUpload = \Carbon\Carbon::parse($detail->created_at);
+            if ($waktuFoto->diffInHours($waktuUpload) > 2) {
+                $isOldPhoto = true;
+            }
+        } else {
+            // Jika benar-benar kosong, ambil waktu file sistem
+            $waktuFoto = \Carbon\Carbon::createFromTimestamp(filemtime($pathFoto));
+        }
+    }
+@endphp
+
 <style>
-    #menu-laporan {
-        background-color: #ffffff !important; 
-        color: #4e4bc1 !important;           
-        font-weight: bold !important;
-        border-radius: 10px 0 0 10px !important;
-        box-shadow: -2px 0 10px rgba(0,0,0,0.1) !important;
+    .detail-section {
+        background: #f8f9fa; /* Background abu-abu lembut */
+        border: 1px solid #e9ecef;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
     }
-
-    #menu-laporan i {
-        color: #4e4bc1 !important;
+    .section-label {
+        display: block;
+        font-size: 13px;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        margin-bottom: 12px;
     }
-
-    .nav-item:not(#menu-laporan) {
-        background-color: transparent !important;
-        color: #ffffff !important;
+    .section-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #2d3436;
+        margin: 0;
     }
 </style>
 
-
 <div class="page-title">
-    <h2>Dokumen</h2>
+    <h2>Detail Bukti</h2>
     <div class="breadcrumb">
        <a href="javascript:void(0)" onclick="loadPage('dashboard')">Dashboard > </a> 
        <a href="javascript:void(0)" onclick="loadPage('laporan-kunjungan')">Laporan Kunjungan > </a> 
-       <span style="color: #3b82f6;">Bukti Kunjungan</span>
+       <span style="color: #3b82f6; font-weight: 600;">Detail Bukti</span>
     </div>
 </div>
 
-<div class="main-card" style="background: white; border-radius: 20px; padding: 30px; margin-top: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+<div class="main-card" style="background: white; border-radius: 20px; padding: 30px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
     
-    {{-- Foto Kunjungan --}}
-    <div class="content-section" style="margin-bottom: 30px;">
-        <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 15px;">Foto Kunjungan</h3>
-        <div class="photo-container" style="width: 100%; max-width: 400px; border-radius: 15px; overflow: hidden; border: 1px solid #ddd;">
-            @if($detail->foto_kunjungan)
-               <img src="{{ asset('uploads/kunjungan/' . $detail->foto_kunjungan) }}" alt="Foto Rumah" style="width: 100%; display: block;">
-            @else
-                <div style="padding: 40px; text-align: center; background: #f9f9f9; color: #999;">
-                    <i class="fa-solid fa-image" style="font-size: 40px; margin-bottom: 10px;"></i>
-                    <p>Tidak ada foto terlampir</p>
+    <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
+        
+        {{-- SISI KIRI: FOTO --}}
+        <div>
+            <div class="detail-section" style="text-align: center; padding: 15px;">
+                <span class="section-label">Foto Kunjungan</span>
+                <div style="border-radius: 12px; overflow: hidden; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    @if($detail->foto_kunjungan)
+                       <img src="{{ asset('uploads/kunjungan/' . $detail->foto_kunjungan) }}" style="width: 100%; display: block;">
+                    @else
+                        <div style="padding: 60px 20px; background: #eee; color: #999;">
+                            <i class="fa-solid fa-image" style="font-size: 40px; margin-bottom: 10px;"></i><br>
+                            <span style="font-size: 14px;">Foto tidak tersedia</span>
+                        </div>
+                    @endif
                 </div>
-            @endif
+            </div>
         </div>
-    </div>
 
-    {{-- Koordinat --}}
-    <div class="content-section" style="margin-bottom: 30px;">
-        <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 10px;">Koordinat Lokasi</h3>
-        <p style="font-size: 20px; font-weight: 700; color: #000;">
-            {{ $detail->koordinat ?? 'Koordinat tidak tersedia' }}
-        </p>
-        @if($detail->koordinat)
-        <a href="https://www.google.com/maps/search/?api=1&query={{ $detail->koordinat }}" 
-            target="_blank" 
-            style="color: #3b82f6; text-decoration: none; font-size: 14px; font-weight: 600;">
-             <i class="fa-solid fa-location-dot"></i> Lihat Lokasi di Google Maps
-         </a>
-        @endif
-    </div>
-
-   {{-- Catatan --}}
-    <div class="content-section">
-        <h3 style="font-size: 22px; font-weight: 700; margin-bottom: 15px;">Catatan Kunjungan</h3>
-        <div style="width: 100%; min-height: 150px; border: 1.5px solid #333; border-radius: 15px; padding: 20px; background-color: #fff; position: relative;">
-            
-            {{-- Teks Catatan Utama --}}
-            <p style="margin: 0; color: #333; font-weight: 500; line-height: 1.6; font-size: 16px;">
-                {!! nl2br(e($detail->catatan ?? 'Tidak ada catatan kunjungan.')) !!}
-            </p>
-
-            {{-- Label Janji Bayar Khusus (Jika field tanggal diisi) --}}
-            @if($detail->tgl_janji_bayar)
-                <div style="margin-top: 20px; padding: 12px 15px; background-color: #fff9f0; border-left: 4px solid #e67e22; border-radius: 5px;">
-                    <span style="display: block; font-size: 12px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px;">
-                        <i class="fa-solid fa-clock"></i> Status Kesanggupan
-                    </span>
-                    <p style="margin: 0; color: #2c3e50; font-weight: 700; font-size: 15px;">
-                        Nasabah menyanggupi akan membayar pada tanggal: 
-                        <span style="color: #e67e22;">{{ \Carbon\Carbon::parse($detail->tgl_janji_bayar)->translatedFormat('d F Y') }}</span>
-                    </p>
+        {{-- SISI KANAN: DATA --}}
+        <div>
+            {{-- 1. Verifikasi Waktu --}}
+            <div class="detail-section" style="border-left: 5px solid {{ $isOldPhoto ? '#ff7675' : '#55efc4' }};">
+                <span class="section-label"><i class="fa-solid fa-shield-check"></i> Verifikasi Waktu Kunjungan</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <small style="color: #888; font-size: 11px;">Laporan Dikirim:</small><br>
+                        <strong style="font-size: 16px;">{{ \Carbon\Carbon::parse($detail->created_at)->translatedFormat('d M Y, H:i') }}</strong>
+                    </div>
+                    <div style="border-left: 1px solid #dee2e6; padding-left: 20px;">
+                        <small style="color: #888; font-size: 11px;">Foto Diambil:</small><br>
+                        <strong style="font-size: 16px; color: {{ $isOldPhoto ? '#d63031' : '#2d3436' }};">
+                            {{ $waktuFoto ? $waktuFoto->translatedFormat('d M Y, H:i') : 'Metadata Tidak Ditemukan' }}
+                        </strong>
+                    </div>
                 </div>
+                @if($isOldPhoto)
+                    <div style="margin-top: 15px; padding: 8px 12px; background: #fff5f5; border-radius: 6px; color: #d63031; font-size: 12px; font-weight: 700;">
+                        <i class="fa-solid fa-circle-exclamation"></i> Peringatan: Foto diambil jauh sebelum laporan dikirim!
+                    </div>
+                @endif
+            </div>
+
+            {{-- 2. Koordinat --}}
+            <div class="detail-section">
+                <span class="section-label"><i class="fa-solid fa-location-dot"></i> Koordinat Lokasi</span>
+                <p class="section-value">{{ $detail->koordinat ?? '-' }}</p>
+                @if($detail->koordinat)
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ $detail->koordinat }}" target="_blank" 
+                       style="display: inline-block; margin-top: 10px; color: #4e4bc1; text-decoration: none; font-weight: 700; font-size: 13px;">
+                        LIHAT DI GOOGLE MAPS <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                @endif
+            </div>
+
+            {{-- 3. Catatan --}}
+            <div class="detail-section">
+                <span class="section-label"><i class="fa-solid fa-pen-to-square"></i> Catatan Petugas</span>
+                <div style="background: white; padding: 15px; border-radius: 10px; border: 1px solid #e9ecef; color: #444; line-height: 1.6; font-size: 15px;">
+                    {!! nl2br(e($detail->catatan ?? 'Tidak ada catatan kunjungan.')) !!}
+                </div>
+            </div>
+
+            {{-- 4. Status Janji Bayar (Hanya Muncul Jika Ada) --}}
+            @if($detail->tgl_janji_bayar)
+            <div class="detail-section" style="background: #fff9db; border-color: #ffe066;">
+                <span class="section-label" style="color: #856404;"><i class="fa-solid fa-calendar-check"></i> Janji Bayar Nasabah</span>
+                <p class="section-value" style="color: #e67e22;">
+                    {{ \Carbon\Carbon::parse($detail->tgl_janji_bayar)->translatedFormat('d F Y') }}
+                </p>
+            </div>
             @endif
         </div>
     </div>
 
     {{-- Tombol Kembali --}}
-    <div style="margin-top: 40px;">
+    <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 25px;">
         <button onclick="loadPage('laporan-kunjungan')" 
-                style="padding: 12px 25px; background-color: #4e4bc1; color: white; border-radius: 10px; font-weight: 600; border: none; cursor: pointer;">
-            <i class="fa-solid fa-arrow-left"></i> Kembali ke Laporan
+                style="padding: 12px 30px; background-color: #4e4bc1; color: white; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s;">
+            <i class="fa-solid fa-chevron-left"></i> KEMBALI KE LAPORAN
         </button>
     </div>
 </div>
-
-<script>
-    // Opsional: Tetap jalankan JS untuk memastikan sinkronisasi DOM
-    (function() {
-        const menu = document.getElementById('menu-laporan');
-        if (menu) menu.classList.add('active');
-    })();
-</script>
-
-<script>
-    (function() {
-        /**
-         * Fungsi untuk memaksa status active pada sidebar
-         */
-        function forceSidebarActive() {
-            const menuLaporan = document.getElementById('menu-laporan');
-            
-            if (menuLaporan) {
-                // 1. Bersihkan semua class active dari nav-item lain
-                document.querySelectorAll('.nav-item').forEach(nav => {
-                    nav.classList.remove('active');
-                });
-
-                // 2. Tambahkan class active ke Laporan Kunjungan
-                menuLaporan.classList.add('active');
-
-                // 3. Jika template kamu menggunakan parent (li), aktifkan juga
-                const parentLi = menuLaporan.closest('li');
-                if (parentLi) {
-                    parentLi.classList.add('active');
-                }
-            }
-        }
-
-        // Jalankan 3x untuk memastikan tidak tertimpa proses AJAX lain
-        forceSidebarActive();
-        setTimeout(forceSidebarActive, 100);
-        setTimeout(forceSidebarActive, 500);
-    })();
-</script>
