@@ -47,14 +47,32 @@
         <div id="main-content-area" style="transition: opacity 0.3s ease;">
             
             <div id="dashboard-default-view">
-                <h3 style="margin-bottom: 1.5rem;">Statistik</h3>
+                <h3 style="margin-bottom: 1.5rem;">Statistik Kinerja</h3>
                 
-                <div class="stats-container">
-                    <div class="card-stats bg-purple">
-                        <div style="font-size: 1.1rem; opacity: 0.9;">Total Kunjungan</div>
-                        <div style="font-size: 3.5rem; font-weight: bold; margin-top: 10px;">
-                            {{ $totalKunjungan ?? 0 }}
-                        </div>
+                <div class="stats-grid">
+                    <div class="stat-card bg-rencana">
+                        <div class="stat-label">Total Rencana</div>
+                        <div class="stat-value">{{ $totalKunjungan ?? 0 }}</div>
+                        <i class="fa-solid fa-calendar-days"></i>
+                    </div>
+
+                    <div class="stat-card bg-selesai">
+                        <div class="stat-label">Sudah Dikunjungi</div>
+                        <div class="stat-value">{{ $totalSelesai ?? 0 }}</div>
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+
+                    <div class="stat-card bg-belum">
+                        <div class="stat-label">Belum Dikunjungi</div>
+                        <div class="stat-value">{{ $totalBelum ?? 0 }}</div>
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+
+                    <div class="stat-card bg-target">
+                        <div class="stat-label">AO Capai Target</div>
+                        <div class="stat-value">{{ $aoSelesaiTarget ?? 0 }}</div>
+                        <div class="kpi-note">*Min 10 & Ada KOL 5</div>
+                        <i class="fa-solid fa-award"></i>
                     </div>
                 </div>
 
@@ -94,7 +112,6 @@
                         <i class="fas fa-calendar-plus"></i>
                         <span>Input Jadwal Kunjungan</span>
                     </a>
-
                 </div>
             </div>
         </div>
@@ -129,28 +146,24 @@
             window.location.href = "{{ route('karyawan.index') }}?page=" + targetPage;
         }, 1000); 
     }
+
     function updateActiveClass(element) {
         const allMenus = document.querySelectorAll('.nav-item, .menu-item, .sub-nav-item');
         allMenus.forEach(menu => menu.classList.remove('active'));
-
-        if (element) {
-            element.classList.add('active');
-        }
+        if (element) { element.classList.add('active'); }
     }
-</script>
+    </script>
 
     <script>
       const ctx = document.getElementById('myChart').getContext('2d');
         const myChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                // Label diambil dari data nama AO
                 labels: {!! json_encode($labels) !!}, 
                 datasets: [{
                     label: 'Jumlah Kunjungan Selesai',
-                    // Data diambil dari jumlah kunjungan masing-masing AO
                     data: {!! json_encode($counts) !!},
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)', // Warna Biru
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 1,
                     borderRadius: 5
@@ -162,16 +175,11 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        ticks: {
-                            stepSize: 1 // Agar skala y selalu angka bulat
-                        }
+                        ticks: { stepSize: 1 }
                     }
                 },
                 plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
+                    legend: { display: true, position: 'top' }
                 }
             }
         });
@@ -194,13 +202,8 @@
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Aktifkan loader jika ada
                     const loader = document.getElementById('loginLoading');
-                    if (loader) {
-                        loader.style.display = 'flex';
-                    }
-
-                    // Kirim form POST ke Laravel
+                    if (loader) { loader.style.display = 'flex'; }
                     setTimeout(() => {
                         document.getElementById('logout-form').submit();
                     }, 800);

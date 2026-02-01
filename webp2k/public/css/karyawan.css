@@ -744,6 +744,10 @@ button:active {
     color: #fff;
 }
 
+#dropdown_no_angsuran option[style*="bold"] {
+        background-color: #fff5f5; /* Latar belakang kemerahan tipis */
+    }
+
 /* --- TAMBAHAN BARU UNTUK MENGHILANGKAN PREVIOUS/NEXT --- */
 
 /* 1. Hilangkan elemen teks info "Showing 1 to 10..." */

@@ -223,7 +223,7 @@
             </div>
 
             <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota</label>
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota (Wajib Pilih KOL 5 Terlebih Dahulu)</label>
                 <select name="no_angsuran" id="dropdown_no_angsuran" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px; background-color: #fff9c4;">
                     <option value="">-- Pilih No. Anggota --</option>
                 </select>

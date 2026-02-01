@@ -407,7 +407,7 @@ document.addEventListener('submit', function(e) {
                 });
                 e.target.reset();
                 closeModalKunjungan();
-                // Memanggil kembali halaman konten kunjungan agar tabel terupdate
+                refreshNoAnggotaDropdown();
                 loadAdminPage('adm-kunjungan'); 
             } else {
                 let errors = data.errors ? Object.values(data.errors).flat().join('<br>') : (data.message || 'Gagal menyimpan');
@@ -512,30 +512,14 @@ function confirmLogout() {
 // FUNGSI AUTO-FILL NASABAH BERDASARKAN NO ANGSURAN
 // 1. FUNGSI AUTO-FILL SAAT DROPDOWN DIPILIH
 $(document).on('change', '#dropdown_no_angsuran', function() {
+    let selected = $(this).find('option:selected');
     let noAngsuran = $(this).val();
     
     if (noAngsuran) {
-        $('#display_nama').val('Memuat data...');
-
-        $.ajax({
-            url: '/admin/get-nasabah/' + noAngsuran,
-            type: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    $('#display_nama').val(response.data.nasabah);
-                    $('#display_alamat').val(response.data.alamat);
-                    $('#display_kol').val(response.data.kol);
-                } else {
-                    Swal.fire('Info', 'Data nasabah tidak ditemukan', 'info');
-                    resetFormKunjungan();
-                }
-            },
-            error: function() {
-                Swal.fire('Error', 'Gagal menghubungi server', 'error');
-                resetFormKunjungan();
-            }
-        });
+        // Ambil data langsung dari atribut yang sudah kita siapkan di atas
+        $('#display_nama').val(selected.attr('data-nama'));
+        $('#display_alamat').val(selected.attr('data-alamat'));
+        $('#display_kol').val(selected.attr('data-kol'));
     } else {
         resetFormKunjungan();
     }
@@ -551,19 +535,58 @@ function resetFormKunjungan() {
 
 // 3. FUNGSI LOAD DAFTAR NOMOR ANGGOTA (Panggil saat modal dibuka)
 function refreshNoAnggotaDropdown() {
-    $.get("/admin/get-daftar-no-anggota", function(data) {
-        let dropdown = $('#dropdown_no_angsuran');
-        dropdown.empty().append('<option value="">-- Pilih No. Anggota --</option>');
-        
-        if (data && data.length > 0) {
-            data.forEach(n => {
-                dropdown.append(`<option value="${n.no_angsuran}">${n.no_angsuran} - ${n.nasabah}</option>`);
-            });
-            console.log("Data nasabah berhasil dimuat ke dropdown");
-        }
-    }).fail(function(xhr) {
-        console.error("Gagal memuat daftar nasabah:", xhr.statusText);
+    let registeredNumbers = [];
+    
+    // 1. Scan nomor yang sudah ada di tabel
+    $('.row-kunjungan').each(function() {
+        let noAng = $(this).attr('data-no-angsuran'); 
+        if (noAng) registeredNumbers.push(noAng.toString().trim());
     });
+
+    // 2. Ambil data dari server
+    fetch('/admin/get-daftar-no-anggota')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('dropdown_no_angsuran');
+            if (!select) return;
+
+            select.innerHTML = '<option value="">-- Pilih No. Anggota --</option>';
+
+            // --- LOGIKA SORTING (KOL 5 DI ATAS) ---
+            // Kita urutkan data: KOL 5 akan naik ke index atas
+            data.sort((a, b) => {
+                if (a.kol == 5 && b.kol != 5) return -1;
+                if (a.kol != 5 && b.kol == 5) return 1;
+                return 0;
+            });
+
+            data.forEach(item => {
+                let currentNo = item.no_angsuran ? item.no_angsuran.toString().trim() : "";
+
+                // Filter agar yang sudah diinput tidak muncul lagi
+                if (currentNo && !registeredNumbers.includes(currentNo)) {
+                    const option = document.createElement('option');
+                    option.value = item.no_angsuran;
+                    
+                    // --- PENANDA VISUAL ---
+                    // Jika KOL 5, tambahkan teks "[PRIORITAS KOL 5]" dan tanda bintang
+                    if (item.kol == 5) {
+                        option.text = `⭐ [KOL 5] ${item.no_angsuran} - ${item.nasabah}`;
+                        option.style.fontWeight = "bold";
+                        option.style.color = "#d32f2f"; // Warna merah di beberapa browser
+                    } else {
+                        option.text = `${item.no_angsuran} - ${item.nasabah} (KOL ${item.kol})`;
+                    }
+                    
+                    option.dataset.nama = item.nasabah;
+                    option.dataset.alamat = item.alamat || '-';
+                    option.dataset.kol = item.kol || '-';
+                    
+                    select.appendChild(option);
+                }
+            });
+        })
+        .catch(err => console.error("Gagal refresh dropdown:", err));
 }
 
     function openModalImportNasabah() {

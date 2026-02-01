@@ -70,17 +70,24 @@ class NasabahController extends Controller
 
     public function getDaftarNoAnggota()
     {
-        return response()->json(Nasabah::select('no_angsuran', 'nasabah')->get());
+        // Gunakan try-catch untuk debugging jika terjadi error internal
+        try {
+            $nasabah = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol')->get();
+            return response()->json($nasabah);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function getNasabah($no_angsuran)
     {
+        // Pastikan pencarian berdasarkan no_angsuran
         $nasabah = Nasabah::where('no_angsuran', $no_angsuran)->first();
 
         if ($nasabah) {
             return response()->json([
                 'success' => true,
-                'data'    => $nasabah
+                'data'    => $nasabah // Mengirim seluruh field (nasabah, alamat, kol)
             ]);
         }
 
