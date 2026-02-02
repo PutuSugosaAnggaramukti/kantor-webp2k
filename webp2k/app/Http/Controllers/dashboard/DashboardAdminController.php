@@ -50,4 +50,71 @@ class DashboardAdminController extends Controller
             'totalKunjungan', 'totalSelesai', 'totalBelum', 'aoSelesaiTarget', 'labels', 'counts'
         ));
     }
+
+   public function getDetail($type)
+    {
+        try {
+            $data = [];
+
+            if ($type == 'rencana') {
+                $data = \DB::table('data_kunjungan_adms')
+                    ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
+                    ->select(
+                        'data_kunjungan_adms.kode_ao',
+                        'karyawans.nama as nama_ao',
+                        'data_kunjungan_adms.nama_nasabah',
+                        'data_kunjungan_adms.tanggal' // Format: 2026-01-31
+                    )
+                    ->get()->map(function($item) {
+                        return [
+                            'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
+                            'info_2' => $item->nama_nasabah,
+                            // Mengubah format ke DD-MM-YYYY
+                            'info_3' => date('d-m-Y', strtotime($item->tanggal)),
+                            'status' => 'Rencana'
+                        ];
+                    });
+
+            } elseif ($type == 'selesai') {
+                $data = \DB::table('kunjungans')
+                    ->select('kode_ao', 'nama_nasabah', 'created_at')
+                    ->get()->map(function($item) {
+                        return [
+                            'info_1' => $item->kode_ao,
+                            'info_2' => $item->nama_nasabah,
+                            // Mengubah format ke DD-MM-YYYY
+                            'info_3' => date('d-m-Y', strtotime($item->created_at)),
+                            'status' => 'Sudah Dikunjungi'
+                        ];
+                    });
+
+            } elseif ($type == 'belum') {
+                $sudahKunjung = \DB::table('kunjungans')->pluck('nama_nasabah')->toArray();
+                
+                $data = \DB::table('data_kunjungan_adms')
+                    ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
+                    ->whereNotIn('data_kunjungan_adms.nama_nasabah', $sudahKunjung)
+                    ->select(
+                        'data_kunjungan_adms.kode_ao',
+                        'karyawans.nama as nama_ao',
+                        'data_kunjungan_adms.nama_nasabah',
+                        'data_kunjungan_adms.tanggal'
+                    )
+                    ->get()->map(function($item) {
+                        return [
+                            'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
+                            'info_2' => $item->nama_nasabah,
+                            'info_3' => date('d-m-Y', strtotime($item->tanggal)),
+                            'status' => 'Belum Dikunjungi'
+                        ];
+                    });
+            }
+
+            return response()->json($data);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
 }

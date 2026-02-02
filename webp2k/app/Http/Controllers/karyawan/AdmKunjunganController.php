@@ -16,16 +16,14 @@ class AdmKunjunganController extends Controller
    public function index()
     {
         $karyawans = Karyawan::all();
-
-        // Pastikan tidak ada spasi/titik sebelum panah (->)
         $kunjungansGrouped = DataKunjunganAdm::with('karyawan')
             ->orderBy('kol', 'desc')
-            ->get() // Ini harus bisa dipanggil
+            ->get()
             ->groupBy('kode_ao'); 
 
         return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'));
     }
-    // --- REKAP DATA KUNJUNGAN (Tabel Terpisah per AO) ---
+    
    public function dataKunjunganContent()
     {
         // 1. Ambil data karyawan beserta hitungan kunjungannya

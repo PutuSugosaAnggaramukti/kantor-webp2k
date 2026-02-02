@@ -18,15 +18,25 @@ use PhpOffice\PhpWord\SimpleType\Jc;
 
 class KunjunganController extends Controller
 {
-    public function index()
+   public function index()
     {
-        $karyawanId = Auth::guard('karyawan')->id();
+        $karyawan = Auth::guard('karyawan')->user();
         
-        if (!$karyawanId) {
+        if (!$karyawan) {
             return "<div class='alert alert-warning'>Sesi berakhir, silakan refresh halaman.</div>";
         }
-    
-        $data = DataKunjunganAdm::where('karyawan_id', $karyawanId)->get();
+
+        $data = DataKunjunganAdm::where('karyawan_id', $karyawan->id)
+            ->get()
+            ->map(function ($item) use ($karyawan) {
+                // Cek berdasarkan kode_ao dan nama_nasabah sesuai tabel kunjungans di screenshot
+                $item->is_filled = \DB::table('kunjungans')
+                    ->where('kode_ao', $karyawan->kode_ao) 
+                    ->where('nama_nasabah', $item->nama_nasabah)
+                    ->exists();
+                return $item;
+            });
+
         if (request()->ajax()) {
             return view('kunjungan.partials.data_table', compact('data'));
         }
@@ -34,58 +44,142 @@ class KunjunganController extends Controller
     }
 
    public function dataKunjunganContent()
-{
-    $karyawanId = Auth::guard('karyawan')->id();
-    $data = DataKunjunganAdm::where('karyawan_id', $karyawanId)->get();
+    {
+        $karyawan = Auth::guard('karyawan')->user();
+        $data = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
 
-    foreach ($data as $item) {
-        // 1. PASTIKAN KOLOMNYA BENAR (foto vs foto_kunjungan)
-        $namaFile = $item->foto_kunjungan ?? $item->foto; 
-        $path = public_path('uploads/kunjungan/' . $namaFile); 
-        
-        $item->waktu_foto = "Waktu tidak terdeteksi";
+        $data->map(function ($item) use ($karyawan) {
+            $item->is_filled = \DB::table('kunjungans')
+                ->where('kode_ao', $karyawan->kode_ao)
+                ->where('nama_nasabah', $item->nama_nasabah)
+                ->exists();
+            return $item;
+        });
 
-        if (!empty($namaFile) && file_exists($path)) {
-            // 2. Cek apakah extension EXIF aktif
-            if (function_exists('exif_read_data')) {
-                $exif = @exif_read_data($path);
-                
-                if ($exif && isset($exif['DateTimeOriginal'])) {
-                    $date = new \DateTime($exif['DateTimeOriginal']);
-                    $item->waktu_foto = $date->format('d-m-Y H:i:s');
-                } else {
-                    // Cadangan: Ambil waktu modifikasi file jika metadata hilang
-                    $item->waktu_foto = date("d-m-Y H:i:s", filemtime($path)) . " (System)";
-                }
-            } else {
-                $item->waktu_foto = "Fungsi EXIF Off";
-            }
-        } else {
-            $item->waktu_foto = "File tidak ditemukan";
-        }
+        // Pastikan compact('data') dikirim ke view
+        return view('kunjungan.partials.data_table', compact('data'));
     }
-
-    return view('kunjungan.partials.data_table', compact('data'));
-}
 
     public function laporanKunjunganContent()
     {
-        $data = Nasabah::all();
-        return view('kunjungan.partials.laporan_table', compact('data'));
+        $jadwal = \DB::table('nasabahs')->get();
+        $realisasi = \DB::table('kunjungans')->get();
+
+        $laporan = [];
+
+        foreach ($jadwal as $j) {
+            $kunjungan = $realisasi->first(function ($value) use ($j) {
+                return strtoupper(trim($value->nama_nasabah)) === strtoupper(trim($j->nasabah));
+            });
+
+            $laporan[] = (object)[
+                'id_kunjungan' => $kunjungan ? $kunjungan->id : null,
+                'kode_ao'      => $j->kode_ao,
+                'nama_nasabah' => $j->nasabah, 
+                'kol'          => $j->kol,
+                'bulan'        => $j->bulan,
+            ];
+        }
+
+        foreach ($realisasi as $r) {
+            $adaDiJadwal = $jadwal->first(function ($value) use ($r) {
+                return strtoupper(trim($value->nasabah)) === strtoupper(trim($r->nama_nasabah));
+            });
+
+            if (!$adaDiJadwal) {
+                $laporan[] = (object)[
+                    'id_kunjungan' => $r->id,
+                    'kode_ao'      => $r->kode_ao ?? '-',
+                    'nama_nasabah' => $r->nama_nasabah,
+                    'kol'          => '-',
+                    'bulan'        => \Carbon\Carbon::parse($r->created_at)->format('Y-m'),
+                ];
+            }
+        }
+
+        return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
     }
 
     public function indexpelaporan()
     {
         try {
-            // 1. Ambil ID Karyawan (AO) yang sedang login
-            $karyawanId = Auth::guard('karyawan')->id();
-    
-            // 2. Filter data agar hanya mengambil milik AO yang login (karyawan_id)
-            $laporan = DataKunjunganAdm::where('karyawan_id', $karyawanId)
-                        ->with(['karyawan', 'hasilKunjungan'])
-                        ->get();
-    
-            return view('kunjungan.partials.laporan_table', compact('laporan'));
+            $user = Auth::guard('karyawan')->user();
+            // Wahyu kodenya PG.822, kita pastikan ini benar
+            $myCode = ($user->username == 'WAHYU' || $user->username == 'wahyu') ? 'PG.822' : $user->username;
+
+            // 1. Ambil data realisasi milik Wahyu (Ini pondasi kita)
+            $realisasi = \DB::table('kunjungans')
+                ->where('kode_ao', $myCode)
+                ->get();
+
+            // Ambil daftar nama nasabah yang sudah dikunjungi Wahyu
+            $namaSudahDikunjungi = $realisasi->pluck('nama_nasabah')->map(function($nama) {
+                return strtoupper(trim($nama));
+            })->toArray();
+
+            // 2. Ambil data jadwal (HANYA nasabah yang kodenya PG.822 ATAU yang kodenya kosong)
+            $jadwal = \DB::table('nasabahs')
+                ->where(function($q) use ($myCode) {
+                    $q->where('kode_ao', $myCode)
+                    ->orWhere('kode_ao', '')
+                    ->orWhereNull('kode_ao')
+                    ->orWhere('kode_ao', '-');
+                })
+                ->get();
+
+            $laporan = [];
+
+            // LANGKAH A: Map data Jadwal
+            foreach ($jadwal as $j) {
+                $namaJadwalClean = strtoupper(trim($j->nasabah));
+                
+                // Cari apakah nasabah ini ada di realisasi Wahyu
+                $kunjungan = $realisasi->first(function ($value) use ($namaJadwalClean) {
+                    return strtoupper(trim($value->nama_nasabah)) === $namaJadwalClean;
+                });
+
+                // FILTER: Tampilkan nasabah jika:
+                // 1. Sudah dikunjungi Wahyu, ATAU
+                // 2. Memang jadwalnya Wahyu (PG.822), ATAU
+                // 3. Nasabah umum yang kodenya kosong (agar Wahyu bisa lihat jadwalnya)
+                if ($kunjungan || $j->kode_ao == $myCode || empty($j->kode_ao) || $j->kode_ao == '-') {
+                    
+                    // Batasi nasabah umum agar tidak ribuan (Hanya tampilkan 15 nasabah umum pertama + yang sudah dikunjungi)
+                    if (!$kunjungan && empty($j->kode_ao) && count($laporan) > 15) continue;
+
+                    $laporan[] = (object)[
+                        'id_kunjungan' => $kunjungan ? $kunjungan->id : null,
+                        'kode_ao'      => $myCode, // Paksa tampilkan kode Wahyu agar tidak '-'
+                        'nama_nasabah' => $j->nasabah,
+                        'kol'          => $j->kol,
+                        'bulan'        => $j->bulan,
+                    ];
+                }
+            }
+
+            // LANGKAH B: Tambahkan Mandiri (Ingram) yang mungkin tidak ada di filter jadwal di atas
+            foreach ($realisasi as $r) {
+                $namaRealClean = strtoupper(trim($r->nama_nasabah));
+                $adaDiList = collect($laporan)->first(function($item) use ($namaRealClean) {
+                    return strtoupper(trim($item->nama_nasabah)) === $namaRealClean;
+                });
+
+                if (!$adaDiList) {
+                    $laporan[] = (object)[
+                        'id_kunjungan' => $r->id,
+                        'kode_ao'      => $r->kode_ao,
+                        'nama_nasabah' => $r->nama_nasabah,
+                        'kol'          => '-',
+                        'bulan'        => \Carbon\Carbon::parse($r->created_at)->format('Y-m'),
+                    ];
+                }
+            }
+
+            // Urutkan berdasarkan status kunjungan (yang hijau di atas) lalu nama
+            $laporan = collect($laporan)->sortByDesc('id_kunjungan')->values()->all();
+
+            return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
+
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -93,82 +187,100 @@ class KunjunganController extends Controller
 
     public function detailPelaporan(Request $request)
     {
+        // Ambil ID dari query string (?id=...)
         $id = $request->query('id');
-        $karyawanId = Auth::guard('karyawan')->id();
 
-        // Cari detail laporan, tapi pastikan data jadwalnya (dataKunjungan) milik AO yang login
-        $detail = HasilKunjungan::whereHas('dataKunjungan', function($query) use ($karyawanId) {
-            $query->where('karyawan_id', $karyawanId);
-        })->find($id);
-
-        if (!$detail) {
-            return "<div class='alert alert-danger'>Akses ditolak atau data tidak ditemukan.</div>";
+        if (!$id) {
+            return "<div class='alert alert-danger'>ID Kunjungan tidak ditemukan dalam request.</div>";
         }
 
-        return view('kunjungan.partials.bukti_kunjungan', compact('detail'));
+        try {
+            // Gunakan DB Table langsung agar bypass proteksi Model
+            $detail = \DB::table('kunjungans')->where('id', $id)->first();
+
+            if (!$detail) {
+                return "<div style='padding:50px; text-align:center;'>
+                            <h3 style='color:red;'>Data Tidak Ditemukan</h3>
+                            <p>ID kunjungan ($id) tidak ada di database.</p>
+                            <button onclick=\"loadPage('laporan-kunjungan')\" class='btn btn-primary'>Kembali</button>
+                        </div>";
+            }
+
+            // Render view bukti_kunjungan
+            return view('kunjungan.partials.bukti_kunjungan', compact('detail'))->render();
+
+        } catch (\Exception $e) {
+            return "<div class='alert alert-danger'>Terjadi kesalahan: " . $e->getMessage() . "</div>";
+        }
     }
 
     public function showBukti($id)
     {
-        $detail = Kunjungan::findOrFail($id);
+        try {
+            // 1. Gunakan DB Table langsung untuk bypass proteksi Model
+            $detail = \DB::table('kunjungans')->where('id', $id)->first();
 
-        if (request()->ajax()) {
-            return view('kunjungan.partials.bukti_kunjungan', compact('detail'))->render();
+            // 2. Jika data benar-benar tidak ada di DB
+            if (!$detail) {
+                return "<div style='padding:50px; text-align:center;'>
+                            <h3 style='color:red;'>Data Tidak Ditemukan</h3>
+                            <p>ID kunjungan ($id) tidak ada di tabel kunjungans.</p>
+                            <button onclick=\"loadPage('laporan-kunjungan')\">Kembali</button>
+                        </div>";
+            }
+
+            // 3. Render view dengan variabel 'detail'
+            if (request()->ajax()) {
+                return view('kunjungan.partials.bukti_kunjungan', compact('detail'))->render();
+            }
+
+            return view('kunjungan.datakunjungan', [
+                'data' => \DB::table('kunjungans')->get(), 
+                'content' => view('kunjungan.partials.bukti_kunjungan', compact('detail'))->render()
+            ]);
+
+        } catch (\Exception $e) {
+            return "<div class='alert alert-danger'>Terjadi kesalahan sistem: " . $e->getMessage() . "</div>";
         }
-
-        return view('kunjungan.datakunjungan', [
-            'data' => Kunjungan::all(), 
-            'content' => view('kunjungan.partials.bukti_kunjungan', compact('detail'))->render()
-        ]);
     }
 
     public function store(Request $request)
     {
-        $nama_file_foto = null;
-        $koordinat_final = $request->koordinat; 
+        $karyawan = Auth::guard('karyawan')->user();
 
+        // Pastikan pengecekan menggunakan kolom yang benar-benar ada di tabel
+        $exists = \DB::table('kunjungans')
+            ->where('kode_ao', $karyawan->kode_ao)
+            ->where('nama_nasabah', $request->nama_nasabah)
+            ->exists();
+
+        if ($exists) {
+            return redirect()->back()->with('error', 'Data sudah ada!');
+        }
+
+        $nama_file_foto = null;
         if ($request->hasFile('foto_kunjungan')) {
             $file = $request->file('foto_kunjungan');
-            $path = $file->getRealPath();
-
-            try {
-                if (function_exists('exif_read_data')) {
-                    $exif = @exif_read_data($path);
-                    
-                    if ($exif && isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
-                        $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-                        $lng = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
-                        
-                        if ($lat != 0 && $lng != 0) {
-                            $koordinat_final = "$lat, $lng";
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                // Error log jika diperlukan
-            }
-
             $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
             $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
         }
 
-        // Prosedur Simpan: Field 'keterangan_nasabah' sudah dihapus
+        // Sesuaikan dengan struktur tabel di gambar: id, kode_ao, no_nasabah, nama_nasabah, dll.
         \DB::table('kunjungans')->insert([
-            'kode_ao'        => auth()->user()->kode_ao,
-            'no_nasabah'     => $request->no_nasabah,
-            'nama_nasabah'   => $request->nama_nasabah,
-            'ada_di_lokasi'  => $request->ada_di_lokasi,
-            'catatan'        => $request->catatan, 
-            'tgl_janji_bayar'=> $request->tgl_janji_bayar,
-            'foto_kunjungan' => $nama_file_foto, 
-            'koordinat'      => $koordinat_final, 
-            'created_at'     => now(),
-            'updated_at'     => now(),
+            'kode_ao'         => $karyawan->kode_ao,
+            'no_nasabah'      => $karyawan->kode_ao, // Di gambar DB, no_nasabah diisi PG 822
+            'nama_nasabah'    => $request->nama_nasabah,
+            'ada_di_lokasi'   => $request->ada_di_lokasi,
+            'catatan'         => $request->catatan, 
+            'tgl_janji_bayar' => $request->tgl_janji_bayar,
+            'foto_kunjungan'  => $nama_file_foto, 
+            'koordinat'       => $request->koordinat, 
+            'created_at'      => now(),
         ]);
 
-        return redirect()->back()->with('success', 'Data kunjungan berhasil disimpan!');
+        return redirect()->back()->with('success', 'Berhasil disimpan!');
     }
-    
+        
     private function getGps($exifCoord, $hemi) 
     {
         $degrees = count($exifCoord) > 0 ? $this->getFraction($exifCoord[0]) : 0;

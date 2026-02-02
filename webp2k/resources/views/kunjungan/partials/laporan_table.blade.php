@@ -28,12 +28,11 @@
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Kunjungan</th>
             </tr>
         </thead>
-        <tbody>
-            {{-- Sekarang menggunakan data asli dari Controller --}}
+      <tbody>
             @forelse($laporan as $index => $item)
             <tr style="text-align: center; border-bottom: 1px solid #333;">
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $index + 1 }}</td>
-                <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->karyawan->kode_ao ?? '-' }}</td>
+                <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->kode_ao }}</td>
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700; text-align: left; padding-left: 20px;">
                     {{ strtoupper($item->nama_nasabah) }}
                 </td>
@@ -41,17 +40,15 @@
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->bulan }}</td>
                 <td style="border: 1px solid #333; padding: 10px;">
                     <div style="display: flex; justify-content: center; align-items: center;">
-                        @if($item->hasilKunjungan)
-                            {{-- Tombol AKTIF (Sudah Lapor) --}}
-                            <button onclick="loadPage('detail-pelaporan?id={{ $item->hasilKunjungan->id }}')" 
-                                    style="border: none; background: #28a745; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s;"
-                                    title="Lihat Detail Bukti Kunjungan">
+                        @if($item->id_kunjungan)
+                            {{-- TOMBOL HIJAU: Jika sudah lapor (Termasuk Eko & Ingram) --}}
+                            <button onclick="loadPage('detail-pelaporan?id={{ $item->id_kunjungan }}')" 
+                                    style="border: none; background: #28a745; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-check"></i>
                             </button>
                         @else
-                            {{-- Icon PASIF (Belum Lapor) --}}
-                            <div style="background-color: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center;"
-                                 title="Belum Ada Laporan">
+                            {{-- TOMBOL BIRU: Jika belum ada laporan --}}
+                            <div style="background-color: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-minus"></i>
                             </div>
                         @endif
@@ -60,7 +57,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="6" style="padding: 20px; text-align: center; font-weight: bold; color: #999;">Belum ada data rencana kunjungan.</td>
+                <td colspan="6" style="padding: 20px; text-align: center;">Belum ada data kunjungan.</td>
             </tr>
             @endforelse
         </tbody>

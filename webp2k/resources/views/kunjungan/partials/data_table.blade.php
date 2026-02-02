@@ -15,8 +15,39 @@
         background-color: transparent !important;
         color: white !important;
     }
-</style>
 
+    /* Style untuk baris yang sudah dikunjungi */
+    .row-completed {
+        background-color: #f0fdf4 !important; /* Hijau sangat muda */
+    }
+    
+    .badge-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        margin-left: 10px;
+    }
+
+    .row-completed {
+        background-color: #f0fdf4 !important;
+    }
+    
+    /* Warna untuk baris yang BELUM terisi (Merah) */
+    .row-pending {
+        background-color: #fff1f2 !important; /* Merah muda sangat halus */
+    }
+
+    .badge-status {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        margin-left: 10px;
+    }
+</style>
 
 <div class="page-title">
     <h2>Data Kunjungan</h2>
@@ -25,17 +56,29 @@
     </div>
 </div>
 
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    
+    <button onclick="openManualModal()" 
+            style="background-color: #4e4bc1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 6px rgba(78, 75, 193, 0.2); transition: 0.3s;">
+        <i class="fa-solid fa-plus-circle"></i> 
+        <span>Tambah Kunjungan Mandiri</span>
+    </button>
 
-<div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
-    <div style="position: relative; width: 300px;">
-        <input type="text" placeholder="Pencarian.." style="width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; background-color: #f9f9f9;">
-        <i class="fa-solid fa-xmark" style="position: absolute; right: 12px; top: 10px; color: #ccc; cursor: pointer;"></i>
+    <div style="position: relative; width: 250px;">
+        <input type="text" placeholder="Cari nasabah.." style="width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; background-color: #f9f9f9; height: 38px;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 12px; top: 11px; color: #ccc;"></i>
     </div>
 </div>
 
 @if(session('success'))
     <div style="padding: 15px; background-color: #d1edda; color: #155724; border-radius: 10px; margin-bottom: 20px;">
         {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div style="padding: 15px; background-color: #f8d7da; color: #721c24; border-radius: 10px; margin-bottom: 20px;">
+        {{ session('error') }}
     </div>
 @endif
 
@@ -51,13 +94,23 @@
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Option</th>
             </tr>
         </thead>
-        <tbody style="font-weight: 800; font-size: 16px; color: #000;">
+       <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
-            <tr style="border-bottom: 2px solid #000; text-align: center;">
+            <tr class="{{ $item->is_filled ? 'row-completed' : 'row-pending' }}" style="border-bottom: 2px solid #000; text-align: center;">
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
                     {{ $item->nama_nasabah }}
+                    
+                    @if($item->is_filled)
+                        <span class="badge-status" style="background-color: #dcfce7; color: #166534; border: 1px solid #166534;">
+                            <i class="fa-solid fa-circle-check"></i> Terisi
+                        </span>
+                    @else
+                        <span class="badge-status" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #991b1b;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Belum Diisi
+                        </span>
+                    @endif
                 </td>
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kol }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000;">
@@ -66,36 +119,38 @@
                 <td style="border: 1px solid #333; padding: 15px;">
                     <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
                         
-                        <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}')" 
-                                style="background-color: #A3A8AC; color: #333; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                            <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
-                        </button>
+                        @if($item->is_filled)
+                            <div style="background-color: #28a745; color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-check" style="font-size: 18px;"></i>
+                            </div>
+                        @else
+                            <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}')" 
+                                    style="background-color: #A3A8AC; color: #333; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
+                            </button>
+                        @endif
 
                         <button onclick="openDetailModal('{{ $item->kode_ao }}', '-', '{{ $item->nama_nasabah }}', '-', '0', '0', '{{ $item->kol }}', '-', '-')" 
                                 style="background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                             <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
                         </button>
-                        
                     </div>
                 </td>
             </tr>
             @empty
-            <tr>
-                <td colspan="6" style="padding: 20px; text-align: center;">Belum ada jadwal kunjungan untuk Anda.</td>
-            </tr>
             @endforelse
         </tbody>
     </table>
 </div>
 
 <div class="instruction-box" style="margin-top: 20px; background-color: #f1f1f1; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px;">
-    <div class="icon-indicator" style="background-color: #8e94a9; color: white; width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
-        <i class="fa-solid fa-plus"></i>
+    <div class="icon-indicator" style="background-color: #28a745; color: white; width: 45px; height: 45px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+        <i class="fa-solid fa-circle-check"></i>
     </div>
     <div class="text-indicator">
         <h4 style="margin: 0 0 5px 0; color: #1e293b; font-weight: 700; font-size: 16px;">Petunjuk !</h4>
         <p style="margin: 0; color: #475569; font-size: 14px; line-height: 1.5; font-weight: 600;">
-            Silahkan klik tombol tersebut pada tabel untuk mengisi form kunjungan sebagai bukti telah menyelesaikan kunjungan
+            Baris berwarna <span style="color: #166534;">hijau</span> dan bertanda <i class="fa-solid fa-check"></i> menandakan bukti kunjungan nasabah tersebut sudah berhasil disimpan.
         </p>
     </div>
 </div>

@@ -612,6 +612,38 @@ function resetAvatarPreview() {
 }
 </script>
 
+<script>
+   function openManualModal() {
+        document.getElementById('modalManual').style.display = 'block';
+        
+        // Ambil Lokasi Realtime
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                document.getElementById('manual_koordinat').value = lat + ", " + lng;
+            }, function(error) {
+                console.error("Gagal mengambil lokasi: ", error);
+                alert("Harap aktifkan GPS Anda untuk mengirim laporan.");
+            });
+        } else {
+            alert("Browser tidak mendukung Geolocation.");
+        }
+    }
+    
+    function closeManualModal() {
+        document.getElementById('modalManual').style.display = 'none';
+    }
+
+    // Menutup modal jika klik di luar area modal
+    window.onclick = function(event) {
+        let modal = document.getElementById('modalManual');
+        if (event.target == modal) {
+            closeManualModal();
+        }
+    }
+</script>
+
 
 </body>
 </html>

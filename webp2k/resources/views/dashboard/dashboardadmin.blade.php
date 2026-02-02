@@ -50,25 +50,25 @@
                 <h3 style="margin-bottom: 1.5rem;">Statistik Kinerja</h3>
                 
                 <div class="stats-grid">
-                    <div class="stat-card bg-rencana">
+                    <div class="stat-card bg-rencana" onclick="showDetail('rencana')">
                         <div class="stat-label">Total Rencana</div>
                         <div class="stat-value">{{ $totalKunjungan ?? 0 }}</div>
                         <i class="fa-solid fa-calendar-days"></i>
                     </div>
 
-                    <div class="stat-card bg-selesai">
+                    <div class="stat-card bg-selesai" onclick="showDetail('selesai')">
                         <div class="stat-label">Sudah Dikunjungi</div>
                         <div class="stat-value">{{ $totalSelesai ?? 0 }}</div>
                         <i class="fa-solid fa-circle-check"></i>
                     </div>
 
-                    <div class="stat-card bg-belum">
+                    <div class="stat-card bg-belum" onclick="showDetail('belum')">
                         <div class="stat-label">Belum Dikunjungi</div>
                         <div class="stat-value">{{ $totalBelum ?? 0 }}</div>
                         <i class="fa-solid fa-clock"></i>
                     </div>
 
-                    <div class="stat-card bg-target">
+                    <div class="stat-card bg-target" onclick="showDetail('target')">
                         <div class="stat-label">AO Capai Target</div>
                         <div class="stat-value">{{ $aoSelesaiTarget ?? 0 }}</div>
                         <div class="kpi-note">*Min 10 & Ada KOL 5</div>
@@ -117,9 +117,28 @@
         </div>
 </main>
 
+
+<div id="statsModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Detail Data</h2>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="modalLoading" style="display:none; text-align:center; padding: 20px;">
+                <div class="spinner"></div>
+                <p>Mengambil data...</p>
+            </div>
+            <div id="modalTableContainer">
+                </div>
+        </div>
+    </div>
+</div>
+
     <footer class="footer-admin">
         Sistem Aplikasi P2K
     </footer>
+
 
     <script>
     function transitionToAdminPage(targetPage) {
@@ -210,6 +229,69 @@
                 }
             });
         }
+    </script>
+
+    <script>
+        function showDetail(type) {
+        const titleMap = {
+            'rencana': 'Detail Rencana Kunjungan',
+            'selesai': 'Detail Kunjungan Selesai',
+            'target': 'Daftar AO Capai Target'
+        };
+
+        document.getElementById('modalTitle').innerText = titleMap[type];
+        document.getElementById('modalTableContainer').innerHTML = '<p>Sedang memuat...</p>';
+        document.getElementById('statsModal').style.display = 'flex';
+
+        fetch(`/admin/dashboard-detail/${type}`)
+            .then(response => response.json())
+            .then(data => {
+               let table = `<table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                <thead>
+                    <tr style="background:#f1f5f9; text-align:left;">
+                        <th style="padding:12px; border:1px solid #ddd;">No</th>
+                        <th style="padding:12px; border:1px solid #ddd;">Kode AO</th>
+                        <th style="padding:12px; border:1px solid #ddd;">Nama Nasabah</th>
+                        <th style="padding:12px; border:1px solid #ddd;">Tanggal</th>
+                        <th style="padding:12px; border:1px solid #ddd; text-align:center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+             data.forEach((item, index) => {
+                // Warna label dinamis berdasarkan status
+                let badgeColor = '#fee2e2'; // Default Merah (Belum)
+                let textColor = '#991b1b';
+                
+                if(item.status === 'Sudah Dikunjungi') {
+                    badgeColor = '#dcfce7'; // Hijau
+                    textColor = '#166534';
+                } else if(item.status === 'Rencana') {
+                    badgeColor = '#e0f2fe'; // Biru
+                    textColor = '#0369a1';
+                }
+
+               table += `<tr>
+                        <td style="padding:10px; border:1px solid #eee; text-align:center;">${index + 1}</td>
+                        <td style="padding:10px; border:1px solid #eee;">${item.info_1}</td>
+                        <td style="padding:10px; border:1px solid #eee;">${item.info_2}</td>
+                        <td style="padding:10px; border:1px solid #eee; text-align:center;">${item.info_3}</td>
+                        <td style="padding:10px; border:1px solid #eee; text-align:center;">
+                            <span style="background:${badgeColor}; color:${textColor}; padding:4px 10px; border-radius:15px; font-size:11px; font-weight:bold;">
+                                ${item.status}
+                            </span>
+                        </td>
+                    </tr>`;
+                });
+
+                table += `</tbody></table>`;
+                document.getElementById('modalTableContainer').innerHTML = data.length > 0 ? table : '<p>Tidak ada data.</p>';
+            });
+    }
+
+    function closeModal() {
+        document.getElementById('statsModal').style.display = 'none';
+    }
     </script>
 
 </body>

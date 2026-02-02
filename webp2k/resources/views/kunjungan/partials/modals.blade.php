@@ -87,3 +87,64 @@
     </div>
 </div>
 
+<div id="modalManual" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(3px); overflow-y: auto;">
+    <div style="background:white; margin:20px auto; padding:25px; width:90%; max-width:450px; border-radius:15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); font-family: 'Poppins', sans-serif; position: relative;">
+        
+        <h3 style="text-align:center; margin-bottom:20px; font-weight:bold;">Form Kunjungan</h3>
+        
+        <form action="{{ route('kunjungan.store') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            
+            <div style="max-height: 60vh; overflow-y: auto; padding-right: 5px; margin-bottom: 15px;">
+                
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Nama Nasabah</label>
+                    <input type="text" name="nama_nasabah" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;" required placeholder="Masukkan nama nasabah">
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Nomor Anggota</label>
+                    <input type="text" name="no_nasabah" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;" placeholder="Masukkan nomor">
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Apakah nasabah ada di lokasi?</label>
+                    <select name="ada_di_lokasi" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; background:white;" required>
+                        <option value="Ada">Ada</option>
+                        <option value="Tidak Ada">Tidak Ada</option>
+                    </select>
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Hasil Kunjungan</label>
+                    <textarea name="catatan" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;" rows="3" required placeholder="Tulis hasil kunjungan..."></textarea>
+                </div>
+
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Tanggal Kesanggupan Bayar</label>
+                    <input type="date" name="tgl_janji_bayar" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
+                </div>
+
+                <div style="margin-bottom:20px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Foto Kunjungan</label>
+                    <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
+                        <input type="file" name="foto_kunjungan" accept="image/*" capture="camera" required style="width:100%;">
+                    </div>
+                    <div style="font-size: 12px; color: #28a745; margin-top: 8px; font-weight: bold;">
+                        <i class="fa-solid fa-circle-check"></i> Lokasi Terkunci
+                    </div>
+                </div>
+
+            </div> <input type="hidden" name="koordinat" id="manual_koordinat">
+
+            <div style="display: flex; gap: 15px; background: white; padding-top: 10px;">
+                <button type="button" onclick="closeManualModal()" style="flex: 1; background:#e91e63; color:white; padding:12px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">
+                    Cancel
+                </button>
+                <button type="submit" style="flex: 1; background:#5c59d1; color:white; padding:12px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">
+                    Save
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
