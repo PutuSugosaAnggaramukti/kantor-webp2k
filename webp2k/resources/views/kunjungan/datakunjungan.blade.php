@@ -90,29 +90,24 @@
             const contentArea = document.getElementById('konten-utama');
             contentArea.style.opacity = '0.3';
 
-            fetch(`/user/${pageName}-content`) 
-                .then(response => {
-                    if (!response.ok) throw new Error('Gagal memuat halaman');
-                    return response.text();
-                })
-                .then(html => {
-                    contentArea.innerHTML = html;
-                    contentArea.style.opacity = '1';
-                    updateSidebarActive(pageName);
-                })
-                .catch(error => {
-                    console.error('Fetch error:', error);
-                    alert('Kesalahan: ' + error.message);
-                    contentArea.style.opacity = '1';
-                });
-        }
-
-        function loadDashboardGrafik() {
-            if (typeof loadAdminPage === "function") {
-                loadAdminPage('dashboard'); 
-            } else {
-                loadPage('dashboard');
-            }
+            fetch(`/user/${pageName}-content`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' 
+                }
+            }) 
+            .then(response => {
+                if (!response.ok) throw new Error('Gagal memuat halaman');
+                return response.text();
+            })
+            .then(html => {
+                contentArea.innerHTML = html;
+                contentArea.style.opacity = '1';
+                updateSidebarActive(pageName);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                contentArea.style.opacity = '1';
+            });
         }
 
         function loadContent(url) {

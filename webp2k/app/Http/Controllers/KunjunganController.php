@@ -18,46 +18,84 @@ use PhpOffice\PhpWord\SimpleType\Jc;
 
 class KunjunganController extends Controller
 {
-   public function index()
+
+    public function index()
     {
-        $karyawan = Auth::guard('karyawan')->user();
-        
-        if (!$karyawan) {
-            return "<div class='alert alert-warning'>Sesi berakhir, silakan refresh halaman.</div>";
-        }
-
-        $data = DataKunjunganAdm::where('karyawan_id', $karyawan->id)
-            ->get()
-            ->map(function ($item) use ($karyawan) {
-                // Cek berdasarkan kode_ao dan nama_nasabah sesuai tabel kunjungans di screenshot
-                $item->is_filled = \DB::table('kunjungans')
-                    ->where('kode_ao', $karyawan->kode_ao) 
-                    ->where('nama_nasabah', $item->nama_nasabah)
-                    ->exists();
-                return $item;
-            });
-
-        if (request()->ajax()) {
-            return view('kunjungan.partials.data_table', compact('data'));
-        }
-        return view('kunjungan.datakunjungan', compact('data'));
+        return $this->getMergedKunjunganData();
     }
 
    public function dataKunjunganContent()
     {
+        return $this->getMergedKunjunganData();
+    }
+
+    private function getMergedKunjunganData()
+    {
         $karyawan = Auth::guard('karyawan')->user();
-        $data = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
+        if (!$karyawan) return redirect()->back();
 
-        $data->map(function ($item) use ($karyawan) {
-            $item->is_filled = \DB::table('kunjungans')
-                ->where('kode_ao', $karyawan->kode_ao)
-                ->where('nama_nasabah', $item->nama_nasabah)
-                ->exists();
-            return $item;
-        });
+        $myCode = strtoupper(trim($karyawan->kode_ao));
+        
+        // Ambil Jadwal dari Admin
+        $jadwal = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
 
-        // Pastikan compact('data') dikirim ke view
-        return view('kunjungan.partials.data_table', compact('data'));
+        // Ambil Realisasi (Termasuk Heni / Data Mandiri)
+        $realisasi = \DB::table('kunjungans')
+            ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
+            ->get();
+
+        $dataFinal = collect();
+        $namaTerproses = [];
+
+        // PROSES A: Masukkan data sesuai Jadwal Admin
+        foreach ($jadwal as $j) {
+            $namaJadwal = strtoupper(trim(preg_replace('/\s+/', ' ', $j->nama_nasabah)));
+            
+            $match = $realisasi->first(function ($r) use ($namaJadwal) {
+                $namaReal = strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah)));
+                return $namaReal === $namaJadwal;
+            });
+
+            $dataFinal->push((object)[
+                'id' => $j->id,
+                'kode_ao' => $myCode,
+                'nama_nasabah' => $j->nama_nasabah,
+                'kol' => $j->kol ?? '-',
+                'bulan' => $j->bulan, 
+                'is_filled' => $match ? true : false,
+                'is_mandiri' => false
+            ]);
+            
+            $namaTerproses[] = $namaJadwal;
+        }
+
+        // PROSES B: Masukkan data Mandiri (Nasabah yang tidak ada di jadwal)
+        foreach ($realisasi as $r) {
+            $namaReal = strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah)));
+            
+            if (!in_array($namaReal, $namaTerproses)) {
+                $dataFinal->push((object)[
+                    'id' => $r->id,
+                    'kode_ao' => $r->kode_ao,
+                    'nama_nasabah' => $r->nama_nasabah,
+                    'kol' => $r->kol ?? '-',
+                    'bulan' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->translatedFormat('F Y') : date('F Y'), 
+                    'is_filled' => true,
+                    'is_mandiri' => true
+                ]);
+                $namaTerproses[] = $namaReal;
+            }
+        }
+
+        $data = $dataFinal->values();
+
+        // CEK: Jika request datang dari AJAX (pindah menu), kirim POTONGAN tabel saja
+        if (request()->ajax()) {
+            return view('kunjungan.partials.data_table', compact('data'));
+        }
+
+        // Jika akses awal, kirim HALAMAN UTUH
+        return view('kunjungan.datakunjungan', compact('data'));
     }
 
     public function laporanKunjunganContent()
@@ -100,83 +138,34 @@ class KunjunganController extends Controller
         return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
     }
 
-    public function indexpelaporan()
+   public function indexpelaporan()
     {
         try {
             $user = Auth::guard('karyawan')->user();
-            // Wahyu kodenya PG.822, kita pastikan ini benar
             $myCode = ($user->username == 'WAHYU' || $user->username == 'wahyu') ? 'PG.822' : $user->username;
 
-            // 1. Ambil data realisasi milik Wahyu (Ini pondasi kita)
-            $realisasi = \DB::table('kunjungans')
-                ->where('kode_ao', $myCode)
-                ->get();
-
-            // Ambil daftar nama nasabah yang sudah dikunjungi Wahyu
-            $namaSudahDikunjungi = $realisasi->pluck('nama_nasabah')->map(function($nama) {
-                return strtoupper(trim($nama));
-            })->toArray();
-
-            // 2. Ambil data jadwal (HANYA nasabah yang kodenya PG.822 ATAU yang kodenya kosong)
-            $jadwal = \DB::table('nasabahs')
-                ->where(function($q) use ($myCode) {
-                    $q->where('kode_ao', $myCode)
-                    ->orWhere('kode_ao', '')
-                    ->orWhereNull('kode_ao')
-                    ->orWhere('kode_ao', '-');
+            // Ambil data dari tabel kunjungans dan gabungkan dengan tabel nasabahs
+            $laporan = \DB::table('kunjungans')
+                ->leftJoin('nasabahs', function($join) {
+                    // Mencocokkan berdasarkan nama nasabah
+                    $join->on('kunjungans.nama_nasabah', '=', 'nasabahs.nasabah');
                 })
-                ->get();
-
-            $laporan = [];
-
-            // LANGKAH A: Map data Jadwal
-            foreach ($jadwal as $j) {
-                $namaJadwalClean = strtoupper(trim($j->nasabah));
-                
-                // Cari apakah nasabah ini ada di realisasi Wahyu
-                $kunjungan = $realisasi->first(function ($value) use ($namaJadwalClean) {
-                    return strtoupper(trim($value->nama_nasabah)) === $namaJadwalClean;
-                });
-
-                // FILTER: Tampilkan nasabah jika:
-                // 1. Sudah dikunjungi Wahyu, ATAU
-                // 2. Memang jadwalnya Wahyu (PG.822), ATAU
-                // 3. Nasabah umum yang kodenya kosong (agar Wahyu bisa lihat jadwalnya)
-                if ($kunjungan || $j->kode_ao == $myCode || empty($j->kode_ao) || $j->kode_ao == '-') {
-                    
-                    // Batasi nasabah umum agar tidak ribuan (Hanya tampilkan 15 nasabah umum pertama + yang sudah dikunjungi)
-                    if (!$kunjungan && empty($j->kode_ao) && count($laporan) > 15) continue;
-
-                    $laporan[] = (object)[
-                        'id_kunjungan' => $kunjungan ? $kunjungan->id : null,
-                        'kode_ao'      => $myCode, // Paksa tampilkan kode Wahyu agar tidak '-'
-                        'nama_nasabah' => $j->nasabah,
-                        'kol'          => $j->kol,
-                        'bulan'        => $j->bulan,
+                ->where('kunjungans.kode_ao', $myCode)
+                ->select(
+                    'kunjungans.*', 
+                    'nasabahs.kol as kol_master' // Mengambil kolom 'kol' dari tabel nasabahs
+                )
+                ->orderBy('kunjungans.created_at', 'desc')
+                ->get()
+                ->map(function($item) {
+                    return (object)[
+                        'id_kunjungan' => $item->id,
+                        'kode_ao'      => $item->kode_ao,
+                        'nama_nasabah' => $item->nama_nasabah,
+                        'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
+                        'bulan'        => \Carbon\Carbon::parse($item->created_at)->format('Y-m'),
                     ];
-                }
-            }
-
-            // LANGKAH B: Tambahkan Mandiri (Ingram) yang mungkin tidak ada di filter jadwal di atas
-            foreach ($realisasi as $r) {
-                $namaRealClean = strtoupper(trim($r->nama_nasabah));
-                $adaDiList = collect($laporan)->first(function($item) use ($namaRealClean) {
-                    return strtoupper(trim($item->nama_nasabah)) === $namaRealClean;
                 });
-
-                if (!$adaDiList) {
-                    $laporan[] = (object)[
-                        'id_kunjungan' => $r->id,
-                        'kode_ao'      => $r->kode_ao,
-                        'nama_nasabah' => $r->nama_nasabah,
-                        'kol'          => '-',
-                        'bulan'        => \Carbon\Carbon::parse($r->created_at)->format('Y-m'),
-                    ];
-                }
-            }
-
-            // Urutkan berdasarkan status kunjungan (yang hijau di atas) lalu nama
-            $laporan = collect($laporan)->sortByDesc('id_kunjungan')->values()->all();
 
             return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
 
@@ -244,20 +233,21 @@ class KunjunganController extends Controller
         }
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
     {
         $karyawan = Auth::guard('karyawan')->user();
 
-        // Pastikan pengecekan menggunakan kolom yang benar-benar ada di tabel
+        // 1. Cek Duplikasi
         $exists = \DB::table('kunjungans')
             ->where('kode_ao', $karyawan->kode_ao)
             ->where('nama_nasabah', $request->nama_nasabah)
             ->exists();
 
         if ($exists) {
-            return redirect()->back()->with('error', 'Data sudah ada!');
+            return redirect()->back()->with('error', 'Data kunjungan untuk nasabah ini sudah dilaporkan!');
         }
 
+        // 2. Proses Upload Foto
         $nama_file_foto = null;
         if ($request->hasFile('foto_kunjungan')) {
             $file = $request->file('foto_kunjungan');
@@ -265,11 +255,12 @@ class KunjunganController extends Controller
             $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
         }
 
-        // Sesuaikan dengan struktur tabel di gambar: id, kode_ao, no_nasabah, nama_nasabah, dll.
+        // 3. Simpan ke Database
         \DB::table('kunjungans')->insert([
             'kode_ao'         => $karyawan->kode_ao,
-            'no_nasabah'      => $karyawan->kode_ao, // Di gambar DB, no_nasabah diisi PG 822
+            'no_nasabah'      => $request->no_nasabah, // Ambil dari input form, bukan kode AO
             'nama_nasabah'    => $request->nama_nasabah,
+            'kol'             => $request->kol,        // MASUKKAN KOL (OPSIONAL)
             'ada_di_lokasi'   => $request->ada_di_lokasi,
             'catatan'         => $request->catatan, 
             'tgl_janji_bayar' => $request->tgl_janji_bayar,
@@ -278,7 +269,7 @@ class KunjunganController extends Controller
             'created_at'      => now(),
         ]);
 
-        return redirect()->back()->with('success', 'Berhasil disimpan!');
+        return redirect()->back()->with('success', 'Laporan kunjungan berhasil disimpan!');
     }
         
     private function getGps($exifCoord, $hemi) 

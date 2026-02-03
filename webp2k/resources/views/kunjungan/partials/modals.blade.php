@@ -108,6 +108,19 @@
                 </div>
 
                 <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">KOL (Jika tidak tahu bisa dikosongi saja)</label>
+                    <select name="kol" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; background:white;">
+                        <option value="">-- Pilih KOL (Jika tahu) --</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                    <small style="color: #888; font-size: 11px;">Biarkan kosong jika tidak yakin.</small>
+                </div>
+
+                <div style="margin-bottom:15px;">
                     <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Apakah nasabah ada di lokasi?</label>
                     <select name="ada_di_lokasi" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; background:white;" required>
                         <option value="Ada">Ada</option>

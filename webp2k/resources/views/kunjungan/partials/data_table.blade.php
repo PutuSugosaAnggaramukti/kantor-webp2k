@@ -114,7 +114,14 @@
                 </td>
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kol }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000;">
-                    {{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('M Y') }}
+                    @php
+                        $valBulan = $item->bulan ?? '-';
+                        if (preg_match('/^[0-9]{4}-[0-9]{2}/', $valBulan)) {
+                            echo \Carbon\Carbon::parse($valBulan)->translatedFormat('M Y');
+                        } else {
+                            echo $valBulan;
+                        }
+                    @endphp
                 </td>
                 <td style="border: 1px solid #333; padding: 15px;">
                     <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
