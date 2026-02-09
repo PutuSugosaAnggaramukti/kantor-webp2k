@@ -58,9 +58,8 @@
         </nav>
 
         <main class="p-6 max-w-6xl mx-auto">
-            <h2 class="text-2xl font-bold mb-6">Statistik</h2>
-
-           <div class="stat-grid">
+            <h2 class="text-2xl font-bold mb-6 italic text-gray-700">Statistik</h2>
+            <div class="stat-grid mb-8">
                 <div class="card-stat bg-blue-p2k cursor-pointer transition transform hover:scale-105" onclick="openModal('modalRencana')">
                     <p class="text-lg font-semibold">Total Rencana</p>
                     <p class="text-4xl font-bold mt-2">{{ $total_rencana }}</p>
@@ -86,7 +85,52 @@
                 </div>
             </div>
 
+            <h2 class="text-2xl font-bold mb-6 italic text-gray-700">Persentase Performa</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 text-center">
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-500">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Target Harian</p>
+                    <div class="relative inline-flex items-center justify-center">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                            <circle class="text-blue-600" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="{{ 175.9 - (175.9 * ($kunjungan_hari_ini / 10 * 100)) / 100 }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                        </svg>
+                        <span class="absolute text-xs font-bold">{{ round(($kunjungan_hari_ini / 10) * 100) }}%</span>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-500">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Success Rate</p>
+                    <div class="relative inline-flex items-center justify-center">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                            <circle class="text-green-500" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="{{ 175.9 - (175.9 * 85) / 100 }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                        </svg>
+                        <span class="absolute text-xs font-bold">85%</span>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-red-500">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">KOL 5 Done</p>
+                    <div class="relative inline-flex items-center justify-center">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                            <circle class="text-red-500" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="{{ 175.9 - (175.9 * 60) / 100 }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                        </svg>
+                        <span class="absolute text-xs font-bold">60%</span>
+                    </div>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-yellow-500">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Janji Bayar</p>
+                    <div class="relative inline-flex items-center justify-center">
+                        <svg class="w-16 h-16 transform -rotate-90">
+                            <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                            <circle class="text-yellow-500" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="{{ 175.9 - (175.9 * 45) / 100 }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                        </svg>
+                        <span class="absolute text-xs font-bold">45%</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white p-6 rounded-xl shadow-sm mb-8">
+                <p class="text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider">Histori Kunjungan 7 Hari Terakhir</p>
                 <div class="h-64">
                     <canvas id="visitChart"></canvas>
                 </div>
@@ -115,8 +159,9 @@
                 </a>
             </div>
         </main>
-    </div> <footer class="p2k-footer mt-auto"> Sistem Aplikasi P2K
-    </footer>
+    </div> 
+    
+    <footer class="p2k-footer mt-auto"> Sistem Aplikasi P2K </footer>
 
     <div id="modalRencana" class="fixed inset-0 z-[999] hidden overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -234,14 +279,14 @@
                         data: @json($nasabahAda),
                         backgroundColor: '#0E5E7E', 
                         borderRadius: 6,
-                        maxBarThickness: 40
+                        maxBarThickness: 30
                     },
                     {
                         label: 'Nasabah Tidak Ada',
                         data: @json($nasabahTidakAda), 
                         backgroundColor: '#F38120', 
                         borderRadius: 6,
-                        maxBarThickness: 40
+                        maxBarThickness: 30
                     }
                 ]
             },
@@ -252,28 +297,19 @@
                     legend: {
                         display: true, 
                         position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 20
-                        }
+                        labels: { usePointStyle: true }
                     }
                 },
                 scales: {
-                    x: {
-                        stacked: false, 
-                        grid: { display: false }
-                    },
+                    x: { grid: { display: false } },
                     y: { 
                         beginAtZero: true, 
-                        min: 0, 
-                        ticks: { 
-                            stepSize: 1,
-                            precision: 0
-                        }
+                        ticks: { stepSize: 1 }
                     }
                 }
             }
         });
+
         const trigger = document.getElementById('userTrigger');
         const dropdown = document.getElementById('userDropdown');
 
@@ -289,119 +325,51 @@
 
         function transitionToKunjungan() {
             const loader = document.getElementById('loginLoading');
-            loader.classList.add('active');
             loader.style.display = 'flex';
             setTimeout(() => {
                 window.location.href = "{{ route('data-kunjungan') }}";
-            }, 1000); 
-        }
-    </script>
-
-    <script>
-    function transitionToPage(targetPage) {
-        const loader = document.getElementById('loginLoading');
-        const loadingText = loader.querySelector('p');
-        
-        // Memberikan feedback teks yang berbeda sesuai menu
-        const labels = {
-            'data-kunjungan': 'Memuat Data Kunjungan...',
-            'laporan-kunjungan': 'Memuat Laporan Kunjungan...',
-            'dokumen': 'Memuat Dokumen...',
-            'pengaturan': 'Memuat Pengaturan...'
-        };
-
-        if (loadingText) {
-            loadingText.innerText = labels[targetPage] || 'Memuat Halaman...';
+            }, 800); 
         }
 
-        // Tampilkan animasi loading
-        loader.classList.add('active');
-        loader.style.display = 'flex';
+        function transitionToPage(targetPage) {
+            const loader = document.getElementById('loginLoading');
+            loader.style.display = 'flex';
+            setTimeout(() => {
+                window.location.href = "{{ route('data-kunjungan') }}?page=" + targetPage;
+            }, 800); 
+        }
 
-        // Berikan jeda 1 detik agar transisi terasa halus sebelum pindah halaman
-        setTimeout(() => {
-            // Redirect ke route data-kunjungan dengan parameter 'page' agar bisa di-load dinamis
-            window.location.href = "{{ route('data-kunjungan') }}?page=" + targetPage;
-        }, 1000); 
-    }
-    </script>
-
-    <script>
         function loadMenuWithTransition(targetPage) {
-        const loader = document.getElementById('loginLoading');
-        const loadingText = loader.querySelector('p');
-        
-        // Ubah teks loading sesuai menu yang diklik
-        if(targetPage === 'pengaturan') loadingText.innerText = "Memuat Pengaturan...";
-        else if(targetPage === 'dokumen') loadingText.innerText = "Memuat Dokumen...";
-        else if(targetPage === 'laporan-kunjungan') loadingText.innerText = "Memuat Laporan...";
-        else loadingText.innerText = "Memuat Data Kunjungan...";
+            const loader = document.getElementById('loginLoading');
+            loader.style.display = 'flex';
+            setTimeout(() => {
+                window.location.href = `{{ route('data-kunjungan') }}?page=${targetPage}`;
+            }, 800); 
+        }
 
-        // Tampilkan overlay loading
-        loader.classList.add('active');
-        loader.style.display = 'flex';
-
-        // Redirect ke halaman data-kunjungan dengan parameter 'page'
-        setTimeout(() => {
-            window.location.href = `{{ route('data-kunjungan') }}?page=${targetPage}`;
-        }, 1000); 
-    }
-    </script>
-
-    <script>
-       function confirmLogout() {
+        function confirmLogout() {
             Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Anda akan keluar dari sistem P2K",
+                title: 'Logout?',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#3f36b1', 
-                cancelButtonColor: '#cbd5e1',
-                confirmButtonText: 'Ya, Logout!',
-                cancelButtonText: 'Batal'
+                confirmButtonColor: '#3f36b1',
+                confirmButtonText: 'Ya, Keluar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Aktifkan overlay loading
-                    const loader = document.getElementById('loginLoading');
-                    if (loader) {
-                        const loadingText = loader.querySelector('p');
-                        if (loadingText) loadingText.innerText = "Mengakhiri Sesi...";
-                        loader.classList.add('active');
-                        loader.style.display = 'flex';
-                    }
-
-                    // Ganti Redirect Manual dengan Submit Form POST Laravel
-                    setTimeout(() => {
-                        document.getElementById('logout-form').submit(); // Mengarah ke route logout
-                    }, 1000);
+                    document.getElementById('logout-form').submit();
                 }
             });
         }
-    </script>
 
-    <script>
         function openModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Kunci scroll layar utama
-    }
-
-    function closeModal(modalId) {
-        const modal = document.getElementById(modalId);
-        modal.classList.add('hidden');
-        document.body.style.overflow = 'auto'; // Aktifkan scroll kembali
-    }
-
-    // Tutup modal jika user menekan tombol 'Esc'
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            closeModal('modalRencana');
-            closeModal('modalSudah');
-            closeModal('modalKOL5');
+            document.getElementById(modalId).classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
         }
-    });
-    </script>
-    
 
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+    </script>
 </body>
 </html>

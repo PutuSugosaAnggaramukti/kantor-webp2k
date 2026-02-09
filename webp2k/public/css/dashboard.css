@@ -93,45 +93,38 @@ body {
     font-size: 0.875rem;
 }
 
+:root {
+    --blue-p2k: #0E5E7E;
+    --green-p2k: #27ae60;
+    --red-p2k: #e74c3c;
+    --orange-p2k: #f39c12;
+    --gray-bg: #f3f4f6;
+}
+
 /* Card Statistik */
 .stat-grid {
     display: grid;
-    grid-template-columns: repeat(1, minmax(0, 1fr)); /* Default 1 kolom untuk HP */
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
 }
 
-/* Untuk Tablet (2 kolom) */
-@media (min-width: 640px) {
-    .stat-grid { 
-        grid-template-columns: repeat(2, minmax(0, 1fr)); 
-    }
-}
-
-/* Untuk Desktop (Layar Monitor - 4 kolom) */
-@media (min-width: 1024px) {
-    .stat-grid { 
-        grid-template-columns: repeat(4, minmax(0, 1fr)); 
+@media (min-width: 768px) {
+    .stat-grid {
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 
 .card-stat {
-    border-radius: 0.75rem;
     padding: 1.5rem;
-    text-align: center;
+    border-radius: 1rem;
     color: white;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s; /* Tambahan sedikit efek saat dihover */
+    position: relative;
+    overflow: hidden;
 }
 
-.card-stat:hover {
-    transform: translateY(-5px);
-}
-
-.bg-blue-p2k { background-color: #4338ca; } 
-.bg-green-p2k { background-color: #10b981; }
-.bg-red-p2k { background-color: #ef4444; }   /* Warna untuk KOL 5 */
-.bg-orange-p2k { background-color: #f59e0b; } /* Warna untuk Hari Ini */
+.bg-blue-p2k { background-color: var(--blue-p2k); }
+.bg-green-p2k { background-color: var(--green-p2k); }
 
 /* Menu Utama */
 .menu-grid {
