@@ -7,9 +7,11 @@
 </div>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <button class="btn-excel" style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold;">
-        <i class="fa-solid fa-file-excel"></i> Excel
-    </button>
+    <a href="{{ route('export.excel') }}" 
+    class="btn-excel" 
+    style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center;">
+        <i class="fa-solid fa-file-excel" style="margin-right: 8px;"></i> Excel
+    </a>
     <div style="position: relative;">
         <input type="text" placeholder="Pencarian.." style="padding: 8px 30px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; width: 250px;">
         <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 10px; top: 10px; color: #ccc;"></i>

@@ -7,8 +7,8 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithDrawings; // Tambahkan ini
-use PhpOffice\PhpSpreadsheet\Worksheet\Drawing; // Tambahkan ini
+use Maatwebsite\Excel\Concerns\WithDrawings;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing; 
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class NasabahExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithDrawings

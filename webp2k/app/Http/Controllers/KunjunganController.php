@@ -15,6 +15,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\SimpleType\Jc;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\KunjunganExport;
 
 class KunjunganController extends Controller
 {
@@ -138,41 +140,38 @@ class KunjunganController extends Controller
         return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
     }
 
-   public function indexpelaporan()
-    {
-        try {
-            $user = Auth::guard('karyawan')->user();
-            $myCode = ($user->username == 'WAHYU' || $user->username == 'wahyu') ? 'PG.822' : $user->username;
+  public function indexpelaporan()
+{
+    $user = Auth::guard('karyawan')->user();
+    if (!$user) return redirect()->back();
 
-            // Ambil data dari tabel kunjungans dan gabungkan dengan tabel nasabahs
-            $laporan = \DB::table('kunjungans')
-                ->leftJoin('nasabahs', function($join) {
-                    // Mencocokkan berdasarkan nama nasabah
-                    $join->on('kunjungans.nama_nasabah', '=', 'nasabahs.nasabah');
-                })
-                ->where('kunjungans.kode_ao', $myCode)
-                ->select(
-                    'kunjungans.*', 
-                    'nasabahs.kol as kol_master' // Mengambil kolom 'kol' dari tabel nasabahs
-                )
-                ->orderBy('kunjungans.created_at', 'desc')
-                ->get()
-                ->map(function($item) {
-                    return (object)[
-                        'id_kunjungan' => $item->id,
-                        'kode_ao'      => $item->kode_ao,
-                        'nama_nasabah' => $item->nama_nasabah,
-                        'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
-                        'bulan'        => \Carbon\Carbon::parse($item->created_at)->format('Y-m'),
-                    ];
-                });
+    $myCode = strtoupper(trim($user->kode_ao));
 
-            return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
+    $laporan = \DB::table('kunjungans')
+        // Join ke tabel nasabahs untuk mendapatkan data KOL master
+        ->leftJoin('nasabahs', function($join) {
+            $join->on('kunjungans.nama_nasabah', '=', 'nasabahs.nasabah');
+        })
+        ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
+        ->select(
+            'kunjungans.*', 
+            'nasabahs.kol as kol_master' 
+        )
+        ->orderBy('kunjungans.created_at', 'desc')
+        ->get()
+        ->map(function($item) {
+            return (object)[
+                'id_kunjungan' => $item->id,
+                'kode_ao'      => $item->kode_ao,
+                'nama_nasabah' => $item->nama_nasabah,
+                // Logika: Gunakan KOL dari laporan, jika kosong ambil dari master nasabah
+                'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
+                'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
+            ];
+        });
 
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
+    return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
+}
 
     public function detailPelaporan(Request $request)
     {
@@ -292,102 +291,156 @@ class KunjunganController extends Controller
 
     public function exportPDF($id)
     {
-        $detail = HasilKunjungan::with('dataKunjungan')->findOrFail($id);
-        $namaAO = Auth::guard('karyawan')->user()->nama; 
-        $pdf = Pdf::loadView('kunjungan.pdf_gabungan', compact('detail', 'namaAO'));
+        // Gunakan DB table agar tidak crash saat relasi dataKunjungan kosong (Data Mandiri)
+        $detail = \DB::table('kunjungans')
+            ->leftJoin('nasabahs', 'kunjungans.nama_nasabah', '=', 'nasabahs.nasabah')
+            ->where('kunjungans.id', $id)
+            ->select('kunjungans.*', 'nasabahs.kol as kol_master')
+            ->first();
 
-        $pdf->setPaper('a4', 'portrait');
+        if (!$detail) return redirect()->back()->with('error', 'Data tidak ditemukan');
 
-        return $pdf->download('Laporan_Lengkap_' . $detail->dataKunjungan->nama_nasabah . '.pdf');
-    }
-
-   public function exportWord($id)
-    {
-        $detail = HasilKunjungan::with('dataKunjungan')->findOrFail($id);
         $namaAO = Auth::guard('karyawan')->user()->nama;
 
-        $phpWord = new \PhpOffice\PhpWord\PhpWord();
-        
-        $phpWord->setDefaultFontName('Helvetica');
-        $phpWord->setDefaultFontSize(11);
+        // Tambahkan properti dummy agar view PDF lama tidak error
+        $detail->dataKunjungan = (object)[
+            'kode_ao'      => $detail->kode_ao,
+            'nama_nasabah' => $detail->nama_nasabah,
+            'kol'          => $detail->kol ?: ($detail->kol_master ?: '-'),
+            'bulan'        => $detail->bulan ?? $detail->created_at
+        ];
 
-        $section = $phpWord->addSection();
+        $pdf = Pdf::loadView('kunjungan.pdf_gabungan', compact('detail', 'namaAO'));
+        $pdf->setPaper('a4', 'portrait');
 
-        $section->addText("LAPORAN HASIL KUNJUNGAN", ['bold' => true, 'size' => 14], ['alignment' => 'center']);
-        $section->addText("Bagian P2K - AO: " . strtoupper($namaAO), ['bold' => true], ['alignment' => 'center']);
-        $section->addText("Bank Bantul - Sistem Informasi P2K", ['size' => 10], ['alignment' => 'center']);
-        $section->addLine(['width' => 450, 'height' => 0, 'color' => '000000']); 
-        $section->addTextBreak(1);
+        return $pdf->download('Laporan_Lengkap_' . str_replace(' ', '_', $detail->nama_nasabah) . '.pdf');
+    }
 
-        $section->addText("I. RINGKASAN DATA NASABAH", ['bold' => true], ['shading' => ['fill' => 'F2F2F2']]);
-        
-        $tableStyle = ['borderSize' => 6, 'borderColor' => '999999', 'cellMargin' => 80];
-        $phpWord->addTableStyle('RingkasanTable', $tableStyle);
-        $table = $section->addTable('RingkasanTable');
-        
-        $table->addRow();
-        $table->addCell(2000, ['bgColor' => 'F8F9FA'])->addText("KODE AO", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-        $table->addCell(4000, ['bgColor' => 'F8F9FA'])->addText("NAMA NASABAH", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-        $table->addCell(1500, ['bgColor' => 'F8F9FA'])->addText("KOL", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-        $table->addCell(2000, ['bgColor' => 'F8F9FA'])->addText("BULAN", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-        $table->addCell(1500, ['bgColor' => 'F8F9FA'])->addText("STATUS", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
+public function exportWord($id)
+{
+    // Ambil data dan langsung ubah ke Array agar akses variabel lebih stabil
+    $data = \DB::table('kunjungans')
+        ->leftJoin('nasabahs', 'kunjungans.nama_nasabah', '=', 'nasabahs.nasabah')
+        ->where('kunjungans.id', $id)
+        ->select('kunjungans.*', 'nasabahs.kol as kol_master')
+        ->first();
 
-        $table->addRow();
-        $table->addCell(2000)->addText($detail->dataKunjungan->kode_ao, ['size' => 9], ['alignment' => 'center']);
-        $table->addCell(4000)->addText($detail->dataKunjungan->nama_nasabah, ['size' => 9]);
-        $table->addCell(1500)->addText($detail->dataKunjungan->kol, ['size' => 9], ['alignment' => 'center']);
-        $table->addCell(2000)->addText(\Carbon\Carbon::parse($detail->dataKunjungan->bulan)->translatedFormat('F Y'), ['size' => 9], ['alignment' => 'center']);
-        $table->addCell(1500)->addText("SELESAI", ['bold' => true, 'color' => '28A745', 'size' => 9], ['alignment' => 'center']);
+    if (!$data) return redirect()->back()->with('error', 'Data tidak ditemukan');
+    
+    // Ubah ke array untuk menghindari error "Undefined property stdClass"
+    $detail = (array) $data;
 
-        $section->addTextBreak(1);
+    $user = Auth::guard('karyawan')->user();
+    $namaAO = $user ? $user->nama : 'Account Officer';
 
-        $section->addText("II. DETAIL HASIL KUNJUNGAN LAPANGAN", ['bold' => true], ['shading' => ['fill' => 'F2F2F2']]);
-        
-        $textTable = $section->addTable();
-        $textTable->addRow();
-        $textTable->addCell(2500)->addText("Tanggal Input");
-        $textTable->addCell(7000)->addText(": " . \Carbon\Carbon::parse($detail->created_at)->locale('id')->translatedFormat('l, d F Y'));
-        
-        $textTable->addRow();
-        $textTable->addCell(2500)->addText("Koordinat Lokasi");
-        $textTable->addCell(7000)->addText(": " . $detail->koordinat);
-        
-        $textTable->addRow();
-        $textTable->addCell(2500)->addText("Catatan AO");
-        $textTable->addCell(7000)->addText(": " . $detail->catatan);
+    $phpWord = new \PhpOffice\PhpWord\PhpWord();
+    $phpWord->setDefaultFontName('Helvetica');
+    $phpWord->setDefaultFontSize(11);
 
-       if ($detail->foto_kunjungan) {
+    $section = $phpWord->addSection();
+
+    // HEADER
+    $section->addText("LAPORAN HASIL KUNJUNGAN", ['bold' => true, 'size' => 14], ['alignment' => 'center']);
+    $section->addText("Bagian P2K - AO: " . strtoupper($namaAO), ['bold' => true], ['alignment' => 'center']);
+    $section->addText("Bank Bantul - Sistem Informasi P2K", ['size' => 10], ['alignment' => 'center']);
+    $section->addLine(['width' => 450, 'height' => 0, 'color' => '000000']); 
+    $section->addTextBreak(1);
+
+    // I. RINGKASAN
+    $section->addText("I. RINGKASAN DATA NASABAH", ['bold' => true], ['shading' => ['fill' => 'F2F2F2']]);
+    
+    $tableStyle = ['borderSize' => 6, 'borderColor' => '999999', 'cellMargin' => 80];
+    $phpWord->addTableStyle('RingkasanTable', $tableStyle);
+    $table = $section->addTable('RingkasanTable');
+    
+    $table->addRow();
+    $table->addCell(2000, ['bgColor' => 'F8F9FA'])->addText("KODE AO", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
+    $table->addCell(4000, ['bgColor' => 'F8F9FA'])->addText("NAMA NASABAH", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
+    $table->addCell(1500, ['bgColor' => 'F8F9FA'])->addText("KOL", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
+    $table->addCell(2000, ['bgColor' => 'F8F9FA'])->addText("BULAN", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
+    $table->addCell(1500, ['bgColor' => 'F8F9FA'])->addText("STATUS", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
+
+    // AKSES MENGGUNAKAN ARRAY ['key'] BUKAN ->key
+    $table->addRow();
+    $table->addCell(2000)->addText($detail['kode_ao'] ?? '-', ['size' => 9], ['alignment' => 'center']);
+    $table->addCell(4000)->addText(strtoupper($detail['nama_nasabah'] ?? '-'), ['size' => 9]);
+    
+    $kolFix = $detail['kol'] ?: ($detail['kol_master'] ?: '-');
+    $table->addCell(1500)->addText($kolFix, ['size' => 9], ['alignment' => 'center']);
+    
+    // LOGIKA BULAN (Gunakan isset)
+    $bulanText = $detail['bulan'] ?? '-';
+    try {
+        if (!empty($detail['bulan'])) {
+            $bulanText = \Carbon\Carbon::parse($detail['bulan'])->translatedFormat('F Y');
+        }
+    } catch (\Exception $e) {
+        $bulanText = $detail['bulan']; 
+    }
+    
+    $table->addCell(2000)->addText($bulanText, ['size' => 9], ['alignment' => 'center']);
+    $table->addCell(1500)->addText("SELESAI", ['bold' => true, 'color' => '28A745', 'size' => 9], ['alignment' => 'center']);
+
+    $section->addTextBreak(1);
+
+    // II. DETAIL KUNJUNGAN
+    $section->addText("II. DETAIL HASIL KUNJUNGAN LAPANGAN", ['bold' => true], ['shading' => ['fill' => 'F2F2F2']]);
+    
+    $textTable = $section->addTable();
+    $textTable->addRow();
+    $textTable->addCell(2500)->addText("Tanggal Lapor");
+    $textTable->addCell(7000)->addText(": " . \Carbon\Carbon::parse($detail['created_at'])->translatedFormat('l, d F Y'));
+    
+    $textTable->addRow();
+    $textTable->addCell(2500)->addText("Koordinat Lokasi");
+    $textTable->addCell(7000)->addText(": " . ($detail['koordinat'] ?? '-'));
+    
+    $textTable->addRow();
+    $textTable->addCell(2500)->addText("Catatan AO");
+    $textTable->addCell(7000)->addText(": " . ($detail['catatan'] ?? '-'));
+
+    $textTable->addRow();
+    $textTable->addCell(2500)->addText("Janji Pelunasan");
+    $textTable->addCell(7000)->addText(": " . ($detail['tgl_janji_bayar'] ?? '-'));
+
+    // FOTO
+    if (!empty($detail['foto_kunjungan'])) {
+        $path = public_path('uploads/kunjungan/' . $detail['foto_kunjungan']);
+        if (file_exists($path)) {
             $section->addTextBreak(1);
             $section->addText("Dokumentasi Foto:", ['bold' => true]);
-            
-            // Perbaikan path: arahkan ke folder 'uploads/kunjungan'
-            $path = public_path('uploads/kunjungan/' . $detail->foto_kunjungan);
-            
-            if (file_exists($path)) {
-                $section->addImage($path, [
-                    'width'     => 280, 
-                    'height'    => 200, 
-                    'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER
-                ]);
-            } else {
-                // Tambahkan keterangan jika file tidak ditemukan secara fisik di folder
-                $section->addText("(File foto tidak ditemukan di server)", ['italic' => true, 'color' => 'FF0000']);
-            }
+            $section->addTextBreak(1);
+            $section->addImage($path, ['width' => 280, 'height' => 200, 'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
         }
-        
-        $section->addTextBreak(2);
-        $section->addText(\Carbon\Carbon::now()->locale('id')->translatedFormat('l, d F Y'), ['size' => 10], ['alignment' => 'right']);
-        $section->addTextBreak(2);
-        $section->addText("( " . strtoupper($namaAO) . " )", ['bold' => true, 'underline' => 'single'], ['alignment' => 'right']);
-        $section->addText("Account Officer", [], ['alignment' => 'right']);
+    }
+    
+    // FOOTER
+    $section->addTextBreak(2);
+    $section->addText(\Carbon\Carbon::now()->translatedFormat('l, d F Y'), ['size' => 10], ['alignment' => 'right']);
+    $section->addTextBreak(2);
+    $section->addText("( " . strtoupper($namaAO) . " )", ['bold' => true, 'underline' => 'single'], ['alignment' => 'right']);
+    $section->addText("Account Officer", [], ['alignment' => 'right']);
 
-        $filename = "Laporan_Lengkap_" . str_replace(' ', '_', $detail->dataKunjungan->nama_nasabah) . ".docx";
-        header('Content-Type: application/octet-stream');
-        header('Content-Disposition: attachment;filename="' . $filename . '"');
-        
-        $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
-        $objWriter->save('php://output');
-        exit;
+    $filename = "Laporan_Lengkap_" . str_replace(' ', '_', $detail['nama_nasabah'] ?? 'Data') . ".docx";
+    
+    header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    header('Content-Disposition: attachment;filename="' . $filename . '"');
+    
+    $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
+    $objWriter->save('php://output');
+    exit;
+}
+
+    public function exportExcel()
+    {
+        $karyawan = Auth::guard('karyawan')->user();
+        if (!$karyawan) return redirect()->back();
+
+        $myCode = strtoupper(trim($karyawan->kode_ao));
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\KunjunganExport($myCode), 
+            'Laporan_Kunjungan_' . $myCode . '.xlsx'
+        );
     }
     
 

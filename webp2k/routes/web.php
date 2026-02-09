@@ -76,6 +76,7 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::post('/pengaturan/upload-avatar', [PengaturanController::class, 'uploadAvatar'])->name('settings.avatar');
     Route::get('/export-pdf/{id}', [KunjunganController::class, 'exportPDF'])->name('export.pdf');
     Route::get('/export-word/{id}', [KunjunganController::class, 'exportWord'])->name('export.word');
+    Route::get('/export-excel', [KunjunganController::class, 'exportExcel'])->name('export.excel');
 });
 
 

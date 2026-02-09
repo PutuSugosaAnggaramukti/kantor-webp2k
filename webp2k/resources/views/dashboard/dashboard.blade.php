@@ -60,14 +60,29 @@
         <main class="p-6 max-w-6xl mx-auto">
             <h2 class="text-2xl font-bold mb-6">Statistik</h2>
 
-            <div class="stat-grid">
-                <div class="card-stat bg-blue-p2k">
-                    <p class="text-lg font-semibold">Total Kunjungan</p>
-                    <p class="text-4xl font-bold mt-2">{{ $total_kunjungan }}</p>
+           <div class="stat-grid">
+                <div class="card-stat bg-blue-p2k cursor-pointer transition transform hover:scale-105" onclick="openModal('modalRencana')">
+                    <p class="text-lg font-semibold">Total Rencana</p>
+                    <p class="text-4xl font-bold mt-2">{{ $total_rencana }}</p>
+                    <p class="text-xs opacity-75 mt-2"><i class="fa-solid fa-magnifying-glass"></i> Klik detail</p>
                 </div>
-                <div class="card-stat bg-green-p2k">
+
+                <div class="card-stat bg-green-p2k cursor-pointer transition transform hover:scale-105" onclick="openModal('modalSudah')">
                     <p class="text-lg font-semibold">Sudah Dikunjungi</p>
-                    <p class="text-4xl font-bold mt-2">{{ $sudah_dikunjungi }}</p>
+                    <p class="text-4xl font-bold mt-2">{{ $total_kunjungan }}</p>
+                    <p class="text-xs opacity-75 mt-2"><i class="fa-solid fa-magnifying-glass"></i> Klik detail</p>
+                </div>
+
+                <div class="card-stat cursor-pointer transition transform hover:scale-105" style="background-color: #e74c3c; color: white;" onclick="openModal('modalKOL5')">
+                    <p class="text-lg font-semibold">Wajib (KOL 5)</p>
+                    <p class="text-4xl font-bold mt-2">{{ $wajib_kol5 }}</p>
+                    <p class="text-xs opacity-75 mt-2"><i class="fa-solid fa-triangle-exclamation"></i> Cek Prioritas</p>
+                </div>
+
+                <div class="card-stat" style="background-color: #f39c12; color: white;">
+                    <p class="text-lg font-semibold">Hari Ini</p>
+                    <p class="text-4xl font-bold mt-2">{{ $kunjungan_hari_ini }}</p>
+                    <p class="text-xs opacity-75 mt-2">Update Realtime</p>
                 </div>
             </div>
 
@@ -102,6 +117,110 @@
         </main>
     </div> <footer class="p2k-footer mt-auto"> Sistem Aplikasi P2K
     </footer>
+
+    <div id="modalRencana" class="fixed inset-0 z-[999] hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick="closeModal('modalRencana')"></div>
+        <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="px-6 py-4 border-b bg-blue-p2k text-white flex justify-between">
+                <h3 class="text-lg font-bold">Daftar Seluruh Rencana Kunjungan</h3>
+                <button onclick="closeModal('modalRencana')" class="text-2xl">&times;</button>
+            </div>
+            <div class="p-6 max-h-[60vh] overflow-y-auto">
+                <table class="w-full text-sm text-left border">
+                    <thead class="bg-gray-100 uppercase text-xs">
+                        <tr>
+                            <th class="px-4 py-2 border">No Ang</th>
+                            <th class="px-4 py-2 border">Nama Nasabah</th>
+                            <th class="px-4 py-2 border">Alamat</th>
+                            <th class="px-4 py-2 border text-center">KOL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($detail_rencana as $res)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 border">{{ $res->no_angsuran }}</td>
+                            <td class="px-4 py-2 border font-bold">{{ $res->nama_nasabah }}</td>
+                            <td class="px-4 py-2 border">{{ $res->alamat_nasabah }}</td>
+                            <td class="px-4 py-2 border text-center">
+                                <span class="px-2 py-1 rounded {{ $res->kol == 5 ? 'bg-red-500 text-white' : 'bg-gray-200' }}">{{ $res->kol }}</span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalKOL5" class="fixed inset-0 z-[999] hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75" onclick="closeModal('modalKOL5')"></div>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-4xl w-full overflow-hidden">
+            <div class="px-6 py-4 border-b bg-red-600 text-white flex justify-between">
+                <h3 class="text-lg font-bold"><i class="fa-solid fa-triangle-exclamation mr-2"></i> Nasabah Prioritas (KOL 5)</h3>
+                <button onclick="closeModal('modalKOL5')" class="text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <table class="w-full text-sm text-left border">
+                    <thead class="bg-red-50 text-red-700">
+                        <tr>
+                            <th class="px-4 py-2 border">Nama Nasabah</th>
+                            <th class="px-4 py-2 border">Alamat</th>
+                            <th class="px-4 py-2 border">Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($detail_kol5 as $k5)
+                        <tr class="hover:bg-red-50">
+                            <td class="px-4 py-2 border font-bold">{{ $k5->nama_nasabah }}</td>
+                            <td class="px-4 py-2 border">{{ $k5->alamat_nasabah }}</td>
+                            <td class="px-4 py-2 border text-red-600 font-semibold italic">Wajib Dikunjungi Segera</td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="3" class="p-4 text-center">Tidak ada nasabah KOL 5</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalSudah" class="fixed inset-0 z-[999] hidden overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75" onclick="closeModal('modalSudah')"></div>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-4xl w-full overflow-hidden">
+            <div class="px-6 py-4 border-b bg-green-600 text-white flex justify-between">
+                <h3 class="text-lg font-bold">Nasabah Telah Dikunjungi</h3>
+                <button onclick="closeModal('modalSudah')" class="text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <table class="w-full text-sm text-left border">
+                    <thead class="bg-green-50 uppercase text-xs">
+                        <tr>
+                            <th class="px-4 py-2 border">Tgl Kunjungan</th>
+                            <th class="px-4 py-2 border">Nama Nasabah</th>
+                            <th class="px-4 py-2 border text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($detail_sudah_dikunjungi as $sdh)
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 border text-xs">{{ \Carbon\Carbon::parse($sdh->created_at)->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-2 border font-bold">{{ $sdh->nama_nasabah }}</td>
+                            <td class="px-4 py-2 border text-center">
+                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">{{ $sdh->ada_di_lokasi }}</span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script>
       const ctx = document.getElementById('visitChart').getContext('2d');
@@ -258,6 +377,29 @@
                 }
             });
         }
+    </script>
+
+    <script>
+        function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Kunci scroll layar utama
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.add('hidden');
+        document.body.style.overflow = 'auto'; // Aktifkan scroll kembali
+    }
+
+    // Tutup modal jika user menekan tombol 'Esc'
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeModal('modalRencana');
+            closeModal('modalSudah');
+            closeModal('modalKOL5');
+        }
+    });
     </script>
     
 

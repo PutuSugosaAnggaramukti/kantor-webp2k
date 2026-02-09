@@ -96,13 +96,23 @@ body {
 /* Card Statistik */
 .stat-grid {
     display: grid;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
+    grid-template-columns: repeat(1, minmax(0, 1fr)); /* Default 1 kolom untuk HP */
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
 
-@media (min-width: 768px) {
-    .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Untuk Tablet (2 kolom) */
+@media (min-width: 640px) {
+    .stat-grid { 
+        grid-template-columns: repeat(2, minmax(0, 1fr)); 
+    }
+}
+
+/* Untuk Desktop (Layar Monitor - 4 kolom) */
+@media (min-width: 1024px) {
+    .stat-grid { 
+        grid-template-columns: repeat(4, minmax(0, 1fr)); 
+    }
 }
 
 .card-stat {
@@ -111,10 +121,17 @@ body {
     text-align: center;
     color: white;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s; /* Tambahan sedikit efek saat dihover */
+}
+
+.card-stat:hover {
+    transform: translateY(-5px);
 }
 
 .bg-blue-p2k { background-color: #4338ca; } 
-.bg-green-p2k { background-color: #10b981; } 
+.bg-green-p2k { background-color: #10b981; }
+.bg-red-p2k { background-color: #ef4444; }   /* Warna untuk KOL 5 */
+.bg-orange-p2k { background-color: #f59e0b; } /* Warna untuk Hari Ini */
 
 /* Menu Utama */
 .menu-grid {
