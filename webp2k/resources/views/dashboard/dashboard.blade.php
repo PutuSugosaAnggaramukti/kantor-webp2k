@@ -92,39 +92,50 @@
                     <div class="relative inline-flex items-center justify-center">
                         <svg class="w-16 h-16 transform -rotate-90">
                             <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
-                            <circle class="text-blue-600" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="{{ 175.9 - (175.9 * ($kunjungan_hari_ini / 10 * 100)) / 100 }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                            <circle class="text-blue-600" stroke-width="6" stroke-dasharray="175.9" 
+                                stroke-dashoffset="{{ 175.9 - (175.9 * ($kpi['target'] ?? 0)) / 100 }}" 
+                                stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
                         </svg>
-                        <span class="absolute text-xs font-bold">{{ round(($kunjungan_hari_ini / 10) * 100) }}%</span>
+                        <span class="absolute text-xs font-bold">{{ $kpi['target'] ?? 0 }}%</span>
                     </div>
                 </div>
+
                 <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-green-500">
                     <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Success Rate</p>
                     <div class="relative inline-flex items-center justify-center">
                         <svg class="w-16 h-16 transform -rotate-90">
                             <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
-                            <circle class="text-green-500" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="{{ 175.9 - (175.9 * 85) / 100 }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                            <circle class="text-green-500" stroke-width="6" stroke-dasharray="175.9" 
+                                stroke-dashoffset="{{ 175.9 - (175.9 * ($kpi['success'] ?? 0)) / 100 }}" 
+                                stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
                         </svg>
-                        <span class="absolute text-xs font-bold">85%</span>
+                        <span class="absolute text-xs font-bold">{{ $kpi['success'] ?? 0 }}%</span>
                     </div>
                 </div>
+
                 <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-red-500">
                     <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">KOL 5 Done</p>
                     <div class="relative inline-flex items-center justify-center">
                         <svg class="w-16 h-16 transform -rotate-90">
                             <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
-                            <circle class="text-red-500" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="{{ 175.9 - (175.9 * 60) / 100 }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                            <circle class="text-red-500" stroke-width="6" stroke-dasharray="175.9" 
+                                stroke-dashoffset="{{ 175.9 - (175.9 * ($kpi['kol5'] ?? 0)) / 100 }}" 
+                                stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
                         </svg>
-                        <span class="absolute text-xs font-bold">60%</span>
+                        <span class="absolute text-xs font-bold">{{ $kpi['kol5'] ?? 0 }}%</span>
                     </div>
                 </div>
+
                 <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-yellow-500">
                     <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Janji Bayar</p>
                     <div class="relative inline-flex items-center justify-center">
                         <svg class="w-16 h-16 transform -rotate-90">
                             <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
-                            <circle class="text-yellow-500" stroke-width="6" stroke-dasharray="175.9" stroke-dashoffset="{{ 175.9 - (175.9 * 45) / 100 }}" stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
+                            <circle class="text-yellow-500" stroke-width="6" stroke-dasharray="175.9" 
+                                stroke-dashoffset="{{ 175.9 - (175.9 * ($kpi['janji'] ?? 0)) / 100 }}" 
+                                stroke-linecap="round" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
                         </svg>
-                        <span class="absolute text-xs font-bold">45%</span>
+                        <span class="absolute text-xs font-bold">{{ $kpi['janji'] ?? 0 }}%</span>
                     </div>
                 </div>
             </div>
@@ -217,14 +228,22 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($detail_kol5 as $k5)
+                       @forelse($detail_kol5 as $k5)
                         <tr class="hover:bg-red-50">
                             <td class="px-4 py-2 border font-bold">{{ $k5->nama_nasabah }}</td>
-                            <td class="px-4 py-2 border">{{ $k5->alamat_nasabah }}</td>
-                            <td class="px-4 py-2 border text-red-600 font-semibold italic">Wajib Dikunjungi Segera</td>
+                            
+                            <td class="px-4 py-2 border text-xs">{{ $k5->alamat ?? '-' }}</td>
+                            
+                            <td class="px-4 py-3 text-sm">
+                                <span class="px-2 py-1 rounded-full text-[10px] font-semibold {{ $k5->status_label == 'Sudah Dikunjungi' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
+                                    {{ $k5->status_label }}
+                                </span>
+                            </td>
                         </tr>
                         @empty
-                        <tr><td colspan="3" class="p-4 text-center">Tidak ada nasabah KOL 5</td></tr>
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-gray-500 italic">Tidak ada nasabah KOL 5</td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>
