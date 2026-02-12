@@ -76,8 +76,36 @@
                     </div>
                 </div>
 
-                <div class="chart-box">
-                    <canvas id="myChart" height="120"></canvas>
+                <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Persentase Performa Nasional <small style="font-size: 0.6rem; color: #999;">(Klik untuk detail AO)</small></h3>
+
+                <div class="stats-grid">
+                    <div class="stat-card" onclick="openModalAO('target')" style="background: white; color: #333; border-left: 8px solid #3f36b1; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 20px;">
+                        <div style="text-align: left;">
+                            <div class="stat-label" style="color: #666;">Penyelesaian Target</div>
+                            <div style="font-size: 0.75rem; color: #999;">Agregat Seluruh AO</div>
+                        </div>
+                        <div style="position: relative; width: 70px; height: 70px;">
+                            <svg viewBox="0 0 36 36" style="transform: rotate(-90deg); width: 100%; height: 100%;">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#eee" stroke-width="4"></circle>
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#3f36b1" stroke-width="4" stroke-dasharray="{{ $kpi_target_nasional }}, 100" stroke-linecap="round"></circle>
+                            </svg>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold;">{{ $kpi_target_nasional }}%</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" onclick="openModalAO('kol5')" style="background: white; color: #333; border-left: 8px solid #e74c3c; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 20px;">
+                        <div style="text-align: left;">
+                            <div class="stat-label" style="color: #666;">KOL 5 Done</div>
+                            <div style="font-size: 0.75rem; color: #999;">Target: Per Kunjungan 1 Nasabah KOL 5</div>
+                        </div>
+                        <div style="position: relative; width: 70px; height: 70px;">
+                            <svg viewBox="0 0 36 36" style="transform: rotate(-90deg); width: 100%; height: 100%;">
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#eee" stroke-width="4"></circle>
+                                <circle cx="18" cy="18" r="16" fill="none" stroke="#e74c3c" stroke-width="4" stroke-dasharray="{{ $kpi_kol5_nasional }}, 100" stroke-linecap="round"></circle>
+                            </svg>
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; color: #e74c3c;">{{ $kpi_kol5_nasional }}%</div>
+                        </div>
+                    </div>
                 </div>
 
                 <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
@@ -132,6 +160,30 @@
             <div id="modalTableContainer">
                 </div>
         </div>
+    </div>
+</div>
+
+<div id="modalAO" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px);">
+    <div style="background-color: #fff; margin: 10% auto; padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;">
+        <span onclick="closeModalAO()" style="position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #aaa;">&times;</span>
+        
+        <h4 id="modalTitle" style="font-weight: bold; margin-bottom: 20px; color: #333;">Detail Performa AO</h4>
+        
+        <div id="aoListContent">
+            @foreach($detailPerformaAO as $ao)
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span style="font-weight: 600; color: #444;">{{ $ao->nama }}</span>
+                    <span class="label-persen" data-target="{{ $ao->persen_target }}" data-kol5="{{ $ao->persen_kol5 }}" style="font-weight: bold;">0%</span>
+                </div>
+                <div style="width: 100%; background-color: #eee; height: 12px; border-radius: 10px; overflow: hidden;">
+                    <div class="bar-progres" data-target="{{ $ao->persen_target }}" data-kol5="{{ $ao->persen_kol5 }}" style="width: 0%; height: 100%; border-radius: 10px; transition: width 0.8s ease-in-out;"></div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        
+        <button onclick="closeModalAO()" style="width: 100%; padding: 10px; border: none; background: #f0f0f0; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px;">Tutup</button>
     </div>
 </div>
 
@@ -292,6 +344,55 @@
     function closeModal() {
         document.getElementById('statsModal').style.display = 'none';
     }
+
+    function openModalAO(type) {
+    const modal = document.getElementById('modalAO');
+    const title = document.getElementById('modalTitle');
+    const bars = document.querySelectorAll('.bar-progres');
+    const labels = document.querySelectorAll('.label-persen');
+    
+    // Reset dan Set Tampilan
+    modal.style.display = 'block';
+    
+    if (type === 'target') {
+        title.innerText = 'Rincian Penyelesaian Target';
+        title.style.color = '#3f36b1';
+    } else {
+        title.innerText = 'Rincian Penyelesaian KOL 5';
+        title.style.color = '#e74c3c';
+    }
+
+    // Animasi Bar
+    setTimeout(() => {
+        bars.forEach((bar, index) => {
+            const value = type === 'target' ? bar.dataset.target : bar.dataset.kol5;
+            const color = type === 'target' ? '#3f36b1' : '#e74c3c';
+            
+            bar.style.width = value + '%';
+            bar.style.backgroundColor = color;
+            
+            labels[index].innerText = value + '%';
+            labels[index].style.color = color;
+        });
+    }, 100);
+}
+
+function closeModalAO() {
+    const modal = document.getElementById('modalAO');
+    const bars = document.querySelectorAll('.bar-progres');
+    
+    // Reset width ke 0 untuk animasi saat dibuka lagi nanti
+    bars.forEach(bar => bar.style.width = '0%');
+    modal.style.display = 'none';
+}
+
+// Tutup modal jika klik di luar kotak putih
+window.onclick = function(event) {
+    const modal = document.getElementById('modalAO');
+    if (event.target == modal) {
+        closeModalAO();
+    }
+}
     </script>
 
 </body>

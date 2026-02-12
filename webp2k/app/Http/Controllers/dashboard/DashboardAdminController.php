@@ -10,45 +10,102 @@ use Illuminate\Http\Request;
 
 class DashboardAdminController extends Controller
 {
-    public function index()
+   public function index()
     {
-        $totalKunjungan = \App\Models\DataKunjunganAdm::count();
-
+        // --- 1. DATA DASAR ---
+        $totalKunjungan = \App\Models\DataKunjunganAdm::count(); // Total Rencana Admin
+        
+        // Kita proses performa AO satu per satu di sini
         $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) {
             $kodeAO = trim($karyawan->kode_ao);
-
-            // 1. Ambil semua kunjungan AO ini
+            
+            // Data Kunjungan Riil AO
             $kunjunganUser = \DB::table('kunjungans')
                 ->where('kode_ao', $kodeAO)
                 ->get();
 
             $karyawan->kunjungan_selesai = $kunjunganUser->count();
-            
-            // 2. Ambil daftar nama nasabah yang dikunjungi (karena no_nasabah kamu isinya salah)
-            $daftarNamaNasabah = $kunjunganUser->pluck('nama_nasabah')->toArray();
+            $daftarNamaNasabahSelesai = $kunjunganUser->pluck('nama_nasabah')->toArray();
 
-            // 3. Cek ke tabel nasabahs berdasarkan NAMA nasabah
+            // A. HITUNG PERSENTASE TARGET HARIAN PER AO
+            $rencanaAO = \DB::table('data_kunjungan_adms')->where('kode_ao', $kodeAO)->count();
+            $karyawan->persen_target = $rencanaAO > 0 
+                ? round(($karyawan->kunjungan_selesai / $rencanaAO) * 100) 
+                : 0;
+
+            // B. HITUNG PERSENTASE KOL 5 PER AO
+            $rencanaKOL5AO = \DB::table('data_kunjungan_adms')
+                ->where('kode_ao', $kodeAO)
+                ->where('kol', 5)
+                ->pluck('nama_nasabah')->toArray();
+
+            $mandiriKOL5AO = \DB::table('kunjungans')
+                ->where('kode_ao', $kodeAO)
+                ->where('kol', 5)
+                ->whereNotIn('nama_nasabah', $rencanaKOL5AO)
+                ->pluck('nama_nasabah')->toArray();
+
+            $gabunganWajibKOL5 = array_unique(array_merge($rencanaKOL5AO, $mandiriKOL5AO));
+            $totalWajibKOL5AO = count($gabunganWajibKOL5);
+            
+            $selesaiKOL5AO = 0;
+            foreach ($gabunganWajibKOL5 as $nama) {
+                if (in_array($nama, $daftarNamaNasabahSelesai)) {
+                    $selesaiKOL5AO++;
+                }
+            }
+
+            $karyawan->persen_kol5 = $totalWajibKOL5AO > 0 
+                ? round(($selesaiKOL5AO / $totalWajibKOL5AO) * 100) 
+                : 0;
+
+            // Status Capai Target (Syarat: Min 10 kunjungan DAN ada minimal 1 KOL 5 selesai)
             $hasKol5 = \DB::table('nasabahs')
-                ->whereIn('nasabah', $daftarNamaNasabah) // 'nasabah' adalah kolom nama di tabel nasabahs
+                ->whereIn('nasabah', $daftarNamaNasabahSelesai) 
                 ->where('kol', '5')
                 ->exists();
 
             $karyawan->capai_target = ($karyawan->kunjungan_selesai >= 10 && $hasKol5);
-
+            
             return $karyawan;
         });
 
+        // --- 2. LOGIKA AGREGAT NASIONAL (UNTUK DASHBOARD UTAMA) ---
         $totalSelesai = $performaAO->sum('kunjungan_selesai');
         $totalBelum = max(0, $totalKunjungan - $totalSelesai);
         $aoSelesaiTarget = $performaAO->where('capai_target', true)->count();
 
-        // Data Grafik
+        $kpi_target_nasional = $totalKunjungan > 0 ? round(($totalSelesai / $totalKunjungan) * 100) : 0;
+
+        $target_kol5_nama = \DB::table('data_kunjungan_adms')->where('kol', 5)->pluck('nama_nasabah')->toArray();
+        $mandiri_kol5_nama = \DB::table('kunjungans')->where('kol', 5)->whereNotIn('nama_nasabah', $target_kol5_nama)->pluck('nama_nasabah')->toArray();
+        $gabungan_kol5_nasional = array_unique(array_merge($target_kol5_nama, $mandiri_kol5_nama));
+        $total_wajib_kol5 = count($gabungan_kol5_nasional);
+
+        $nama_sudah_visit = \DB::table('kunjungans')->pluck('nama_nasabah')->toArray();
+        $kol5_done_count = 0;
+        foreach ($gabungan_kol5_nasional as $nama) {
+            if (in_array($nama, $nama_sudah_visit)) $kol5_done_count++;
+        }
+
+        $kpi_kol5_nasional = $total_wajib_kol5 > 0 ? round(($kol5_done_count / $total_wajib_kol5) * 100) : 0;
+
+        // --- 3. DATA GRAFIK & RETURN ---
         $labels = $performaAO->pluck('nama'); 
         $counts = $performaAO->pluck('kunjungan_selesai'); 
 
-        return view('dashboard.dashboardadmin', compact(
-            'totalKunjungan', 'totalSelesai', 'totalBelum', 'aoSelesaiTarget', 'labels', 'counts'
-        ));
+        return view('dashboard.dashboardadmin', [
+            'totalKunjungan' => $totalKunjungan,
+            'totalSelesai' => $totalSelesai,
+            'totalBelum' => $totalBelum,
+            'aoSelesaiTarget' => $aoSelesaiTarget,
+            'labels' => $labels,
+            'counts' => $counts,
+            'kpi_target_nasional' => $kpi_target_nasional,
+            'kpi_kol5_nasional' => $kpi_kol5_nasional,
+            'total_wajib_kol5' => $total_wajib_kol5,
+            'detailPerformaAO' => $performaAO // Ini yang akan digunakan di dalam Modal
+        ]);
     }
 
    public function getDetail($type)

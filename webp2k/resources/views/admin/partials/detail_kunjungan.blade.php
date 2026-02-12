@@ -26,39 +26,43 @@
             </tr>
         </thead>
        <tbody>
-            @forelse($data_detail as $item)
+          @forelse($data_detail as $item)
             <tr style="border-bottom: 2px solid #000; text-align: center;">
                 <td style="padding: 10px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
                 
                 <td style="padding: 10px; border-right: 2px solid #000;">
-                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('d-m-Y') : '-' }}
+                    {{ \Carbon\Carbon::parse($item->created_at)->format('d-m-Y') }}
                 </td>
                 
                 <td style="padding: 10px; border-right: 2px solid #000;">
-                    {{ $item->no_angsuran ?? '-' }}
+                    {{-- Jika inputan AO (no_nasabah) aneh/kode AO, tampilkan nomor dari rencana --}}
+                    @if($item->no_nasabah == $kode_ao)
+                        <b style="color: blue;">{{ $item->no_rencana ?? $item->no_nasabah }}</b>
+                    @else
+                        <b>{{ $item->no_nasabah }}</b>
+                    @endif
                 </td>
                 
                 <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
-                    {{ $item->nama_nasabah ?? '-' }}
+                    {{ strtoupper($item->nama_nasabah) }}
                 </td>
 
                 <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
-                    {{ $item->alamat_nasabah ?? '-' }}
+                    {{-- Ambil alamat master, jika kosong ambil dari rencana --}}
+                    {{ $item->alamat_master ?? ($item->alamat_rencana ?? 'Alamat Tidak Ditemukan') }}
                 </td>
                 
                 <td style="padding: 10px;">
                     <button type="button" 
-                            onclick="window.open('{{ route('download.docx', $item->id) }}', '_blank'); event.stopPropagation();" 
-                            style="background: none; border: none; cursor: pointer; padding: 0;">
+                            onclick="window.open('{{ route('download.docx', $item->id) }}', '_blank');" 
+                            style="border: none; background: none; cursor: pointer;">
                         <i class="fa-regular fa-file-word" style="font-size: 20px; color: #2b579a;"></i>
                     </button>
                 </td>
             </tr>
-            @empty
-            <tr>
-                <td colspan="6" style="padding: 20px;">Data kunjungan tidak ditemukan.</td>
-            </tr>
-            @endforelse
+        @empty
+            <tr><td colspan="6" style="padding: 20px;">Data kunjungan tidak ditemukan.</td></tr>
+        @endforelse
         </tbody>
     </table>
 </div>

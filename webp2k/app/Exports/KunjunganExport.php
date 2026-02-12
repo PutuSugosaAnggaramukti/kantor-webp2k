@@ -15,19 +15,26 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
 {
     protected $kode_ao;
 
-    public function __construct($kode_ao)
+    // PERBAIKAN: Tambahkan '= null' agar tidak error saat dipanggil tanpa argumen
+    public function __construct($kode_ao = null)
     {
         $this->kode_ao = $kode_ao;
     }
 
     public function collection()
     {
-        return DB::table('kunjungans')
+        // Mulai Query Dasar
+        $query = DB::table('kunjungans')
             ->leftJoin('nasabahs', 'kunjungans.nama_nasabah', '=', 'nasabahs.nasabah')
-            ->where('kunjungans.kode_ao', 'LIKE', '%' . $this->kode_ao . '%')
             ->select('kunjungans.*', 'nasabahs.kol as kol_master')
-            ->orderBy('kunjungans.created_at', 'desc')
-            ->get();
+            ->orderBy('kunjungans.created_at', 'desc');
+
+        // PERBAIKAN: Hanya gunakan filter WHERE jika $kode_ao memiliki nilai
+        if (!empty($this->kode_ao)) {
+            $query->where('kunjungans.kode_ao', 'LIKE', '%' . $this->kode_ao . '%');
+        }
+
+        return $query->get();
     }
 
     // FUNGSI UNTUK MEMASUKKAN GAMBAR KE EXCEL

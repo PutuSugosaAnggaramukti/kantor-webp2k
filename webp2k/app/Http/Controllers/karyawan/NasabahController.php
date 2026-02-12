@@ -81,13 +81,12 @@ class NasabahController extends Controller
 
     public function getNasabah($no_angsuran)
     {
-        // Pastikan pencarian berdasarkan no_angsuran
         $nasabah = Nasabah::where('no_angsuran', $no_angsuran)->first();
 
         if ($nasabah) {
             return response()->json([
                 'success' => true,
-                'data'    => $nasabah // Mengirim seluruh field (nasabah, alamat, kol)
+                'data'    => $nasabah 
             ]);
         }
 
@@ -107,8 +106,21 @@ class NasabahController extends Controller
             return redirect()->route('admin.dashboard', ['page' => 'nasabah'])
                             ->with('success', 'Data Nasabah berhasil diimport!');
         } catch (\Exception $e) {
-            // Jika masih ada error field lain, ini akan menampilkannya
             return "Terjadi Error Database: " . $e->getMessage(); 
         }
     }
+
+  public function exportExcel(Request $request)
+{
+    $tglAwal = $request->query('tanggal_awal');
+    $tglAkhir = $request->query('tanggal_akhir');
+
+    if (!$tglAwal || !$tglAkhir) {
+        return back()->with('error', 'Silakan pilih rentang tanggal.');
+    }
+
+    $nama_file = 'Data_Nasabah_' . $tglAwal . '_sd_' . $tglAkhir . '.xlsx';
+
+    return \Maatwebsite\Excel\Facades\Excel::download(new NasabahExport($tglAwal, $tglAkhir), $nama_file);
+}
 }

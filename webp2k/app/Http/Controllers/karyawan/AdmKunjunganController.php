@@ -50,13 +50,26 @@ class AdmKunjunganController extends Controller
         return view('admin.partials.kunjungan', compact('karyawan', 'kunjunganGrouped'));
     }
 
-    public function detail($kode_ao)
+   public function detail($kode_ao)
     {
         try {
-            $data_detail = DataKunjunganAdm::whereHas('karyawan', function($q) use ($kode_ao) {
-                    $q->where('kode_ao', $kode_ao);
+            $data_detail = \DB::table('kunjungans')
+                ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
+                ->leftJoin('data_kunjungan_adms', function($join) {
+                    $join->on('kunjungans.nama_nasabah', '=', 'data_kunjungan_adms.nama_nasabah')
+                        ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao');
                 })
-                ->orderBy('tanggal', 'desc')
+                ->where('kunjungans.kode_ao', $kode_ao)
+                ->select(
+                    'kunjungans.id',
+                    'kunjungans.created_at',
+                    'kunjungans.nama_nasabah',
+                    'kunjungans.no_nasabah', 
+                    'nasabahs.alamat as alamat_master',
+                    'data_kunjungan_adms.alamat_nasabah as alamat_rencana',
+                    'data_kunjungan_adms.no_angsuran as no_rencana'
+                )
+                ->orderBy('kunjungans.created_at', 'desc')
                 ->get();
 
             return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
@@ -104,8 +117,12 @@ class AdmKunjunganController extends Controller
         return view('admin.rekap_kunjungan_content', compact('rekap'));
     }
 
-    public function exportExcel()
+    public function exportExcel(Request $request)
     {
-        return Excel::download(new KunjunganExport, 'rekap_seluruh_kunjungan.xlsx');
+        // Kita ambil kode_ao dari request, jika tidak ada (export semua), nilainya jadi null
+        $kode_ao = $request->query('kode_ao'); 
+
+        // Masukkan $kode_ao ke dalam constructor KunjunganExport
+        return Excel::download(new KunjunganExport($kode_ao), 'rekap_kunjungan_' . date('Y-m-d') . '.xlsx');
     }
 }
