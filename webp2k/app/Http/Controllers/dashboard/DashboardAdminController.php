@@ -12,14 +12,20 @@ class DashboardAdminController extends Controller
 {
    public function index()
     {
-        // --- 1. DATA DASAR ---
-        $totalKunjungan = \App\Models\DataKunjunganAdm::count(); // Total Rencana Admin
+
+        $data = $this->getDashboardData();
+        return view('dashboard.dashboardadmin', $data);
         
-        // Kita proses performa AO satu per satu di sini
+    }
+
+    public function getDashboardData()
+    {
+        // --- 1. DATA DASAR ---
+        $totalKunjungan = \App\Models\DataKunjunganAdm::count(); 
+        
         $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) {
             $kodeAO = trim($karyawan->kode_ao);
             
-            // Data Kunjungan Riil AO
             $kunjunganUser = \DB::table('kunjungans')
                 ->where('kode_ao', $kodeAO)
                 ->get();
@@ -27,13 +33,11 @@ class DashboardAdminController extends Controller
             $karyawan->kunjungan_selesai = $kunjunganUser->count();
             $daftarNamaNasabahSelesai = $kunjunganUser->pluck('nama_nasabah')->toArray();
 
-            // A. HITUNG PERSENTASE TARGET HARIAN PER AO
             $rencanaAO = \DB::table('data_kunjungan_adms')->where('kode_ao', $kodeAO)->count();
             $karyawan->persen_target = $rencanaAO > 0 
                 ? round(($karyawan->kunjungan_selesai / $rencanaAO) * 100) 
                 : 0;
 
-            // B. HITUNG PERSENTASE KOL 5 PER AO
             $rencanaKOL5AO = \DB::table('data_kunjungan_adms')
                 ->where('kode_ao', $kodeAO)
                 ->where('kol', 5)
@@ -59,7 +63,6 @@ class DashboardAdminController extends Controller
                 ? round(($selesaiKOL5AO / $totalWajibKOL5AO) * 100) 
                 : 0;
 
-            // Status Capai Target (Syarat: Min 10 kunjungan DAN ada minimal 1 KOL 5 selesai)
             $hasKol5 = \DB::table('nasabahs')
                 ->whereIn('nasabah', $daftarNamaNasabahSelesai) 
                 ->where('kol', '5')
@@ -70,7 +73,7 @@ class DashboardAdminController extends Controller
             return $karyawan;
         });
 
-        // --- 2. LOGIKA AGREGAT NASIONAL (UNTUK DASHBOARD UTAMA) ---
+        // --- 2. LOGIKA AGREGAT NASIONAL ---
         $totalSelesai = $performaAO->sum('kunjungan_selesai');
         $totalBelum = max(0, $totalKunjungan - $totalSelesai);
         $aoSelesaiTarget = $performaAO->where('capai_target', true)->count();
@@ -90,11 +93,11 @@ class DashboardAdminController extends Controller
 
         $kpi_kol5_nasional = $total_wajib_kol5 > 0 ? round(($kol5_done_count / $total_wajib_kol5) * 100) : 0;
 
-        // --- 3. DATA GRAFIK & RETURN ---
         $labels = $performaAO->pluck('nama'); 
         $counts = $performaAO->pluck('kunjungan_selesai'); 
 
-        return view('dashboard.dashboardadmin', [
+        // Return array untuk compact-an
+        return [
             'totalKunjungan' => $totalKunjungan,
             'totalSelesai' => $totalSelesai,
             'totalBelum' => $totalBelum,
@@ -104,8 +107,8 @@ class DashboardAdminController extends Controller
             'kpi_target_nasional' => $kpi_target_nasional,
             'kpi_kol5_nasional' => $kpi_kol5_nasional,
             'total_wajib_kol5' => $total_wajib_kol5,
-            'detailPerformaAO' => $performaAO // Ini yang akan digunakan di dalam Modal
-        ]);
+            'detailPerformaAO' => $performaAO
+        ];
     }
 
    public function getDetail($type)

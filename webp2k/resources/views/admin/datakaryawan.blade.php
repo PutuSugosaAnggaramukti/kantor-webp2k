@@ -77,10 +77,16 @@
                 </div>
             </div>
 
-            <div class="main-content">
+           <div class="main-content">
                 <div class="content-padding">
                     <div id="main-content-area">
-                        @include('admin.partials.karyawan_table') 
+                        @if(isset($content))
+                            {{-- Saat Refresh: Menampilkan HTML dari Controller --}}
+                            {!! $content !!}
+                        @else
+                            {{-- Saat Akses Awal: Menampilkan Tabel Karyawan --}}
+                            @include('admin.partials.karyawan_table', ['karyawan' => $karyawan ?? collect()])
+                        @endif
                     </div>
                 </div>
             </div>
@@ -138,28 +144,32 @@ window.loadAdminPage = function(pageName, element) {
         else {
             menuToActive = document.getElementById(`menu-${pageName}`);
         }
+
     }
 
-    // 3. Tambahkan class active
-    if (menuToActive) {
-        menuToActive.classList.add('active');
-    }
+     if (menuToActive) menuToActive.classList.add('active');
 
-    // --- Proses Fetch AJAX ---
-    contentArea.style.opacity = '0.3';
+     contentArea.style.opacity = '0.3';
     
-    // Logika URL Fetch agar dinamis terhadap route yang memiliki param atau tidak
-    let fetchUrl = pageName.includes('-content') ? `/admin/${pageName}` : `/admin/${pageName}-content`;
+        let cleanName = pageName.replace('-content', '');
+        let fetchUrl = `/admin/${cleanName}-content`;
 
-    fetch(fetchUrl)
+        fetch(fetchUrl, {
+            method: 'GET',
+            headers: {
+                // Header ini wajib agar Controller mendeteksi $request->ajax()
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'text/html'
+            }
+        })
         .then(res => res.text())
         .then(html => {
+            // Tempelkan kontennya (Partial saja, tanpa sidebar)
             contentArea.innerHTML = html;
             contentArea.style.opacity = '1';
             
-            // Push State untuk update URL di browser
-            let displayUrl = pageName.replace('-content', '');
-            history.pushState({page: pageName}, "", `/admin/${displayUrl}`);
+            // Update URL tanpa reload
+            history.pushState({page: cleanName}, "", `/admin/${cleanName}`);
         })
         .catch(err => {
             console.error("Gagal memuat:", err);
@@ -168,20 +178,41 @@ window.loadAdminPage = function(pageName, element) {
 };
 
 document.addEventListener("DOMContentLoaded", function() {
-    // 1. Ambil parameter 'page' dari URL browser
     const urlParams = new URLSearchParams(window.location.search);
     const pageToLoad = urlParams.get('page');
+    
+    // Ambil path URL saat ini (misal: /admin/data-kunjungan)
+    const currentPath = window.location.pathname;
 
-    // 2. Jika ada parameter page (misal: ?page=nasabah), jalankan loadAdminPage
+    // JIKA URL mengandung kata selain 'data-karyawan' (seperti 'kunjungan' atau 'nasabah')
+    // MAKA kita hanya perlu mengaktifkan menu sidebar-nya saja, 
+    // karena kontennya sudah di-render oleh Laravel (Server Side).
+    if (currentPath.includes('kunjungan')) {
+        setActiveMenuOnly('menu-data-kunjungan');
+    } else if (currentPath.includes('nasabah')) {
+        setActiveMenuOnly('menu-nasabah');
+    } else if (currentPath.includes('adm-kunjungan')) {
+        setActiveMenuOnly('menu-adm-kunjungan');
+    }
+
+    // Hanya jalankan AJAX load jika ada parameter ?page= di URL (untuk kompatibilitas lama)
     if (pageToLoad) {
-        // Beri sedikit delay agar DOM siap
-        setTimeout(() => {
-            if (typeof window.loadAdminPage === 'function') {
-                window.loadAdminPage(pageToLoad);
-            }
-        }, 100);
+        // Cek jika area konten masih kosong, baru load via AJAX
+        const contentArea = document.getElementById('main-content-area');
+        if (contentArea && contentArea.innerHTML.trim() === "") {
+             loadAdminPage(pageToLoad);
+        }
     }
 });
+
+// Fungsi pembantu untuk menyalakan lampu menu tanpa fetch data
+function setActiveMenuOnly(menuId) {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    const activeMenu = document.getElementById(menuId);
+    if (activeMenu) {
+        activeMenu.classList.add('active');
+    }
+}
 
 // 3. MODAL KONTROL (Tambah, Edit, Detail)
 function openModalTambah() { document.getElementById('modalTambahKaryawan').style.display = 'flex'; }

@@ -13,18 +13,35 @@ use Illuminate\Http\Request;
 class NasabahController extends Controller
 {
 
-  public function nasabahContent(Request $request)
+    public function nasabahContent(Request $request)
     {
-        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->paginate(10)->withQueryString();
+        // 1. Ambil data nasabah
+        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')
+                        ->paginate(10)
+                        ->withQueryString();
 
-        // Jika lewat AJAX (klik pagination)
+        // --- LOGIKA HYBRID START ---
+        
+        // A. Jika request via AJAX (Klik menu sidebar / Pagination)
         if ($request->ajax()) {
-            // Render HANYA isi tabel dan link paginationnya saja
+            // Hanya kirim tabelnya saja
             return view('admin.partials.nasabah_table', compact('nasabah_all'))->render();
         }
 
-        // Jika akses pertama kali (bukan AJAX)
-        return view('admin.partials.nasabah_table', compact('nasabah_all'));
+        // B. Jika request via Refresh / Direct URL (F5)
+        // Panggil dashboard controller untuk mengambil data Sidebar/Stats
+        $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+        $data = $dashboard->getDashboardData();
+
+        // Masukkan isi tabel nasabah ke variabel 'content'
+        $data['content'] = view('admin.partials.nasabah_table', compact('nasabah_all'))->render();
+        $data['page'] = 'nasabah';
+        $data['title'] = 'Data Nasabah';
+
+        // Kembalikan ke view UTAMA (yang ada sidebar-nya)
+        return view('admin.datakaryawan', $data);
+
+        // --- LOGIKA HYBRID END ---
     }
 
     public function detail($no_angsuran)

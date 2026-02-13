@@ -26,37 +26,49 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Grouping untuk Admin
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    // 1. DASHBOARD
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-detail/{type}', [DashboardAdminController::class, 'getDetail'])->name('admin.dashboard.detail');
+
+    // 2. DATA KARYAWAN (Sudah benar)
     Route::get('/data-karyawan', [KaryawanController::class, 'index'])->name('karyawan.index');
     Route::get('/data-karyawan-content', [KaryawanController::class, 'getContent']);
     Route::get('/karyawan/{id}/edit', [KaryawanController::class, 'edit']);
     Route::put('/karyawan/{id}', [KaryawanController::class, 'update'])->name('karyawan.update');
     Route::post('/karyawan/store', [KaryawanController::class, 'store'])->name('karyawan.store');
     Route::get('/karyawan/{id}', [KaryawanController::class, 'show']);
-    Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('admin.kunjungan.index');
-    Route::get('/data-kunjungan-content', [AdmKunjunganController::class, 'dataKunjunganContent'])->name('admin.kunjungan.rekap');
-    Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail'])
-    ->where('kode_ao', '.*');
-    Route::get('/detail-kunjungan-content', [AdmKunjunganController::class, 'detail']);
+    Route::get('/get-karyawan-list', [KaryawanController::class, 'getList'])->name('admin.karyawan.list');
+
+    // 3. ADM KUNJUNGAN (Dibenahi rutenya agar tidak 404 saat refresh)
+    Route::get('/data-kunjungan', [AdmKunjunganController::class, 'dataKunjunganContent'])->name('admin.kunjungan.index'); // Rute bersih
+    Route::get('/data-kunjungan-content', [AdmKunjunganController::class, 'dataKunjunganContent']); // Tetap ada untuk AJAX
+    Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('admin.kunjungan.input'); 
+    Route::get('/kunjungan-detail/{kode_ao}', [AdmKunjunganController::class, 'detail'])->where('kode_ao', '.*');
+    Route::post('/datakunjungan/store', [AdmKunjunganController::class, 'store'])->name('admin.datakunjungan.store');
+    Route::get('/kunjungan/export', [AdmKunjunganController::class, 'exportExcel'])->name('admin.kunjungan.export');
+
+    // 4. DATA NASABAH (Dibenahi rutenya)
+    Route::get('/nasabah', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.index'); // Rute bersih
     Route::get('/nasabah-content', [NasabahController::class, 'nasabahContent']);
     Route::post('/nasabah/store', [NasabahController::class, 'store'])->name('nasabah.store');
     Route::get('/get-daftar-no-anggota', [NasabahController::class, 'getDaftarNoAnggota']);
     Route::get('/get-nasabah/{no_angsuran}', [NasabahController::class, 'getNasabah']);
-    Route::get('/nasabah-detail/{no_angsuran}-content', [NasabahController::class, 'detail']);
-    Route::get('/pelaporan-content', [PelaporanController::class, 'index'])->name('pelaporan.content');
-    Route::get('/pelaporan-detail/{id_ao}-content', [PelaporanController::class, 'detailAo'])->name('pelaporan.detail');
-    Route::get('/detail-pelaporan-nasabah-content', [PelaporanController::class, 'detail_nasabah']);
-    Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumenIndex']);
-    Route::get('/download-docx/{id}', [AdmDokumenController::class, 'downloadWord'])->name('download.docx');
-    Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail']);
-    Route::post('/datakunjungan/store', [AdmKunjunganController::class, 'store'])->name('admin.datakunjungan.store');
-    Route::get('/get-karyawan-list', [KaryawanController::class, 'getList'])->name('admin.karyawan.list');
-    Route::get('/kunjungan/export', [AdmKunjunganController::class, 'exportExcel'])->name('admin.kunjungan.export');
+    Route::get('/nasabah-detail/{no_angsuran}', [NasabahController::class, 'detail']);
     Route::get('/nasabah/filter', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.filter');
     Route::get('/nasabah/export', [NasabahController::class, 'exportExcel'])->name('admin.nasabah.export');
     Route::post('/nasabah/import', [NasabahController::class, 'importExcel'])->name('admin.nasabah.import');
+
+    // 5. PELAPORAN (Dibenahi rutenya)
+    Route::get('/pelaporan', [PelaporanController::class, 'index'])->name('pelaporan.index'); // Rute bersih
+    Route::get('/pelaporan-content', [PelaporanController::class, 'index']);
+    Route::get('/pelaporan-detail/{id_ao}', [PelaporanController::class, 'detailAo'])->name('pelaporan.detail');
+    Route::get('/detail-pelaporan-nasabah', [PelaporanController::class, 'detail_nasabah']);
     Route::get('/pelaporan/export', [PelaporanController::class, 'exportExcel'])->name('admin.pelaporan.export');
+
+    // 6. DOKUMEN (Dibenahi rutenya)
+    Route::get('/dokumen', [AdmDokumenController::class, 'dokumenIndex'])->name('admin.dokumen.index'); // Rute bersih
+    Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumenIndex']);
+    Route::get('/download-docx/{id}', [AdmDokumenController::class, 'downloadWord'])->name('download.docx');
 });
 
 

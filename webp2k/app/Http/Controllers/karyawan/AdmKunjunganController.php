@@ -3,59 +3,65 @@
 namespace App\Http\Controllers\karyawan;
 
 use App\Http\Controllers\Controller;
-use App\Models\DataKunjunganAdm; // Model Jadwal Kunjungan (Input Admin)
-use App\Models\Kunjungan;        // Model Hasil Kunjungan (Input AO di Lapangan)
+use App\Models\DataKunjunganAdm;
+use App\Models\Kunjungan;
 use App\Models\Karyawan;
 use App\Exports\KunjunganExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+// Import Dashboard Controller untuk mengambil data sidebar
+use App\Http\Controllers\Dashboard\DashboardAdminController;
 
 class AdmKunjunganController extends Controller
 {
-   public function index()
+    public function index()
     {
         $karyawans = Karyawan::all();
         $kunjungansGrouped = DataKunjunganAdm::with('karyawan')
             ->orderBy('kol', 'desc')
             ->get()
-            ->groupBy('kode_ao'); 
+            ->groupBy('kode_ao');
 
         return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'));
     }
-    
-   public function dataKunjunganContent()
+
+    public function dataKunjunganContent(Request $request)
     {
-        // 1. Ambil data karyawan beserta hitungan kunjungannya
-        // Kita namakan $karyawan agar sesuai dengan @foreach di Blade kamu
-        $karyawan = \App\Models\Karyawan::where('status', 'aktif')
-            ->get()
-            ->map(function ($item) {
-                // Hitung jumlah kunjungan selesai dari tabel kunjungans
-                $item->kunjungan_count = \DB::table('kunjungans')
-                    ->where('kode_ao', $item->kode_ao)
-                    ->count();
-                return $item;
-            });
+        // 1. Ambil data utama (Karyawan & Kunjungan)
+        $karyawan = \App\Models\Karyawan::where('status', 'aktif')->get(); // ... tambahkan map() Anda
+        $kunjunganGrouped = \DB::table('kunjungans')->get()->groupBy('kode_ao'); // ... tambahkan logic join Anda
 
-        // 2. Jika kamu masih butuh data detail kunjungan yang di-join ke tabel nasabahs
-        $kunjunganGrouped = \DB::table('kunjungans')
-            ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran') 
-            ->select('kunjungans.*', 'nasabahs.kol')
-            ->orderBy('kunjungans.created_at', 'desc')
-            ->get()
-            ->groupBy('kode_ao');
+        // --- LOGIKA HYBRID ---
+        
+        // A. JIKA AJAX (Klik Sidebar) -> Kirim hanya isi tabelnya
+        if ($request->ajax()) {
+            return view('admin.partials.kunjungan', compact('karyawan', 'kunjunganGrouped'))->render();
+        }
 
-        // Kirim kedua variabel tersebut ke view
-        return view('admin.partials.kunjungan', compact('karyawan', 'kunjunganGrouped'));
+        // B. JIKA REFRESH (F5) -> Kirim halaman lengkap
+        try {
+            $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+            $data = $dashboard->getDashboardData(); 
+        } catch (\Exception $e) {
+            // Fallback jika method getDashboardData() bermasalah
+            $data = ['karyawan_count' => \App\Models\Karyawan::count()];
+        }
+
+        $data['title'] = 'Data Kunjungan';
+        $data['page'] = 'kunjungan';
+        // Gunakan array_merge atau assign langsung ke key 'content'
+        $data['content'] = view('admin.partials.kunjungan', compact('karyawan', 'kunjunganGrouped'))->render();
+
+        return view('admin.datakaryawan', $data);
     }
 
-   public function detail($kode_ao)
+    public function detail($kode_ao)
     {
         try {
             $data_detail = \DB::table('kunjungans')
                 ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
-                ->leftJoin('data_kunjungan_adms', function($join) {
+                ->leftJoin('data_kunjungan_adms', function ($join) {
                     $join->on('kunjungans.nama_nasabah', '=', 'data_kunjungan_adms.nama_nasabah')
                         ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao');
                 })
@@ -64,7 +70,7 @@ class AdmKunjunganController extends Controller
                     'kunjungans.id',
                     'kunjungans.created_at',
                     'kunjungans.nama_nasabah',
-                    'kunjungans.no_nasabah', 
+                    'kunjungans.no_nasabah',
                     'nasabahs.alamat as alamat_master',
                     'data_kunjungan_adms.alamat_nasabah as alamat_rencana',
                     'data_kunjungan_adms.no_angsuran as no_rencana'
@@ -73,7 +79,6 @@ class AdmKunjunganController extends Controller
                 ->get();
 
             return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
-            
         } catch (\Exception $e) {
             return "<div style='color:red; padding:20px;'>Error: " . $e->getMessage() . "</div>";
         }
@@ -100,29 +105,25 @@ class AdmKunjunganController extends Controller
             'kol'            => $request->kol,
             'bulan'          => $request->bulan,
             'no_angsuran'    => $request->no_angsuran,
-            'tanggal'        => $request->tanggal, 
+            'tanggal'        => $request->tanggal,
             'kode_ao'        => $karyawan->kode_ao ?? null,
         ]);
 
         return response()->json([
-            'success' => true, 
+            'success' => true,
             'message' => 'Jadwal kunjungan berhasil ditambahkan!'
         ]);
     }
 
     public function rekapKunjungan()
     {
-        // Tetap menggunakan count untuk summary global jika diperlukan
         $rekap = Karyawan::withCount(['kunjungan as jumlah_kunjungan'])->get();
         return view('admin.rekap_kunjungan_content', compact('rekap'));
     }
 
     public function exportExcel(Request $request)
     {
-        // Kita ambil kode_ao dari request, jika tidak ada (export semua), nilainya jadi null
-        $kode_ao = $request->query('kode_ao'); 
-
-        // Masukkan $kode_ao ke dalam constructor KunjunganExport
+        $kode_ao = $request->query('kode_ao');
         return Excel::download(new KunjunganExport($kode_ao), 'rekap_kunjungan_' . date('Y-m-d') . '.xlsx');
     }
 }

@@ -20,9 +20,7 @@ class NasabahExport implements FromCollection, WithHeadings, ShouldAutoSize
     public function collection()
     {
         return DB::table('nasabahs')
-            // Join 1: Ke tabel rencana admin untuk ambil penunjukan AO (Kode)
             ->leftJoin('data_kunjungan_adms', 'nasabahs.no_angsuran', '=', 'data_kunjungan_adms.no_angsuran')
-            // Join 2: Ke tabel karyawans untuk ambil NAMA petugas berdasarkan kode_ao
             ->leftJoin('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
             ->whereBetween('nasabahs.created_at', [$this->tglAwal . ' 00:00:00', $this->tglAkhir . ' 23:59:59'])
             ->select(
