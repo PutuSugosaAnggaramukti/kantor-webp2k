@@ -41,7 +41,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     // 3. ADM KUNJUNGAN (Dibenahi rutenya agar tidak 404 saat refresh)
     Route::get('/data-kunjungan', [AdmKunjunganController::class, 'dataKunjunganContent'])->name('admin.kunjungan.index'); // Rute bersih
-    Route::get('/data-kunjungan-content', [AdmKunjunganController::class, 'dataKunjunganContent']); // Tetap ada untuk AJAX
+    Route::get('/data-kunjungan-content', [AdmKunjunganController::class, 'dataKunjunganContent']); 
+    Route::get('/adm-kunjungan', [AdmKunjunganController::class, 'index'])->name('admin.adm-kunjungan.index');
     Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('admin.kunjungan.input'); 
     Route::get('/kunjungan-detail/{kode_ao}', [AdmKunjunganController::class, 'detail'])->where('kode_ao', '.*');
     Route::post('/datakunjungan/store', [AdmKunjunganController::class, 'store'])->name('admin.datakunjungan.store');

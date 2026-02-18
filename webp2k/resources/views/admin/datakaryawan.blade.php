@@ -180,32 +180,33 @@ window.loadAdminPage = function(pageName, element) {
 document.addEventListener("DOMContentLoaded", function() {
     const urlParams = new URLSearchParams(window.location.search);
     const pageToLoad = urlParams.get('page');
-    
-    // Ambil path URL saat ini (misal: /admin/data-kunjungan)
     const currentPath = window.location.pathname;
 
-    // JIKA URL mengandung kata selain 'data-karyawan' (seperti 'kunjungan' atau 'nasabah')
-    // MAKA kita hanya perlu mengaktifkan menu sidebar-nya saja, 
-    // karena kontennya sudah di-render oleh Laravel (Server Side).
-    if (currentPath.includes('kunjungan')) {
+    // 1. Logika penentuan Menu Active (Urutan sangat penting!)
+    // Cek 'adm-kunjungan' TERLEBIH DAHULU sebelum 'kunjungan'
+    if (currentPath.includes('adm-kunjungan')) {
+        setActiveMenuOnly('menu-adm-kunjungan');
+    } else if (currentPath.includes('data-kunjungan')) {
         setActiveMenuOnly('menu-data-kunjungan');
     } else if (currentPath.includes('nasabah')) {
         setActiveMenuOnly('menu-nasabah');
-    } else if (currentPath.includes('adm-kunjungan')) {
-        setActiveMenuOnly('menu-adm-kunjungan');
+    } else if (currentPath.includes('pelaporan')) {
+        setActiveMenuOnly('menu-pelaporan');
+    } else if (currentPath.includes('dokumen')) {
+        setActiveMenuOnly('menu-dokumen');
     }
 
-    // Hanya jalankan AJAX load jika ada parameter ?page= di URL (untuk kompatibilitas lama)
+    // 2. Logika Load AJAX (Hanya jika area konten kosong)
     if (pageToLoad) {
-        // Cek jika area konten masih kosong, baru load via AJAX
         const contentArea = document.getElementById('main-content-area');
-        if (contentArea && contentArea.innerHTML.trim() === "") {
+        // Gunakan trim().length === 0 untuk memastikan benar-benar kosong
+        if (contentArea && contentArea.innerHTML.trim().length === 0) {
              loadAdminPage(pageToLoad);
         }
     }
 });
 
-// Fungsi pembantu untuk menyalakan lampu menu tanpa fetch data
+
 function setActiveMenuOnly(menuId) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     const activeMenu = document.getElementById(menuId);

@@ -10,12 +10,11 @@ use App\Exports\KunjunganExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-// Import Dashboard Controller untuk mengambil data sidebar
 use App\Http\Controllers\Dashboard\DashboardAdminController;
 
 class AdmKunjunganController extends Controller
 {
-    public function index()
+    public function index(Request $request) 
     {
         $karyawans = Karyawan::all();
         $kunjungansGrouped = DataKunjunganAdm::with('karyawan')
@@ -23,34 +22,46 @@ class AdmKunjunganController extends Controller
             ->get()
             ->groupBy('kode_ao');
 
-        return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'));
-    }
+        if ($request->ajax()) {
+            return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
+        }
 
+        try {
+            $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+            $data = $dashboard->getDashboardData();
+        } catch (\Exception $e) {
+            $data = [
+                'karyawan_count' => \App\Models\Karyawan::count(),
+                'title' => 'Input Jadwal Kunjungan'
+            ];
+        }
+
+        $data['content'] = view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
+        $data['page'] = 'adm-kunjungan';
+        $data['title'] = 'Input Jadwal Kunjungan';
+
+        return view('admin.datakaryawan', $data);
+
+    }
+    
     public function dataKunjunganContent(Request $request)
     {
-        // 1. Ambil data utama (Karyawan & Kunjungan)
-        $karyawan = \App\Models\Karyawan::where('status', 'aktif')->get(); // ... tambahkan map() Anda
-        $kunjunganGrouped = \DB::table('kunjungans')->get()->groupBy('kode_ao'); // ... tambahkan logic join Anda
+        $karyawan = \App\Models\Karyawan::where('status', 'aktif')->get(); 
+        $kunjunganGrouped = \DB::table('kunjungans')->get()->groupBy('kode_ao'); 
 
-        // --- LOGIKA HYBRID ---
-        
-        // A. JIKA AJAX (Klik Sidebar) -> Kirim hanya isi tabelnya
         if ($request->ajax()) {
             return view('admin.partials.kunjungan', compact('karyawan', 'kunjunganGrouped'))->render();
         }
 
-        // B. JIKA REFRESH (F5) -> Kirim halaman lengkap
         try {
             $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
             $data = $dashboard->getDashboardData(); 
         } catch (\Exception $e) {
-            // Fallback jika method getDashboardData() bermasalah
             $data = ['karyawan_count' => \App\Models\Karyawan::count()];
         }
 
         $data['title'] = 'Data Kunjungan';
         $data['page'] = 'kunjungan';
-        // Gunakan array_merge atau assign langsung ke key 'content'
         $data['content'] = view('admin.partials.kunjungan', compact('karyawan', 'kunjunganGrouped'))->render();
 
         return view('admin.datakaryawan', $data);

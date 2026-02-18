@@ -10,9 +10,32 @@ use Carbon\Carbon;
 
 class AdmDokumenController extends Controller
 {
-    public function dokumenIndex() {
+    public function dokumenIndex(Request $request) 
+    {
+        
         $dokumen_all = DataKunjunganAdm::orderBy('tanggal', 'desc')->get();
-        return view('admin.partials.dokumen', compact('dokumen_all'));
+        if ($request->ajax()) {
+            return view('admin.partials.dokumen', compact('dokumen_all'))->render();
+        }
+
+        $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+        
+        try {
+            $data = $dashboard->getDashboardData();
+        } catch (\Exception $e) {
+    
+            $data = [
+                'karyawan_count' => \App\Models\Karyawan::count(),
+                'title' => 'Dokumen'
+            ];
+        }
+
+        $data['content'] = view('admin.partials.dokumen', compact('dokumen_all'))->render();
+        $data['page'] = 'dokumen'; 
+        $data['title'] = 'Data Dokumen';
+
+        return view('admin.datakaryawan', $data);
+
     }
 
    public function downloadWord($id)
@@ -26,7 +49,6 @@ class AdmDokumenController extends Controller
 
         $templateProcessor = new TemplateProcessor($templatePath);
 
-        // Mapping data
         $templateProcessor->setValue('nama_nasabah', strtoupper($data->nama_nasabah));
         $templateProcessor->setValue('alamat_nasabah', $data->alamat_nasabah);
         $templateProcessor->setValue('no_angsuran', $data->no_angsuran);

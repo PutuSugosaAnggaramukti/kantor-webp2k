@@ -12,23 +12,32 @@ use App\Exports\PelaporanExport;
 
 class PelaporanController extends Controller
 {
-   public function index()
-{
-    // Kita ambil data Karyawan yang punya kunjungan
-    $pelaporan_all = Karyawan::whereHas('kunjungan')
-        ->with(['kunjungan' => function($query) {
-            $query->orderBy('tanggal', 'desc');
-        }])
-        ->get();
+    public function index(Request $request) 
+    {
+        $pelaporan_all = Karyawan::whereHas('kunjungan')
+            ->with(['kunjungan' => function($query) {
+                $query->orderBy('tanggal', 'desc');
+            }])
+            ->get();
 
-    $pelaporan_all = $pelaporan_all->map(function ($karyawan) {
-        // Kita simpan kunjungan terbaru ke dalam attribute baru
-        $karyawan->kunjungan_terbaru = $karyawan->kunjungan->first();
-        return $karyawan;
-    });
+        $pelaporan_all = $pelaporan_all->map(function ($karyawan) {
+            $karyawan->kunjungan_terbaru = $karyawan->kunjungan->first();
+            return $karyawan;
+        });
 
-    return view('admin.partials.pelaporan', compact('pelaporan_all'));
-}
+        if ($request->ajax()) {
+            return view('admin.partials.pelaporan', compact('pelaporan_all'))->render();
+        }
+        $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+        $data = $dashboard->getDashboardData();
+
+        $data['content'] = view('admin.partials.pelaporan', compact('pelaporan_all'))->render();
+        $data['page'] = 'pelaporan';
+        $data['title'] = 'Pelaporan';
+
+        
+        return view('admin.datakaryawan', $data);
+    }
 
     public function detailAo($id_ao)
     {
@@ -49,10 +58,8 @@ class PelaporanController extends Controller
         $tgl_awal = $request->tanggal_awal;
         $tgl_akhir = $request->tanggal_akhir;
 
-        // Nama file yang akan diunduh
         $fileName = 'Laporan_Kunjungan_' . $tgl_awal . '_to_' . $tgl_akhir . '.xlsx';
 
-        // Menjalankan proses download Excel
         return Excel::download(new PelaporanExport($tgl_awal, $tgl_akhir), $fileName);
     }
 
