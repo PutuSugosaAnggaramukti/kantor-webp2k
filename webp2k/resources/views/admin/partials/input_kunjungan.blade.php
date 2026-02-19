@@ -21,9 +21,13 @@
     </ul>
 </div>
 
-<div style="margin-bottom: 25px;">
+<div style="margin-bottom: 25px; display: flex; gap: 12px; flex-wrap: wrap;">
     <button onclick="openModalKunjungan()" style="background-color: #28a745; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <i class="fa-solid fa-plus"></i> Tambah Jadwal Baru
+    </button>
+
+    <button type="button" class="btn-import-excel" onclick="openModalImport()">
+         <i class="fa-solid fa-file-excel"></i> Import dari Excel
     </button>
 </div>
 
@@ -116,3 +120,14 @@
     </div>
     @endforeach
 @endif
+
+@include('admin.partials.modals') 
+
+<script>
+    function openModalImport() {
+        document.getElementById('modalImport').style.display = 'flex';
+    }
+    function closeModalImport() {
+        document.getElementById('modalImport').style.display = 'none';
+    }
+</script>

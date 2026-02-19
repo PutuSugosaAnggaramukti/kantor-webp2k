@@ -46,6 +46,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/adm-kunjungan-content', [AdmKunjunganController::class, 'index'])->name('admin.kunjungan.input'); 
     Route::get('/kunjungan-detail/{kode_ao}', [AdmKunjunganController::class, 'detail'])->where('kode_ao', '.*');
     Route::post('/datakunjungan/store', [AdmKunjunganController::class, 'store'])->name('admin.datakunjungan.store');
+    Route::post('/datakunjungan/import', [AdmKunjunganController::class, 'importExcel'])->name('admin.datakunjungan.import');
     Route::get('/kunjungan/export', [AdmKunjunganController::class, 'exportExcel'])->name('admin.kunjungan.export');
 
     // 4. DATA NASABAH (Dibenahi rutenya)

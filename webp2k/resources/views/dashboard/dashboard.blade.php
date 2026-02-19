@@ -140,13 +140,6 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm mb-8">
-                <p class="text-xs font-bold text-gray-400 uppercase mb-4 tracking-wider">Histori Kunjungan 7 Hari Terakhir</p>
-                <div class="h-64">
-                    <canvas id="visitChart"></canvas>
-                </div>
-            </div>
-
             <h2 class="text-2xl font-bold mb-6">Menu Aplikasi</h2>
 
             <div class="menu-grid">

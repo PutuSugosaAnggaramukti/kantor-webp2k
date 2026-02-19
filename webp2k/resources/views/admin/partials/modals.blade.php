@@ -323,3 +323,44 @@
     </div>
 </div>
 
+<div id="modalImport" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+    <div style="background-color: white; padding: 30px; border-radius: 15px; width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative; border: 3px solid #000;">
+        <h3 style="margin-top: 0; color: #000; font-weight: 800; border-bottom: 2px solid #eee; padding-bottom: 15px; text-transform: uppercase;">
+            <i class="fa-solid fa-file-excel"></i> Import Jadwal AO
+        </h3>
+        
+        <form action="{{ route('admin.datakunjungan.import') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 800; margin-bottom: 8px; color: #333;">Pilih Account Officer (AO)</label>
+                <select name="karyawan_id" required style="width: 100%; padding: 12px; border: 2px solid #000; border-radius: 8px; font-weight: 700; background: #fff;">
+                    <option value="">-- Pilih AO Penerima Jadwal --</option>
+                    @foreach($karyawans as $ao)
+                        <option value="{{ $ao->id }}">{{ $ao->nama }} ({{ $ao->kode_ao }})</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; font-weight: 800; margin-bottom: 8px; color: #333;">File Excel (.xlsx)</label>
+                <input type="file" name="file_excel" accept=".xlsx" required style="width: 100%; padding: 10px; border: 2px dashed #ccc; border-radius: 8px;">
+                <div style="margin-top: 10px; background: #fff5f5; padding: 10px; border-radius: 6px; border: 1px solid #feb2b2;">
+                    <small style="display: block; color: #c53030; font-weight: 700; font-size: 11px;">
+                        <i class="fa-solid fa-info-circle"></i> Format Kolom:
+                    </small>
+                    <small style="display: block; color: #4a5568; font-size: 11px; font-weight: 600;">
+                        A: Nama Nasabah | B: KOL | C: Bulan (YYYY-MM)
+                    </small>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeModalImport()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #000; background: #f8f9fa; font-weight: 700; cursor: pointer;">Batal</button>
+                <button type="submit" style="padding: 10px 20px; border-radius: 8px; border: none; background: #4e4bc1; color: white; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #2d2a8a;">
+                    Proses Import
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+

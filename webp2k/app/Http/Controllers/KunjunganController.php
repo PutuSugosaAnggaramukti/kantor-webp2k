@@ -148,7 +148,6 @@ class KunjunganController extends Controller
     $myCode = strtoupper(trim($user->kode_ao));
 
     $laporan = \DB::table('kunjungans')
-        // Join ke tabel nasabahs untuk mendapatkan data KOL master
         ->leftJoin('nasabahs', function($join) {
             $join->on('kunjungans.nama_nasabah', '=', 'nasabahs.nasabah');
         })
@@ -164,7 +163,6 @@ class KunjunganController extends Controller
                 'id_kunjungan' => $item->id,
                 'kode_ao'      => $item->kode_ao,
                 'nama_nasabah' => $item->nama_nasabah,
-                // Logika: Gunakan KOL dari laporan, jika kosong ambil dari master nasabah
                 'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
                 'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
             ];
@@ -175,7 +173,6 @@ class KunjunganController extends Controller
 
     public function detailPelaporan(Request $request)
     {
-        // Ambil ID dari query string (?id=...)
         $id = $request->query('id');
 
         if (!$id) {
@@ -183,7 +180,6 @@ class KunjunganController extends Controller
         }
 
         try {
-            // Gunakan DB Table langsung agar bypass proteksi Model
             $detail = \DB::table('kunjungans')->where('id', $id)->first();
 
             if (!$detail) {

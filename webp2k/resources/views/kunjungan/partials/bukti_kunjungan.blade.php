@@ -2,24 +2,35 @@
     $pathFoto = public_path('uploads/kunjungan/' . $detail->foto_kunjungan);
     $waktuFoto = null;
     $isOldPhoto = false;
+    $koordinatExif = null;
 
     if (!empty($detail->foto_kunjungan) && file_exists($pathFoto)) {
-        // Gunakan @ untuk meredam error jika file bukan JPEG murni
         $exif = @exif_read_data($pathFoto);
         
-        // 1. Ambil Waktu (Coba beberapa tag sekaligus)
+        // 1. Ambil Waktu (Sudah benar)
         $dateTag = $exif['DateTimeOriginal'] ?? $exif['DateTime'] ?? $exif['FileDateTime'] ?? null;
-        
         if ($dateTag) {
             $waktuFoto = \Carbon\Carbon::parse($dateTag);
             $waktuUpload = \Carbon\Carbon::parse($detail->created_at);
-            if ($waktuFoto->diffInHours($waktuUpload) > 2) {
-                $isOldPhoto = true;
-            }
-        } else {
-            // Jika benar-benar kosong, ambil waktu file sistem
-            $waktuFoto = \Carbon\Carbon::createFromTimestamp(filemtime($pathFoto));
+            if ($waktuFoto->diffInHours($waktuUpload) > 2) { $isOldPhoto = true; }
         }
+
+        // 2. LOGIKA BARU: Ambil Koordinat dari Metadata Foto (EXIF)
+        if (isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
+            // Fungsi pembantu untuk konversi koordinat EXIF (Derajat ke Desimal)
+            $lat = getGpsDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+            $lon = getGpsDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+            $koordinatExif = $lat . ',' . $lon;
+        }
+    }
+
+    // Fungsi helper (taruh di luar @php jika diletakkan di Controller, tapi untuk tes bisa di sini)
+    function getGpsDecimal($exifCoord, $hemi) {
+        $degrees = count($exifCoord) > 0 ? eval("return {$exifCoord[0]};") : 0;
+        $minutes = count($exifCoord) > 1 ? eval("return {$exifCoord[1]};") : 0;
+        $seconds = count($exifCoord) > 2 ? eval("return {$exifCoord[2]};") : 0;
+        $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
+        return $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
     }
 @endphp
 
@@ -102,15 +113,38 @@
                 @endif
             </div>
 
-            {{-- 2. Koordinat --}}
+           {{-- 2. Koordinat --}}
             <div class="detail-section">
                 <span class="section-label"><i class="fa-solid fa-location-dot"></i> Koordinat Lokasi</span>
-                <p class="section-value">{{ $detail->koordinat ?? '-' }}</p>
-                @if($detail->koordinat)
-                    <a href="https://www.google.com/maps/search/?api=1&query={{ $detail->koordinat }}" target="_blank" 
-                       style="display: inline-block; margin-top: 10px; color: #4e4bc1; text-decoration: none; font-weight: 700; font-size: 13px;">
-                        LIHAT DI GOOGLE MAPS <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                    </a>
+                
+                {{-- Gabungkan koordinat dari EXIF atau Database --}}
+                @php 
+                    $fixCoord = $koordinatExif ?? $detail->koordinat; 
+                @endphp
+
+                @if($fixCoord && $fixCoord !== '-')
+                    <p class="section-value">
+                        <a href="https://www.google.com/maps/search/?api=1&query={{ $fixCoord }}" 
+                        target="_blank" 
+                        title="Klik untuk buka di Google Maps"
+                        style="color: #4e4bc1; text-decoration: none; border-bottom: 2px dashed #4e4bc1; transition: 0.2s;">
+                        {{ $fixCoord }} 
+                        <i class="fa-solid fa-up-right-from-square" style="font-size: 14px; margin-left: 5px;"></i>
+                        </a>
+                    </p>
+                    
+                    @if($koordinatExif)
+                        <small style="color: #27ae60; font-weight: 600;">
+                            <i class="fa-solid fa-circle-check"></i> Koordinat akurat terdeteksi dari foto.
+                        </small>
+                    @else
+                        <small style="color: #f39c12; font-weight: 600;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> Menggunakan koordinat sistem aplikasi.
+                        </small>
+                    @endif
+                @else
+                    <p class="section-value">-</p>
+                    <small style="color: #e74c3c;">Koordinat tidak tersedia.</small>
                 @endif
             </div>
 

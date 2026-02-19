@@ -789,3 +789,40 @@ nav div.hidden.sm\:flex-1.sm\:flex.sm\:items-center.sm\:justify-between div:firs
 #modalTambahKaryawan > div {
     animation: zoomInModal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); 
 }
+
+.btn-import-excel {
+    background-color: #2b78c5; /* Warna biru yang lebih soft sesuai gambar */
+    color: white;
+    border: none;
+    padding: 10px 25px; /* Memberi ruang agar tombol terlihat panjang/lonjong */
+    border-radius: 30px; /* Membuat ujung tombol membulat sempurna */
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Bayangan halus di bawah tombol */
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-import-excel:hover {
+    background-color: #1a5ea3; /* Biru sedikit lebih gelap saat dihover */
+    transform: translateY(-3px); /* Efek terangkat */
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); /* Bayangan lebih dalam saat hover */
+    color: white;
+}
+
+.btn-import-excel i {
+    font-size: 1.1rem; /* Ukuran icon sedikit diperbesar */
+}
+
+/* Animasi khusus untuk icon excel saat hover */
+.btn-import-excel:hover i {
+    animation: bounceIcon 0.5s infinite alternate;
+}
+
+@keyframes bounceIcon {
+    from { transform: scale(1); }
+    to { transform: scale(1.2); }
+}
