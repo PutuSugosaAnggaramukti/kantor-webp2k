@@ -335,7 +335,7 @@
                 <label style="display: block; font-weight: 800; margin-bottom: 8px; color: #333;">Pilih Account Officer (AO)</label>
                 <select name="karyawan_id" required style="width: 100%; padding: 12px; border: 2px solid #000; border-radius: 8px; font-weight: 700; background: #fff;">
                     <option value="">-- Pilih AO Penerima Jadwal --</option>
-                    @foreach($karyawans as $ao)
+                    @foreach($karyawans ?? \App\Models\Karyawan::where('status', 'aktif')->get() as $ao)
                         <option value="{{ $ao->id }}">{{ $ao->nama }} ({{ $ao->kode_ao }})</option>
                     @endforeach
                 </select>

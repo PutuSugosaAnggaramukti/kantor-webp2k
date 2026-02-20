@@ -31,21 +31,16 @@
             </tr>
         </thead>
         <tbody style="font-weight: 700; font-size: 14px;">
-            @foreach($karyawan as $index => $item)
-            <tr style="border-bottom: 2px solid #000; text-align: center;">
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
-                    {{ $item->nama }}
-                </td>
-                <td style="padding: 15px; text-align: center;">
-                    <span 
-                        onclick="loadAdminPage('kunjungan-detail/{{ $item->kode_ao }}')" 
-                        style="color: #007bff; text-decoration: underline; cursor: pointer; font-weight: 800;">
-                        {{ $item->kunjungan_count }}
-                    </span>
-                </td>
-            </tr>
+            @foreach($karyawans as $index => $item)
+                <tr style="border-bottom: 2px solid #000; text-align: center; cursor: pointer;" 
+                    onclick="showDetailKunjungan('{{ $item->kode_ao }}')">
+                    <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                    <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
+                    <td style="padding: 15px; border-right: 2px solid #000; text-align: left;">{{ $item->nama }}</td>
+                    <td style="padding: 15px;">
+                        <span class="badge bg-primary">{{ $item->kunjungan_count ?? 0 }}</span>
+                    </td>
+                </tr>
             @endforeach
         </tbody>
     </table>

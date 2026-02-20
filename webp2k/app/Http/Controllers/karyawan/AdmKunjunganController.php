@@ -16,7 +16,6 @@ class AdmKunjunganController extends Controller
 {
     public function index(Request $request) 
     {
-        // Gunakan variabel jamak $karyawans agar sinkron dengan modal
         $karyawans = Karyawan::where('status', 'aktif')->get();
         $kunjungansGrouped = DataKunjunganAdm::with('karyawan')
             ->orderBy('kol', 'desc')
@@ -33,44 +32,47 @@ class AdmKunjunganController extends Controller
         } catch (\Exception $e) {
             $data = [
                 'karyawan_count' => Karyawan::count(),
-                'title' => 'Input Jadwal Kunjungan'
             ];
         }
 
-        // Penting: Pastikan $karyawans ikut masuk ke dalam compact di sini
-        $data['content'] = view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
         $data['page'] = 'adm-kunjungan';
         $data['title'] = 'Input Jadwal Kunjungan';
-        $data['karyawans'] = $karyawans; // Tambahan: Kirim juga ke view utama sebagai cadangan
+        $data['content'] = view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
+        
+        $data['karyawans'] = $karyawans; 
 
         return view('admin.datakaryawan', $data);
     }
     
-    public function dataKunjunganContent(Request $request)
-    {
-        // Ubah variabel menjadi $karyawans (tambah 's') agar cocok dengan modal
-        $karyawans = \App\Models\Karyawan::where('status', 'aktif')->get(); 
-        $kunjunganGrouped = \DB::table('kunjungans')->get()->groupBy('kode_ao'); 
+  public function dataKunjunganContent(Request $request)
+{
+    // Mengambil data karyawan beserta jumlah kunjungannya
+    // Pastikan relasi 'kunjungan' sudah ada di Model Karyawan
+    $karyawans = Karyawan::where('status', 'aktif')
+        ->withCount('kunjungan') 
+        ->get();
 
-        if ($request->ajax()) {
-            // Update compact juga menjadi 'karyawans'
-            return view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
-        }
+    // Data grouped tetap diambil jika diperlukan untuk logika lain
+    $kunjunganGrouped = \DB::table('kunjungans')->get()->groupBy('kode_ao'); 
 
-        try {
-            $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
-            $data = $dashboard->getDashboardData(); 
-        } catch (\Exception $e) {
-            $data = ['karyawan_count' => \App\Models\Karyawan::count()];
-        }
-
-        $data['title'] = 'Data Kunjungan';
-        $data['page'] = 'kunjungan';
-        // Update compact di sini juga
-        $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
-
-        return view('admin.datakaryawan', $data);
+    if ($request->ajax()) {
+        return view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
     }
+
+    try {
+        $dashboard = new DashboardAdminController();
+        $data = $dashboard->getDashboardData(); 
+    } catch (\Exception $e) {
+        $data = ['karyawan_count' => Karyawan::count()];
+    }
+
+    $data['title'] = 'Data Kunjungan';
+    $data['page'] = 'kunjungan';
+    $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
+    $data['karyawans'] = $karyawans;
+
+    return view('admin.datakaryawan', $data);
+}
 
     public function detail($kode_ao)
     {
@@ -164,26 +166,32 @@ class AdmKunjunganController extends Controller
             // Skip header (index 0)
             foreach (array_slice($data, 1) as $row) {
                 // Pastikan kolom nama nasabah (index 0 di excel) tidak kosong
-                if (!empty($row[0])) {
+                if (!empty($row[1])) { // Cek Nama Nasabah (Kolom B) tidak kosong
                     DataKunjunganAdm::create([
                         'karyawan_id'    => $request->karyawan_id,
                         'kode_ao'        => $karyawan->kode_ao,
-                        'nama_nasabah'   => $row[0], // Kolom A
-                        'no_angsuran'    => $row[1] ?? '-', // Kolom B
-                        'alamat_nasabah' => $row[2] ?? '-', // Kolom C
-                        'kol'            => $row[3] ?? 1,   // Kolom D
-                        'bulan'          => $row[4] ?? now()->format('Y-m'), // Kolom E
-                        'tanggal'        => now(), // Default hari ini atau sesuaikan kolom excel
+                        'bulan'          => $row[0] ?? now()->format('Y-m'), // Sekarang Bulan di Kolom A
+                        'nama_nasabah'   => $row[1],                         // Sekarang Nama di Kolom B
+                        'no_angsuran'    => $row[2] ?? '-',                  // No Angsuran di Kolom C
+                        'alamat_nasabah' => $row[3] ?? '-',                  // Alamat di Kolom D
+                        'kol'            => $row[4] ?? 1,                    // KOL di Kolom E
+                        'tanggal'        => now(), 
                     ]);
                 }
             }
 
-            DB::commit();
-            return redirect()->back()->with('success', 'Data nasabah berhasil diimport untuk AO ' . $karyawan->nama);
+           DB::commit();
+            return response()->json([
+                'success' => true,
+                'message' => 'Data nasabah berhasil diimport untuk AO ' . $karyawan->nama
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Gagal import: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal import: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

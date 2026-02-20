@@ -108,6 +108,10 @@
                     </div>
                 </div>
 
+                <div style="margin-top: 2rem; background: white; padding: 20px; border-radius: 12px; height: 300px; display:none;">
+                    <canvas id="myChart"></canvas>
+                </div>
+
                 <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
                 
                 <div class="menu-grid">
@@ -147,7 +151,7 @@
 
 
 <div id="statsModal" class="modal-overlay" style="display:none;">
-    <div class="modal-content">
+    <div class="modal-content" style="width: 80%; max-width: 900px;">
         <div class="modal-header">
             <h2 id="modalTitle">Detail Data</h2>
             <span class="close-modal" onclick="closeModal()">&times;</span>
@@ -157,7 +161,7 @@
                 <div class="spinner"></div>
                 <p>Mengambil data...</p>
             </div>
-            <div id="modalTableContainer">
+            <div id="modalTableContainer" style="overflow-x: auto;">
                 </div>
         </div>
     </div>
@@ -167,7 +171,7 @@
     <div style="background-color: #fff; margin: 10% auto; padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;">
         <span onclick="closeModalAO()" style="position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #aaa;">&times;</span>
         
-        <h4 id="modalTitle" style="font-weight: bold; margin-bottom: 20px; color: #333;">Detail Performa AO</h4>
+        <h4 id="aoModalTitle" style="font-weight: bold; margin-bottom: 20px; color: #333;">Detail Performa AO</h4>
         
         <div id="aoListContent">
             @foreach($detailPerformaAO as $ao)
@@ -218,73 +222,61 @@
         }, 1000); 
     }
 
-    function updateActiveClass(element) {
-        const allMenus = document.querySelectorAll('.nav-item, .menu-item, .sub-nav-item');
-        allMenus.forEach(menu => menu.classList.remove('active'));
-        if (element) { element.classList.add('active'); }
-    }
-    </script>
-
-    <script>
-      const ctx = document.getElementById('myChart').getContext('2d');
-        const myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode($labels) !!}, 
-                datasets: [{
-                    label: 'Jumlah Kunjungan Selesai',
-                    data: {!! json_encode($counts) !!},
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1,
-                    borderRadius: 5
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1 }
-                    }
+    // FUNGSI CHART DENGAN PENGAMAN
+    window.onload = function() {
+        const canvasElement = document.getElementById('myChart');
+        if (canvasElement) {
+            const ctx = canvasElement.getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($labels) !!}, 
+                    datasets: [{
+                        label: 'Jumlah Kunjungan Selesai',
+                        data: {!! json_encode($counts) !!},
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
                 },
-                plugins: {
-                    legend: { display: true, position: 'top' }
-                }
-            }
-        });
-    </script>
-
-    <script>
-        function toggleAdminDropdown() {
-            const dropdown = document.getElementById('adminDropdown');
-            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-        }
-
-        function confirmLogout() {
-            Swal.fire({
-                title: 'Konfirmasi Logout',
-                text: "Sesi admin akan diakhiri",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3f36b1',
-                confirmButtonText: 'Ya, Keluar!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const loader = document.getElementById('loginLoading');
-                    if (loader) { loader.style.display = 'flex'; }
-                    setTimeout(() => {
-                        document.getElementById('logout-form').submit();
-                    }, 800);
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
                 }
             });
         }
-    </script>
+    };
 
-    <script>
-        function showDetail(type) {
+    function toggleAdminDropdown() {
+        const dropdown = document.getElementById('adminDropdown');
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function confirmLogout() {
+        Swal.fire({
+            title: 'Konfirmasi Logout',
+            text: "Sesi admin akan diakhiri",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3f36b1',
+            confirmButtonText: 'Ya, Keluar!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const loader = document.getElementById('loginLoading');
+                if (loader) { loader.style.display = 'flex'; }
+                setTimeout(() => {
+                    document.getElementById('logout-form').submit();
+                }, 800);
+            }
+        });
+    }
+
+    function showDetail(type) {
         const titleMap = {
             'rencana': 'Detail Rencana Kunjungan',
             'selesai': 'Detail Kunjungan Selesai',
@@ -292,17 +284,17 @@
         };
 
         document.getElementById('modalTitle').innerText = titleMap[type];
-        document.getElementById('modalTableContainer').innerHTML = '<p>Sedang memuat...</p>';
+        document.getElementById('modalTableContainer').innerHTML = '<div style="text-align:center; padding:20px;"><div class="spinner"></div><p>Sedang memuat...</p></div>';
         document.getElementById('statsModal').style.display = 'flex';
 
         fetch(`/admin/dashboard-detail/${type}`)
             .then(response => response.json())
             .then(data => {
-               let table = `<table style="width:100%; border-collapse: collapse; margin-top:10px;">
+                let table = `<table style="width:100%; border-collapse: collapse; margin-top:10px; font-size:13px;">
                 <thead>
                     <tr style="background:#f1f5f9; text-align:left;">
                         <th style="padding:12px; border:1px solid #ddd;">No</th>
-                        <th style="padding:12px; border:1px solid #ddd;">Kode AO</th>
+                        <th style="padding:12px; border:1px solid #ddd;">AO (Kode - Nama)</th>
                         <th style="padding:12px; border:1px solid #ddd;">Nama Nasabah</th>
                         <th style="padding:12px; border:1px solid #ddd;">Tanggal</th>
                         <th style="padding:12px; border:1px solid #ddd; text-align:center;">Status</th>
@@ -310,34 +302,41 @@
                 </thead>
                 <tbody>`;
 
-             data.forEach((item, index) => {
-                // Warna label dinamis berdasarkan status
-                let badgeColor = '#fee2e2'; // Default Merah (Belum)
-                let textColor = '#991b1b';
-                
-                if(item.status === 'Sudah Dikunjungi') {
-                    badgeColor = '#dcfce7'; // Hijau
-                    textColor = '#166534';
-                } else if(item.status === 'Rencana') {
-                    badgeColor = '#e0f2fe'; // Biru
-                    textColor = '#0369a1';
+                if (data.length > 0) {
+                    data.forEach((item, index) => {
+                        let badgeColor = '#fee2e2'; 
+                        let textColor = '#991b1b';
+                        
+                        if(item.status === 'Sudah Dikunjungi') {
+                            badgeColor = '#dcfce7'; 
+                            textColor = '#166534';
+                        } else if(item.status === 'Rencana') {
+                            badgeColor = '#e0f2fe'; 
+                            textColor = '#0369a1';
+                        }
+
+                        table += `<tr>
+                            <td style="padding:10px; border:1px solid #eee; text-align:center;">${index + 1}</td>
+                            <td style="padding:10px; border:1px solid #eee; font-weight:bold;">${item.info_1}</td>
+                            <td style="padding:10px; border:1px solid #eee;">${item.info_2}</td>
+                            <td style="padding:10px; border:1px solid #eee; text-align:center;">${item.info_3}</td>
+                            <td style="padding:10px; border:1px solid #eee; text-align:center;">
+                                <span style="background:${badgeColor}; color:${textColor}; padding:4px 10px; border-radius:15px; font-size:11px; font-weight:bold;">
+                                    ${item.status}
+                                </span>
+                            </td>
+                        </tr>`;
+                    });
+                } else {
+                    table += `<tr><td colspan="5" style="text-align:center; padding:20px;">Tidak ada data ditemukan.</td></tr>`;
                 }
 
-               table += `<tr>
-                        <td style="padding:10px; border:1px solid #eee; text-align:center;">${index + 1}</td>
-                        <td style="padding:10px; border:1px solid #eee;">${item.info_1}</td>
-                        <td style="padding:10px; border:1px solid #eee;">${item.info_2}</td>
-                        <td style="padding:10px; border:1px solid #eee; text-align:center;">${item.info_3}</td>
-                        <td style="padding:10px; border:1px solid #eee; text-align:center;">
-                            <span style="background:${badgeColor}; color:${textColor}; padding:4px 10px; border-radius:15px; font-size:11px; font-weight:bold;">
-                                ${item.status}
-                            </span>
-                        </td>
-                    </tr>`;
-                });
-
                 table += `</tbody></table>`;
-                document.getElementById('modalTableContainer').innerHTML = data.length > 0 ? table : '<p>Tidak ada data.</p>';
+                document.getElementById('modalTableContainer').innerHTML = table;
+            })
+            .catch(error => {
+                document.getElementById('modalTableContainer').innerHTML = '<p style="color:red; text-align:center;">Terjadi kesalahan saat mengambil data.</p>';
+                console.error('Error:', error);
             });
     }
 
@@ -346,53 +345,46 @@
     }
 
     function openModalAO(type) {
-    const modal = document.getElementById('modalAO');
-    const title = document.getElementById('modalTitle');
-    const bars = document.querySelectorAll('.bar-progres');
-    const labels = document.querySelectorAll('.label-persen');
-    
-    // Reset dan Set Tampilan
-    modal.style.display = 'block';
-    
-    if (type === 'target') {
-        title.innerText = 'Rincian Penyelesaian Target';
-        title.style.color = '#3f36b1';
-    } else {
-        title.innerText = 'Rincian Penyelesaian KOL 5';
-        title.style.color = '#e74c3c';
+        const modal = document.getElementById('modalAO');
+        const title = document.getElementById('aoModalTitle');
+        const bars = document.querySelectorAll('.bar-progres');
+        const labels = document.querySelectorAll('.label-persen');
+        
+        modal.style.display = 'block';
+        
+        if (type === 'target') {
+            title.innerText = 'Rincian Penyelesaian Target';
+            title.style.color = '#3f36b1';
+        } else {
+            title.innerText = 'Rincian Penyelesaian KOL 5';
+            title.style.color = '#e74c3c';
+        }
+
+        setTimeout(() => {
+            bars.forEach((bar, index) => {
+                const value = type === 'target' ? bar.dataset.target : bar.dataset.kol5;
+                const color = type === 'target' ? '#3f36b1' : '#e74c3c';
+                bar.style.width = value + '%';
+                bar.style.backgroundColor = color;
+                labels[index].innerText = value + '%';
+                labels[index].style.color = color;
+            });
+        }, 100);
     }
 
-    // Animasi Bar
-    setTimeout(() => {
-        bars.forEach((bar, index) => {
-            const value = type === 'target' ? bar.dataset.target : bar.dataset.kol5;
-            const color = type === 'target' ? '#3f36b1' : '#e74c3c';
-            
-            bar.style.width = value + '%';
-            bar.style.backgroundColor = color;
-            
-            labels[index].innerText = value + '%';
-            labels[index].style.color = color;
-        });
-    }, 100);
-}
-
-function closeModalAO() {
-    const modal = document.getElementById('modalAO');
-    const bars = document.querySelectorAll('.bar-progres');
-    
-    // Reset width ke 0 untuk animasi saat dibuka lagi nanti
-    bars.forEach(bar => bar.style.width = '0%');
-    modal.style.display = 'none';
-}
-
-// Tutup modal jika klik di luar kotak putih
-window.onclick = function(event) {
-    const modal = document.getElementById('modalAO');
-    if (event.target == modal) {
-        closeModalAO();
+    function closeModalAO() {
+        const modal = document.getElementById('modalAO');
+        const bars = document.querySelectorAll('.bar-progres');
+        bars.forEach(bar => bar.style.width = '0%');
+        modal.style.display = 'none';
     }
-}
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('modalAO');
+        const statsModal = document.getElementById('statsModal');
+        if (event.target == modal) closeModalAO();
+        if (event.target == statsModal) closeModal();
+    }
     </script>
 
 </body>

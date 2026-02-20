@@ -123,13 +123,12 @@ class DashboardAdminController extends Controller
                         'data_kunjungan_adms.kode_ao',
                         'karyawans.nama as nama_ao',
                         'data_kunjungan_adms.nama_nasabah',
-                        'data_kunjungan_adms.tanggal' // Format: 2026-01-31
+                        'data_kunjungan_adms.tanggal'
                     )
                     ->get()->map(function($item) {
                         return [
                             'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
                             'info_2' => $item->nama_nasabah,
-                            // Mengubah format ke DD-MM-YYYY
                             'info_3' => date('d-m-Y', strtotime($item->tanggal)),
                             'status' => 'Rencana'
                         ];
@@ -137,12 +136,17 @@ class DashboardAdminController extends Controller
 
             } elseif ($type == 'selesai') {
                 $data = \DB::table('kunjungans')
-                    ->select('kode_ao', 'nama_nasabah', 'created_at')
+                    ->join('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
+                    ->select( // Tadi di sini kamu pakai titik (.), sudah saya ganti jadi panah (->)
+                        'kunjungans.kode_ao', 
+                        'karyawans.nama as nama_ao', 
+                        'kunjungans.nama_nasabah', 
+                        'kunjungans.created_at'
+                    )
                     ->get()->map(function($item) {
                         return [
-                            'info_1' => $item->kode_ao,
+                            'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
                             'info_2' => $item->nama_nasabah,
-                            // Mengubah format ke DD-MM-YYYY
                             'info_3' => date('d-m-Y', strtotime($item->created_at)),
                             'status' => 'Sudah Dikunjungi'
                         ];
@@ -176,5 +180,4 @@ class DashboardAdminController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
-
 }

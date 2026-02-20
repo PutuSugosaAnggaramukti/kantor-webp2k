@@ -652,6 +652,76 @@ $(document).on('click', '.pagination a', function(e) {
     });
 });
 
+function showDetailKunjungan(kode_ao) {
+    const contentArea = document.getElementById('main-content-area');
+    if (!contentArea) return;
+
+    contentArea.style.opacity = '0.3';
+
+    // Sesuaikan URL dengan Route yang kamu miliki
+    fetch(`/admin/kunjungan-detail/${kode_ao}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'text/html'
+        }
+    })
+    .then(res => res.text())
+    .then(html => {
+        contentArea.innerHTML = html;
+        contentArea.style.opacity = '1';
+        
+        // Update URL di browser agar user tahu sedang di halaman detail
+        history.pushState({page: 'detail-kunjungan'}, "", `/admin/kunjungan-detail/${kode_ao}`);
+    })
+    .catch(err => {
+        console.error("Gagal memuat detail:", err);
+        contentArea.style.opacity = '1';
+        Swal.fire('Error', 'Gagal memuat halaman detail', 'error');
+    });
+}
+
+$(document).on('submit', '#modalImport form', function(e) {
+    e.preventDefault();
+    let formData = new FormData(this);
+    
+    Swal.fire({ title: 'Memproses...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    $.ajax({
+        url: $(this).attr('action'),
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(res) {
+            closeModalImport();
+            Swal.fire('Berhasil!', res.message, 'success');
+            loadAdminPage('adm-kunjungan'); // Refresh tabel
+        },
+        error: function(xhr) {
+            Swal.fire('Error', 'Terjadi kesalahan saat import data', 'error');
+        }
+    });
+});
+
+
+function openModalImport() {
+    const modal = document.getElementById('modalImport');
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        console.error("Elemen modalImport tidak ditemukan!");
+    }
+}
+
+
+function closeModalImport() {
+    const modal = document.getElementById('modalImport');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
 </script>
 </body>
 </html>
