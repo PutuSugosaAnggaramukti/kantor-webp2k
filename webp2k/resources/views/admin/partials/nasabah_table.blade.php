@@ -1,3 +1,4 @@
+@if(!request()->ajax())
 <div class="page-title" style="margin-bottom: 25px;">
     <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Data Nasabah</h2>
     <p style="font-size: 14px; font-weight: 600;">
@@ -36,6 +37,7 @@
     
     <input type="text" placeholder="Pencarian.." class="search-input" style="padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; width: 250px;">
 </div>
+@endif
 
 <div id="container-nasabah">
     <div class="table-responsive">
@@ -61,7 +63,7 @@
                     </td>
                     
                     <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
-                        {{ $nasabah->nasabah }} {{-- Sesuaikan jika kolom di DB namanya 'nasabah' --}}
+                        {{ $nasabah->nasabah }}
                     </td>
 
                     <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
@@ -81,9 +83,8 @@
                 @endforelse
             </tbody>
         </table>
-            <div class="mt-4">
-                {{ $nasabah_all->links() }}
-            </div>
+        <div class="mt-4">
+            {{ $nasabah_all->links() }}
+        </div>
     </div>
 </div>
-

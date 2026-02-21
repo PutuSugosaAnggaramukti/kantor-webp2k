@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Dashboard;
+namespace App\Http\Controllers\dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Karyawan;
@@ -17,7 +17,7 @@ class DashboardAdminController extends Controller
         return view('dashboard.dashboardadmin', $data);
         
     }
-
+    
     public function getDashboardData()
     {
         // --- 1. DATA DASAR ---
@@ -137,7 +137,7 @@ class DashboardAdminController extends Controller
             } elseif ($type == 'selesai') {
                 $data = \DB::table('kunjungans')
                     ->join('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
-                    ->select( // Tadi di sini kamu pakai titik (.), sudah saya ganti jadi panah (->)
+                    ->select(
                         'kunjungans.kode_ao', 
                         'karyawans.nama as nama_ao', 
                         'kunjungans.nama_nasabah', 
@@ -172,8 +172,49 @@ class DashboardAdminController extends Controller
                             'status' => 'Belum Dikunjungi'
                         ];
                     });
-            }
 
+           } elseif ($type == 'target') {
+            // 1. Ambil daftar AO yang capai target dari dashboard
+            $dashboard = new \App\Http\Controllers\dashboard\DashboardAdminController();
+            $dashboardData = $dashboard->getDashboardData();
+            
+            $kodeAOTarget = $dashboardData['detailPerformaAO']
+                ->where('capai_target', true)
+                ->pluck('kode_ao')
+                ->toArray();
+
+            // 2. Query Detail
+            $data = \DB::table('kunjungans')
+                ->join('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
+                ->whereIn('kunjungans.kode_ao', $kodeAOTarget)
+                ->select(
+                    'kunjungans.kode_ao',
+                    'karyawans.nama as nama_ao',
+                    'kunjungans.nama_nasabah',
+                    'kunjungans.created_at'
+                )
+                ->get()
+                ->filter(function($kunjungan) {
+                    // Kita cari ke tabel nasabahs dengan pembersihan string (trim & uppercase)
+                    $namaClean = strtoupper(trim($kunjungan->nama_nasabah));
+                    
+                    $cekNasabah = \DB::table('nasabahs')
+                        ->whereRaw("UPPER(TRIM(nasabah)) = ?", [$namaClean]) // Sesuaikan jika kolomnya 'nasabah' atau 'nama'
+                        ->where('kol', 5)
+                        ->first();
+                        
+                    return !is_null($cekNasabah);
+                })
+                ->values()
+                ->map(function($item) {
+                    return [
+                        'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
+                        'info_2' => $item->nama_nasabah, 
+                        'info_3' => date('d-m-Y', strtotime($item->created_at)),
+                        'status' => 'KOL 5 Selesai'
+                    ];
+                });
+        }
             return response()->json($data);
 
         } catch (\Exception $e) {

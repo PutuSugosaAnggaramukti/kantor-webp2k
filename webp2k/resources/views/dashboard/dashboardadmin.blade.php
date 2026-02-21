@@ -203,11 +203,21 @@
         
         const labels = {
             'data-karyawan': 'Memuat Data Karyawan...',
-            'adm-kunjungan': 'Memuat Data Kunjungan...',
-            'pelaporan': 'Memuat Laporan...',
+            'data-kunjungan': 'Memuat Data Kunjungan...', // Ini mengarah ke rute index kunjungan
             'nasabah': 'Memuat Data Nasabah...',
+            'pelaporan': 'Memuat Laporan...',
             'dokumen': 'Memuat Dokumen...',
-            'data-kunjungan': 'Memuat Input Kunjungan...'
+            'adm-kunjungan': 'Memuat Input Jadwal...'
+        };
+
+        // Peta Route (Sesuaikan dengan name route di web.php Anda)
+        const routeMap = {
+            'data-karyawan': "{{ route('karyawan.index') }}",
+            'data-kunjungan': "{{ route('admin.kunjungan.index') }}", // PENTING: Gunakan route yang benar
+            'nasabah': "{{ route('admin.nasabah.index') }}",
+            'pelaporan': "{{ route('pelaporan.index') }}",
+            'dokumen': "{{ route('admin.dokumen.index') }}",
+            'adm-kunjungan': "{{ route('admin.adm-kunjungan.index') }}"
         };
 
         if (loadingText) {
@@ -218,7 +228,8 @@
         loader.style.display = 'flex';
 
         setTimeout(() => {
-            window.location.href = "{{ route('karyawan.index') }}?page=" + targetPage;
+            // Redirect ke route yang spesifik, bukan cuma karyawan.index
+            window.location.href = routeMap[targetPage] + "?page=" + targetPage;
         }, 1000); 
     }
 

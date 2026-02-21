@@ -182,8 +182,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const pageToLoad = urlParams.get('page');
     const currentPath = window.location.pathname;
 
-    // 1. Logika penentuan Menu Active (Urutan sangat penting!)
-    // Cek 'adm-kunjungan' TERLEBIH DAHULU sebelum 'kunjungan'
+    // 1. Logika penentuan Menu Active
     if (currentPath.includes('adm-kunjungan')) {
         setActiveMenuOnly('menu-adm-kunjungan');
     } else if (currentPath.includes('data-kunjungan')) {
@@ -194,12 +193,15 @@ document.addEventListener("DOMContentLoaded", function() {
         setActiveMenuOnly('menu-pelaporan');
     } else if (currentPath.includes('dokumen')) {
         setActiveMenuOnly('menu-dokumen');
+    } 
+    // TAMBAHKAN INI: Jika path adalah data-karyawan atau path root admin
+    else if (currentPath.includes('data-karyawan') || currentPath === '/admin') {
+        setActiveMenuOnly('menu-data-karyawan');
     }
 
-    // 2. Logika Load AJAX (Hanya jika area konten kosong)
+    // 2. Logika Load AJAX
     if (pageToLoad) {
         const contentArea = document.getElementById('main-content-area');
-        // Gunakan trim().length === 0 untuk memastikan benar-benar kosong
         if (contentArea && contentArea.innerHTML.trim().length === 0) {
              loadAdminPage(pageToLoad);
         }
@@ -642,11 +644,12 @@ $(document).on('click', '.pagination a', function(e) {
     $.ajax({
         url: url,
         success: function(data) {
-            // Kita ganti seluruh isi container agar tidak double
-            // 'data' di sini adalah hasil render dari nasabah_table.blade.php
-            $('#container-nasabah').html(data);
+            // Kita ambil isi HTML yang ada di dalam #container-nasabah dari response
+            // Agar strukturnya tetap datar dan tidak menumpuk
+            let tableContent = $(data).filter('#container-nasabah').html() || $(data).find('#container-nasabah').html() || data;
             
-            // Scroll ke atas tabel agar rapi
+            $('#container-nasabah').html(tableContent);
+            
             $('html, body').animate({ scrollTop: $("#container-nasabah").offset().top - 100 }, 100);
         }
     });

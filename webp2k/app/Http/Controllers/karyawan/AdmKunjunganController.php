@@ -45,34 +45,31 @@ class AdmKunjunganController extends Controller
     }
     
   public function dataKunjunganContent(Request $request)
-{
-    // Mengambil data karyawan beserta jumlah kunjungannya
-    // Pastikan relasi 'kunjungan' sudah ada di Model Karyawan
-    $karyawans = Karyawan::where('status', 'aktif')
-        ->withCount('kunjungan') 
-        ->get();
+    {
+        $karyawans = Karyawan::where('status', 'aktif')
+            ->withCount('kunjungan') 
+            ->get();
 
-    // Data grouped tetap diambil jika diperlukan untuk logika lain
-    $kunjunganGrouped = \DB::table('kunjungans')->get()->groupBy('kode_ao'); 
+        $kunjunganGrouped = \DB::table('kunjungans')->get()->groupBy('kode_ao'); 
 
-    if ($request->ajax()) {
-        return view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
+        if ($request->ajax()) {
+            return view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
+        }
+
+        try {
+            $dashboard = new DashboardAdminController();
+            $data = $dashboard->getDashboardData(); 
+        } catch (\Exception $e) {
+            $data = ['karyawan_count' => Karyawan::count()];
+        }
+
+        $data['title'] = 'Data Kunjungan';
+        $data['page'] = 'kunjungan';
+        $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
+        $data['karyawans'] = $karyawans;
+
+        return view('admin.datakaryawan', $data);
     }
-
-    try {
-        $dashboard = new DashboardAdminController();
-        $data = $dashboard->getDashboardData(); 
-    } catch (\Exception $e) {
-        $data = ['karyawan_count' => Karyawan::count()];
-    }
-
-    $data['title'] = 'Data Kunjungan';
-    $data['page'] = 'kunjungan';
-    $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
-    $data['karyawans'] = $karyawans;
-
-    return view('admin.datakaryawan', $data);
-}
 
     public function detail($kode_ao)
     {
