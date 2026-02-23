@@ -137,10 +137,20 @@
                             </button>
                         @endif
 
-                        <button onclick="openDetailModal('{{ $item->kode_ao }}', '-', '{{ $item->nama_nasabah }}', '-', '0', '0', '{{ $item->kol }}', '-', '-')" 
-                                style="background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                            <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
-                        </button>
+                  <button onclick="openDetailModal(
+                        '{{ addslashes($item->kode_ao ?? '-') }}', 
+                        '{{ addslashes($item->no_angsuran ?? '-') }}', 
+                        '{{ addslashes($item->nama_nasabah ?? '-') }}', 
+                        '{{ addslashes($item->alamat_nasabah ?? '-') }}', 
+                        '{{ $item->nominal ?? 0 }}', 
+                        '{{ $item->sisa_pokok ?? 0 }}', 
+                        '{{ $item->kol ?? '-' }}', 
+                        '{{ $item->kode_ao ?? '-' }}', 
+                        '{{ addslashes($item->nama_ao ?? '-') }}'
+                    )" 
+                    style="background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
+                    </button>
                     </div>
                 </td>
             </tr>

@@ -14,6 +14,8 @@ class DataKunjunganAdm extends Model
         'kode_ao',
         'nama_nasabah',
         'alamat_nasabah',
+        'nominal',      
+        'sisa_pokok',   
         'kol',
         'bulan',
         'tanggal',
@@ -22,12 +24,24 @@ class DataKunjunganAdm extends Model
     ];
 
     protected $casts = [
-    'tanggal' => 'date',
+        'tanggal' => 'date',
     ];
+
+
+    public function getNominalFormatAttribute()
+    {
+        return 'Rp ' . number_format($this->nominal, 0, ',', '.');
+    }
+
+    public function getSisaFormatAttribute()
+    {
+        return 'Rp ' . number_format($this->sisa_pokok, 0, ',', '.');
+    }
+
 
     public function nasabah()
     {
-        return $this->belongsTo(Nasabah::class, 'nasabah_id');
+        return $this->belongsTo(Nasabah::class, 'no_angsuran', 'no_angsuran');
     }
 
     public function karyawan()

@@ -99,7 +99,7 @@ class AdmKunjunganController extends Controller
         }
     }
 
-    public function store(Request $request)
+   public function store(Request $request)
     {
         $request->validate([
             'karyawan_id'    => 'required|exists:karyawans,id',
@@ -111,6 +111,8 @@ class AdmKunjunganController extends Controller
             'tanggal'        => 'required|date',
         ]);
 
+        // 1. Cari data nasabah di tabel master untuk ambil nominal & sisa pokok
+        $nasabahMaster = \App\Models\Nasabah::where('no_angsuran', $request->no_angsuran)->first();
         $karyawan = Karyawan::find($request->karyawan_id);
 
         DataKunjunganAdm::create([
@@ -122,6 +124,10 @@ class AdmKunjunganController extends Controller
             'no_angsuran'    => $request->no_angsuran,
             'tanggal'        => $request->tanggal,
             'kode_ao'        => $karyawan->kode_ao ?? null,
+            
+            // SINKRONISASI SALDO OTOMATIS
+            'nominal'        => $nasabahMaster->nominal ?? 0,
+            'sisa_pokok'     => $nasabahMaster->sisa_pokok ?? 0,
         ]);
 
         return response()->json([
@@ -142,7 +148,7 @@ class AdmKunjunganController extends Controller
         return Excel::download(new KunjunganExport($kode_ao), 'rekap_kunjungan_' . date('Y-m-d') . '.xlsx');
     }
 
-    public function importExcel(Request $request)
+   public function importExcel(Request $request)
     {
         $request->validate([
             'karyawan_id' => 'required|exists:karyawans,id',
@@ -151,44 +157,38 @@ class AdmKunjunganController extends Controller
 
         try {
             $file = $request->file('file_excel');
-            
-            // Mengambil data dari excel ke dalam array
             $data = Excel::toArray([], $file)[0];
-            
-            // Ambil data karyawan untuk mendapatkan kode_ao
             $karyawan = Karyawan::find($request->karyawan_id);
 
             DB::beginTransaction();
 
-            // Skip header (index 0)
+            // Skip header (Baris 1)
             foreach (array_slice($data, 1) as $row) {
-                // Pastikan kolom nama nasabah (index 0 di excel) tidak kosong
-                if (!empty($row[1])) { // Cek Nama Nasabah (Kolom B) tidak kosong
+                // Kita sesuaikan index dengan struktur data dummy:
+                // index 0: no_ang, 1: nama, 2: alamat, 3: nominal, 4: sisa_pokok, 5: kol
+                
+                if (!empty($row[1])) { // Cek Nama tidak kosong
                     DataKunjunganAdm::create([
                         'karyawan_id'    => $request->karyawan_id,
                         'kode_ao'        => $karyawan->kode_ao,
-                        'bulan'          => $row[0] ?? now()->format('Y-m'), // Sekarang Bulan di Kolom A
-                        'nama_nasabah'   => $row[1],                         // Sekarang Nama di Kolom B
-                        'no_angsuran'    => $row[2] ?? '-',                  // No Angsuran di Kolom C
-                        'alamat_nasabah' => $row[3] ?? '-',                  // Alamat di Kolom D
-                        'kol'            => $row[4] ?? 1,                    // KOL di Kolom E
+                        'bulan'          => now()->format('Y-m'), // Default bulan sekarang
+                        'nama_nasabah'   => $row[1],             // Nama (Kolom B)
+                        'no_angsuran'    => $row[0] ?? '-',      // No Ang (Kolom A)
+                        'alamat_nasabah' => $row[2] ?? '-',      // Alamat (Kolom C)
+                        'nominal'        => $row[3] ?? 0,        // Nominal (Kolom D)
+                        'sisa_pokok'     => $row[4] ?? 0,        // Sisa Pokok (Kolom E)
+                        'kol'            => $row[5] ?? 1,        // KOL (Kolom F)
                         'tanggal'        => now(), 
                     ]);
                 }
             }
 
-           DB::commit();
-            return response()->json([
-                'success' => true,
-                'message' => 'Data nasabah berhasil diimport untuk AO ' . $karyawan->nama
-            ]);
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Data berhasil diimport dengan benar!']);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal import: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()], 500);
         }
     }
 }

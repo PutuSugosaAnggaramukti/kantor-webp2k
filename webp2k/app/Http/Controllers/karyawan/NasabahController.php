@@ -15,33 +15,22 @@ class NasabahController extends Controller
 
     public function nasabahContent(Request $request)
     {
-        // 1. Ambil data nasabah
+
         $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')
                         ->paginate(10)
                         ->withQueryString();
 
-        // --- LOGIKA HYBRID START ---
-        
-        // A. Jika request via AJAX (Klik menu sidebar / Pagination)
         if ($request->ajax()) {
-            // Hanya kirim tabelnya saja
             return view('admin.partials.nasabah_table', compact('nasabah_all'))->render();
         }
-
-        // B. Jika request via Refresh / Direct URL (F5)
-        // Panggil dashboard controller untuk mengambil data Sidebar/Stats
         $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
-        // Masukkan isi tabel nasabah ke variabel 'content'
         $data['content'] = view('admin.partials.nasabah_table', compact('nasabah_all'))->render();
         $data['page'] = 'nasabah';
         $data['title'] = 'Data Nasabah';
 
-        // Kembalikan ke view UTAMA (yang ada sidebar-nya)
         return view('admin.datakaryawan', $data);
-
-        // --- LOGIKA HYBRID END ---
     }
 
     public function detail($no_angsuran)
@@ -50,17 +39,19 @@ class NasabahController extends Controller
             ->with('karyawan')
             ->get();
 
-        // Pastikan view-nya mengarah ke file yang sedang kita edit
         return view('admin.partials.pengunjung_nasabah', compact('histori_kunjungan'));
     }
 
-   public function store(Request $request)
+  public function store(Request $request)
     {
+        // 1. Tambahkan nominal dan sisa_pokok ke dalam validasi
         $request->validate([
             'no_angsuran' => 'required|unique:nasabahs,no_angsuran',
             'nasabah'     => 'required',
             'alamat'      => 'required',
-            'kol'         => 'required'
+            'kol'         => 'required',
+            'nominal'     => 'nullable|numeric',    // Boleh kosong, tapi jika isi harus angka
+            'sisa_pokok'  => 'nullable|numeric',   // Boleh kosong, tapi jika isi harus angka
         ]);
 
         try {
@@ -70,17 +61,20 @@ class NasabahController extends Controller
                 'alamat'        => $request->alamat,
                 'kol'           => $request->kol,
                 
+                // 2. Ambil nilai dari request, jika kosong baru berikan default 0
+                'nominal'       => $request->nominal ?? 0,
+                'sisa_pokok'    => $request->sisa_pokok ?? 0,
+                
                 'kode_ao'       => '-',  
                 'nama_ao'       => '-',  
                 'kode'          => '-', 
-                'nominal'       => 0,
-                'sisa_pokok'    => 0,
                 'sudah_kunjung' => 0,
                 'bulan'         => now()->format('Y-m'),
             ]);
 
             return response()->json(['success' => 'Nasabah berhasil ditambahkan!']);
         } catch (\Exception $e) {
+            // Menggunakan response json agar konsisten dengan AJAX di frontend
             return response()->json(['errors' => ['db' => [$e->getMessage()]]], 500);
         }
     }

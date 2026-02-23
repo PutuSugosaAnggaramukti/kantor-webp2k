@@ -206,22 +206,34 @@
         }
     }
 
-        function openDetailModal(kode, angsuran, nama, alamat, nominal, sisa, kol, kodeAo, namaAo) {
-            try {
-                document.getElementById('detail-kode').innerText = kode || '-';
-                document.getElementById('detail-angsuran').innerText = angsuran || '-';
-                document.getElementById('detail-nama').innerText = nama || '-';
-                document.getElementById('detail-alamat').innerText = alamat || '-';
-                document.getElementById('detail-nominal').innerText = nominal || '-';
-                document.getElementById('detail-sisa').innerText = sisa || '-';
-                document.getElementById('detail-kol').innerText = kol || '-';
-                document.getElementById('detail-kode-ao').innerText = kodeAo || '-';
-                document.getElementById('detail-nama-ao').innerText = namaAo || '-';
-                document.getElementById('detailModal').style.display = 'flex';
-            } catch (error) {
-                console.error("Error modal:", error);
-            }
-        }
+      function openDetailModal(kode, angsuran, nama, alamat, nominal, sisa, kol, kodeAo, namaAo) {
+    const formatRp = new Intl.NumberFormat('id-ID');
+
+    // Mengisi data teks
+    document.getElementById('detail-kode').innerText = kode || '-';
+    document.getElementById('detail-angsuran').innerText = angsuran || '-';
+    document.getElementById('detail-nama').innerText = nama || '-';
+    document.getElementById('detail-alamat').innerText = alamat || '-';
+    
+    // Mengisi data nominal & sisa dengan format rupiah
+    // Kita gunakan Number() untuk memastikan string dari Blade jadi angka
+    const nomVal = Number(nominal.replace(/[^0-9.-]+/g,""));
+    const sisaVal = Number(sisa.replace(/[^0-9.-]+/g,""));
+
+    document.getElementById('detail-nominal').innerText = nomVal ? 'Rp ' + formatRp.format(nomVal) : 'Rp 0';
+    document.getElementById('detail-sisa').innerText = sisaVal ? 'Rp ' + formatRp.format(sisaVal) : 'Rp 0';
+    
+    document.getElementById('detail-kol').innerText = kol || '-';
+    document.getElementById('detail-kode-ao').innerText = kodeAo || '-';
+    document.getElementById('detail-nama-ao').innerText = namaAo || '-';
+
+    // Munculkan modal
+    document.getElementById('detailModal').style.display = 'flex';
+}
+
+function closeDetailModal() {
+    document.getElementById('detailModal').style.display = 'none';
+}
 
         function closeDetailModal() {
             document.getElementById('detailModal').style.display = 'none';

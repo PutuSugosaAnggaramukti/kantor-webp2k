@@ -50,7 +50,7 @@ class KunjunganController extends Controller
         $namaTerproses = [];
 
         // PROSES A: Masukkan data sesuai Jadwal Admin
-        foreach ($jadwal as $j) {
+       foreach ($jadwal as $j) {
             $namaJadwal = strtoupper(trim(preg_replace('/\s+/', ' ', $j->nama_nasabah)));
             
             $match = $realisasi->first(function ($r) use ($namaJadwal) {
@@ -61,7 +61,12 @@ class KunjunganController extends Controller
             $dataFinal->push((object)[
                 'id' => $j->id,
                 'kode_ao' => $myCode,
+                'nama_ao' => $karyawan->nama,
+                'no_angsuran' => $j->no_angsuran, 
                 'nama_nasabah' => $j->nama_nasabah,
+                'alamat_nasabah' => $j->alamat_nasabah, // TAMBAHKAN INI
+                'nominal' => $j->nominal, // TAMBAHKAN INI
+                'sisa_pokok' => $j->sisa_pokok, // TAMBAHKAN INI
                 'kol' => $j->kol ?? '-',
                 'bulan' => $j->bulan, 
                 'is_filled' => $match ? true : false,
@@ -314,116 +319,50 @@ class KunjunganController extends Controller
 
 public function exportWord($id)
 {
-    // Ambil data dan langsung ubah ke Array agar akses variabel lebih stabil
+    // 1. Ambil data (Nama, Alamat, dan Nominal sudah cocok di aplikasi)
     $data = \DB::table('kunjungans')
-        ->leftJoin('nasabahs', 'kunjungans.nama_nasabah', '=', 'nasabahs.nasabah')
+        ->leftJoin('data_kunjungan_adms', function($join) {
+            $join->on(\DB::raw('TRIM(kunjungans.nama_nasabah)'), '=', \DB::raw('TRIM(data_kunjungan_adms.nama_nasabah)'));
+        })
         ->where('kunjungans.id', $id)
-        ->select('kunjungans.*', 'nasabahs.kol as kol_master')
+        ->select(
+            'kunjungans.*', 
+            'data_kunjungan_adms.nominal', 
+            'data_kunjungan_adms.sisa_pokok',
+            'data_kunjungan_adms.no_angsuran'
+        )
         ->first();
 
     if (!$data) return redirect()->back()->with('error', 'Data tidak ditemukan');
-    
-    // Ubah ke array untuk menghindari error "Undefined property stdClass"
-    $detail = (array) $data;
+ 
+    $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(public_path('templates/template_p2k.docx'));
 
-    $user = Auth::guard('karyawan')->user();
-    $namaAO = $user ? $user->nama : 'Account Officer';
+    // 2. Isi variabel yang sudah berhasil sebelumnya
+    $templateProcessor->setValue('nama_nasabah', strtoupper($data->nama_nasabah ?? '-'));
+    $templateProcessor->setValue('alamat_nasabah', $data->alamat_nasabah ?? '-');
+    $templateProcessor->setValue('kode_ao', $data->kode_ao ?? '-');
+    $templateProcessor->setValue('no_angsuran', $data->no_angsuran ?? '-');
 
-    $phpWord = new \PhpOffice\PhpWord\PhpWord();
-    $phpWord->setDefaultFontName('Helvetica');
-    $phpWord->setDefaultFontSize(11);
+    // 3. PEMAKSAAN VARIABEL BARU (Agar terhindar dari error XML Word)
+    // Pastikan di file Word kamu sudah diganti menjadi NOMINAL_VALUE dan SISA_VALUE
+    $nominalText = number_format($data->nominal ?? 0, 0, ',', '.');
+    $sisaText = number_format($data->sisa_pokok ?? 0, 0, ',', '.');
 
-    $section = $phpWord->addSection();
+    // Kita tembak ke 3 kemungkinan nama variabel sekaligus untuk berjaga-jaga
+    $templateProcessor->setValue('nominal', $nominalText); // Jika di word: ${nominal}
+    $templateProcessor->setValue('NOMINAL_VALUE', $nominalText); // Jika di word: NOMINAL_VALUE
+    
+    $templateProcessor->setValue('sisa_pokok', $sisaText); // Jika di word: ${sisa_pokok}
+    $templateProcessor->setValue('SISA_VALUE', $sisaText); // Jika di word: SISA_VALUE
 
-    // HEADER
-    $section->addText("LAPORAN HASIL KUNJUNGAN", ['bold' => true, 'size' => 14], ['alignment' => 'center']);
-    $section->addText("Bagian P2K - AO: " . strtoupper($namaAO), ['bold' => true], ['alignment' => 'center']);
-    $section->addText("Bank Bantul - Sistem Informasi P2K", ['size' => 10], ['alignment' => 'center']);
-    $section->addLine(['width' => 450, 'height' => 0, 'color' => '000000']); 
-    $section->addTextBreak(1);
-
-    // I. RINGKASAN
-    $section->addText("I. RINGKASAN DATA NASABAH", ['bold' => true], ['shading' => ['fill' => 'F2F2F2']]);
+    // 4. Download
+    $filename = "Tagihan_" . str_replace(' ', '_', $data->nama_nasabah) . ".docx";
     
-    $tableStyle = ['borderSize' => 6, 'borderColor' => '999999', 'cellMargin' => 80];
-    $phpWord->addTableStyle('RingkasanTable', $tableStyle);
-    $table = $section->addTable('RingkasanTable');
-    
-    $table->addRow();
-    $table->addCell(2000, ['bgColor' => 'F8F9FA'])->addText("KODE AO", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-    $table->addCell(4000, ['bgColor' => 'F8F9FA'])->addText("NAMA NASABAH", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-    $table->addCell(1500, ['bgColor' => 'F8F9FA'])->addText("KOL", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-    $table->addCell(2000, ['bgColor' => 'F8F9FA'])->addText("BULAN", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-    $table->addCell(1500, ['bgColor' => 'F8F9FA'])->addText("STATUS", ['bold' => true, 'size' => 9], ['alignment' => 'center']);
-
-    // AKSES MENGGUNAKAN ARRAY ['key'] BUKAN ->key
-    $table->addRow();
-    $table->addCell(2000)->addText($detail['kode_ao'] ?? '-', ['size' => 9], ['alignment' => 'center']);
-    $table->addCell(4000)->addText(strtoupper($detail['nama_nasabah'] ?? '-'), ['size' => 9]);
-    
-    $kolFix = $detail['kol'] ?: ($detail['kol_master'] ?: '-');
-    $table->addCell(1500)->addText($kolFix, ['size' => 9], ['alignment' => 'center']);
-    
-    // LOGIKA BULAN (Gunakan isset)
-    $bulanText = $detail['bulan'] ?? '-';
-    try {
-        if (!empty($detail['bulan'])) {
-            $bulanText = \Carbon\Carbon::parse($detail['bulan'])->translatedFormat('F Y');
-        }
-    } catch (\Exception $e) {
-        $bulanText = $detail['bulan']; 
-    }
-    
-    $table->addCell(2000)->addText($bulanText, ['size' => 9], ['alignment' => 'center']);
-    $table->addCell(1500)->addText("SELESAI", ['bold' => true, 'color' => '28A745', 'size' => 9], ['alignment' => 'center']);
-
-    $section->addTextBreak(1);
-
-    // II. DETAIL KUNJUNGAN
-    $section->addText("II. DETAIL HASIL KUNJUNGAN LAPANGAN", ['bold' => true], ['shading' => ['fill' => 'F2F2F2']]);
-    
-    $textTable = $section->addTable();
-    $textTable->addRow();
-    $textTable->addCell(2500)->addText("Tanggal Lapor");
-    $textTable->addCell(7000)->addText(": " . \Carbon\Carbon::parse($detail['created_at'])->translatedFormat('l, d F Y'));
-    
-    $textTable->addRow();
-    $textTable->addCell(2500)->addText("Koordinat Lokasi");
-    $textTable->addCell(7000)->addText(": " . ($detail['koordinat'] ?? '-'));
-    
-    $textTable->addRow();
-    $textTable->addCell(2500)->addText("Catatan AO");
-    $textTable->addCell(7000)->addText(": " . ($detail['catatan'] ?? '-'));
-
-    $textTable->addRow();
-    $textTable->addCell(2500)->addText("Janji Pelunasan");
-    $textTable->addCell(7000)->addText(": " . ($detail['tgl_janji_bayar'] ?? '-'));
-
-    // FOTO
-    if (!empty($detail['foto_kunjungan'])) {
-        $path = public_path('uploads/kunjungan/' . $detail['foto_kunjungan']);
-        if (file_exists($path)) {
-            $section->addTextBreak(1);
-            $section->addText("Dokumentasi Foto:", ['bold' => true]);
-            $section->addTextBreak(1);
-            $section->addImage($path, ['width' => 280, 'height' => 200, 'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER]);
-        }
-    }
-    
-    // FOOTER
-    $section->addTextBreak(2);
-    $section->addText(\Carbon\Carbon::now()->translatedFormat('l, d F Y'), ['size' => 10], ['alignment' => 'right']);
-    $section->addTextBreak(2);
-    $section->addText("( " . strtoupper($namaAO) . " )", ['bold' => true, 'underline' => 'single'], ['alignment' => 'right']);
-    $section->addText("Account Officer", [], ['alignment' => 'right']);
-
-    $filename = "Laporan_Lengkap_" . str_replace(' ', '_', $detail['nama_nasabah'] ?? 'Data') . ".docx";
-    
+    if (ob_get_contents()) ob_end_clean();
     header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     header('Content-Disposition: attachment;filename="' . $filename . '"');
     
-    $objWriter = \PhpOffice\PhpWord\IOFactory::createWriter($phpWord, 'Word2007');
-    $objWriter->save('php://output');
+    $templateProcessor->saveAs('php://output');
     exit;
 }
 

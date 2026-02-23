@@ -66,18 +66,20 @@
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background-color: #fff; border-radius: 0 0 12px 12px; overflow: hidden;">
+       <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border: 2px solid #000; border-radius: 0 0 12px 12px;">
+            <table style="width: 100%; border-collapse: collapse; background-color: #fff; position: relative;">
                 <thead>
-                    <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #f8f9fa;">
+                    <tr style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa; border-bottom: 2px solid #000; text-align: center;">
                         <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
                         <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">Bulan</th>
                         <th style="padding: 15px; border-right: 2px solid #000;">Nama Nasabah</th>
-                        <th style="padding: 15px; border-right: 2px solid #000; width: 120px;">KOL</th>
+                        <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
+                        <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Sisa Pokok</th> 
+                        <th style="padding: 15px; border-right: 2px solid #000; width: 80px;">KOL</th>
                         <th style="padding: 15px; width: 100px;">Option</th>
                     </tr>
                 </thead>
-                <tbody style="font-weight: 800; font-size: 15px; color: #000;">
+                <tbody style="font-weight: 800; font-size: 14px; color: #000;">
                     @foreach($group as $index => $item)
                     @php $isPrioritas = ($item->kol == 5); @endphp
                     
@@ -85,30 +87,37 @@
                         data-no-angsuran="{{ $item->no_angsuran }}" 
                         style="border-bottom: 2px solid #000; text-align: center; {{ $isPrioritas ? 'background-color: #fff5f5;' : '' }}">
                         
-                        <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                        <td style="padding: 15px; border-right: 2px solid #000;">
+                        <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                        <td style="padding: 12px; border-right: 2px solid #000;">
                             {{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('F Y') }}
                         </td>
-                        <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
-                            {{ $item->nama_nasabah }}
+                        <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 15px;">
+                            <span style="font-size: 15px;">{{ $item->nama_nasabah }}</span>
                             @if($isPrioritas)
-                                <br><small style="color: #d32f2f; font-size: 11px;"><i class="fa-solid fa-triangle-exclamation"></i> WAJIB DIKUNJUNGI (KPI)</small>
+                                <br><small style="color: #d32f2f; font-size: 10px; font-weight: 900;"><i class="fa-solid fa-triangle-exclamation"></i> WAJIB (KPI)</small>
                             @endif
                         </td>
-                        <td style="padding: 15px; border-right: 2px solid #000;">
+
+                        <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #4e4bc1;">
+                            {{ number_format($item->nominal ?? 0, 0, ',', '.') }}
+                        </td>
+
+                        <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #d32f2f;">
+                            {{ number_format($item->sisa_pokok ?? 0, 0, ',', '.') }}
+                        </td>
+
+                        <td style="padding: 12px; border-right: 2px solid #000;">
                             <span style="
-                                padding: 5px 12px; 
+                                padding: 4px 10px; 
                                 border-radius: 6px; 
-                                display: inline-block;
                                 background-color: {{ $isPrioritas ? '#d32f2f' : '#eee' }}; 
                                 color: {{ $isPrioritas ? '#ffffff' : '#333333' }};
-                                border: {{ $isPrioritas ? 'none' : '1px solid #ccc' }};
                             ">
                                 {{ $item->kol }}
                             </span>
                         </td>
-                        <td style="padding: 15px; text-align: center; border: none;">
-                            <button onclick="openModalEditKunjungan('{{ $item->id }}')" style="background: none; border: none; cursor: pointer;" title="Edit Jadwal">
+                        <td style="padding: 12px; text-align: center;">
+                            <button onclick="openModalEditKunjungan('{{ $item->id }}')" style="background: none; border: none; cursor: pointer;">
                                 <i class="fa-solid fa-pen-to-square" style="font-size: 18px; color: #333;"></i>
                             </button>
                         </td>
