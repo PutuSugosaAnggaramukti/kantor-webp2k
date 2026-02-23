@@ -13,17 +13,17 @@ return new class extends Migration
     {
        Schema::create('nasabahs', function (Blueprint $table) {
         $table->id();
-        $table->string('kode'); // Contoh: PG.803
+        $table->string('kode'); 
         $table->string('no_angsuran'); 
-        $table->string('nasabah'); // Nama Nasabah
+        $table->string('nasabah'); 
         $table->text('alamat');
-        $table->decimal('nominal', 15, 2); // Untuk Nominal Pinjaman
+        $table->decimal('nominal', 15, 2); 
         $table->decimal('sisa_pokok', 15, 2);
-        $table->string('kol'); // Contoh: Lancar, DPK
-        $table->string('bulan'); // Contoh: NOV 2025
-        $table->string('kode_ao'); // Contoh: C-006
-        $table->string('nama_ao'); // Contoh: Fajar Setyahartadi
-        $table->boolean('sudah_kunjung')->default(false); // Untuk ceklis di Laporan
+        $table->string('kol'); 
+        $table->string('bulan'); 
+        $table->string('kode_ao'); 
+        $table->string('nama_ao'); 
+        $table->boolean('sudah_kunjung')->default(false); 
         $table->timestamps();
     });
     }

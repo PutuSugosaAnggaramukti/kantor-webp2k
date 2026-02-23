@@ -17,28 +17,36 @@ class AdmKunjunganController extends Controller
     public function index(Request $request) 
     {
         $karyawans = Karyawan::where('status', 'aktif')->get();
-        $kunjungansGrouped = DataKunjunganAdm::with('karyawan')
-            ->orderBy('kol', 'desc')
+        
+        // AMBIL DATA UNTUK ACCORDION (Katalog Nasabah per AO)
+        $kunjungansGrouped = \App\Models\Nasabah::with('karyawan')
+            ->orderByRaw("kol = 5 DESC")
             ->get()
             ->groupBy('kode_ao');
 
+        // Data lama tetap diambil jika masih dibutuhkan untuk tabel bawah
+        $kunjungans = DataKunjunganAdm::with('karyawan')
+            ->orderBy('kode_ao', 'asc')
+            ->orderBy('kol', 'desc')
+            ->paginate(15); 
+
         if ($request->ajax()) {
-            return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
+            // Tambahkan kunjungansGrouped di compact
+            return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungans', 'kunjungansGrouped'))->render();
         }
 
         try {
             $dashboard = new DashboardAdminController();
             $data = $dashboard->getDashboardData();
         } catch (\Exception $e) {
-            $data = [
-                'karyawan_count' => Karyawan::count(),
-            ];
+            $data = ['karyawan_count' => Karyawan::count()];
         }
 
         $data['page'] = 'adm-kunjungan';
         $data['title'] = 'Input Jadwal Kunjungan';
-        $data['content'] = view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
         
+        // Tambahkan kunjungansGrouped di compact sini juga
+        $data['content'] = view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungans', 'kunjungansGrouped'))->render();
         $data['karyawans'] = $karyawans; 
 
         return view('admin.datakaryawan', $data);
@@ -50,10 +58,14 @@ class AdmKunjunganController extends Controller
             ->withCount('kunjungan') 
             ->get();
 
-        $kunjunganGrouped = \DB::table('kunjungans')->get()->groupBy('kode_ao'); 
+        // Samakan nama variabelnya dengan yang di index
+        $kunjungansGrouped = \App\Models\Nasabah::with('karyawan')
+            ->orderByRaw("kol = 5 DESC")
+            ->get()
+            ->groupBy('kode_ao');
 
         if ($request->ajax()) {
-            return view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
+            return view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
         }
 
         try {
@@ -65,7 +77,7 @@ class AdmKunjunganController extends Controller
 
         $data['title'] = 'Data Kunjungan';
         $data['page'] = 'kunjungan';
-        $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjunganGrouped'))->render();
+        $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
         $data['karyawans'] = $karyawans;
 
         return view('admin.datakaryawan', $data);

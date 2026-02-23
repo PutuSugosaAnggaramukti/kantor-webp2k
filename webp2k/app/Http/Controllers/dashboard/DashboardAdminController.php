@@ -18,7 +18,7 @@ class DashboardAdminController extends Controller
         
     }
     
-    public function getDashboardData()
+   public function getDashboardData()
     {
         // --- 1. DATA DASAR ---
         $totalKunjungan = \App\Models\DataKunjunganAdm::count(); 
@@ -96,6 +96,13 @@ class DashboardAdminController extends Controller
         $labels = $performaAO->pluck('nama'); 
         $counts = $performaAO->pluck('kunjungan_selesai'); 
 
+        // --- 3. LOGIKA UNTUK ACCORDION NASABAH (NEW) ---
+        // Mengambil data nasabah hasil import, diurutkan agar KOL 5 muncul paling atas dalam grup
+        $kunjungansGrouped = \App\Models\Nasabah::with('karyawan')
+            ->orderByRaw("kol = 5 DESC")
+            ->get()
+            ->groupBy('kode_ao');
+
         // Return array untuk compact-an
         return [
             'totalKunjungan' => $totalKunjungan,
@@ -107,7 +114,8 @@ class DashboardAdminController extends Controller
             'kpi_target_nasional' => $kpi_target_nasional,
             'kpi_kol5_nasional' => $kpi_kol5_nasional,
             'total_wajib_kol5' => $total_wajib_kol5,
-            'detailPerformaAO' => $performaAO
+            'detailPerformaAO' => $performaAO,
+            'kunjungansGrouped' => $kunjungansGrouped // Variabel yang dibutuhkan View
         ];
     }
 

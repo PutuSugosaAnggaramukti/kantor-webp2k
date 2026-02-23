@@ -9,6 +9,10 @@ class Nasabah extends Model
 {
     use HasFactory;
 
+    protected $primaryKey = 'no_angsuran';
+    public $incrementing = false;
+    protected $keyType = 'string';
+
     protected $fillable = [
         'kode',
         'no_angsuran',
@@ -22,6 +26,12 @@ class Nasabah extends Model
         'nama_ao',
         'sudah_kunjung'
     ];
+
+    // Relasi ke Karyawan (PENTING: Agar Dashboard tidak error)
+    public function karyawan()
+    {
+        return $this->belongsTo(Karyawan::class, 'kode_ao', 'kode_ao');
+    }
 
     public function getNominalRupiahAttribute()
     {

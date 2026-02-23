@@ -1,3 +1,29 @@
+<style>
+    /* Membuat header bisa diklik */
+    .ao-header {
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+    .ao-header:hover {
+        background-color: #3b38a3 !important; /* Warna sedikit lebih gelap saat hover */
+    }
+    /* Sembunyikan tabel secara default */
+    .table-container {
+        display: none;
+    }
+    /* Saat section AO aktif, tampilkan tabel */
+    .ao-section.active .table-container {
+        display: block;
+    }
+    /* Animasi icon panah */
+    .fa-chevron-down {
+        transition: transform 0.3s ease;
+    }
+    .ao-section.active .fa-chevron-down {
+        transform: rotate(180deg);
+    }
+</style>
+
 <div class="page-title" style="margin-bottom: 25px;">
     <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Input Jadwal Kunjungan</h2>
     <p style="font-size: 14px; font-weight: 600;">
@@ -36,17 +62,19 @@
         <h3 style="color: #666;">Belum ada jadwal kunjungan yang dibuat.</h3>
     </div>
 @else
-    @foreach($kunjungansGrouped as $kodeAo => $group)
+   @foreach($kunjungansGrouped as $kodeAo => $group)
     @php 
         $totalJadwal = $group->count();
         $hasKol5 = $group->contains('kol', 5);
         $isTargetMet = $totalJadwal >= 10;
     @endphp
     
-    <div class="ao-section" style="margin-bottom: 40px;">
-        <div style="background-color: #4e4bc1; color: white; padding: 15px 20px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center; border: 2px solid #000; border-bottom: none;">
-            <h3 style="margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase;">
-                <i class="fa-solid fa-user-tie"></i> {{ $group->first()->karyawan->nama ?? 'Nama AO Tidak Ditemukan' }} ({{ $kodeAo }})
+    <div class="ao-section" style="margin-bottom: 20px;">
+        <div class="ao-header" onclick="toggleAo(this)" style="background-color: #4e4bc1; color: white; padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 2px solid #000;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 12px;">
+                <i class="fa-solid fa-chevron-down"></i>
+                <i class="fa-solid fa-user-tie"></i> 
+                {{ $group->first()->karyawan->nama ?? 'Nama AO Tidak Ditemukan' }} ({{ $kodeAo }})
             </h3>
             
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -66,68 +94,52 @@
             </div>
         </div>
 
-       <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border: 2px solid #000; border-radius: 0 0 12px 12px;">
-            <table style="width: 100%; border-collapse: collapse; background-color: #fff; position: relative;">
-                <thead>
-                    <tr style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa; border-bottom: 2px solid #000; text-align: center;">
-                        <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
-                        <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">Bulan</th>
-                        <th style="padding: 15px; border-right: 2px solid #000;">Nama Nasabah</th>
-                        <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
-                        <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Sisa Pokok</th> 
-                        <th style="padding: 15px; border-right: 2px solid #000; width: 80px;">KOL</th>
-                        <th style="padding: 15px; width: 100px;">Option</th>
-                    </tr>
-                </thead>
-                <tbody style="font-weight: 800; font-size: 14px; color: #000;">
-                    @foreach($group as $index => $item)
-                    @php $isPrioritas = ($item->kol == 5); @endphp
-                    
-                    <tr class="row-kunjungan" 
-                        data-no-angsuran="{{ $item->no_angsuran }}" 
-                        style="border-bottom: 2px solid #000; text-align: center; {{ $isPrioritas ? 'background-color: #fff5f5;' : '' }}">
-                        
-                        <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                        <td style="padding: 12px; border-right: 2px solid #000;">
-                            {{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('F Y') }}
-                        </td>
-                        <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 15px;">
-                            <span style="font-size: 15px;">{{ $item->nama_nasabah }}</span>
-                            @if($isPrioritas)
-                                <br><small style="color: #d32f2f; font-size: 10px; font-weight: 900;"><i class="fa-solid fa-triangle-exclamation"></i> WAJIB (KPI)</small>
-                            @endif
-                        </td>
-
-                        <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #4e4bc1;">
-                            {{ number_format($item->nominal ?? 0, 0, ',', '.') }}
-                        </td>
-
-                        <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #d32f2f;">
-                            {{ number_format($item->sisa_pokok ?? 0, 0, ',', '.') }}
-                        </td>
-
-                        <td style="padding: 12px; border-right: 2px solid #000;">
-                            <span style="
-                                padding: 4px 10px; 
-                                border-radius: 6px; 
-                                background-color: {{ $isPrioritas ? '#d32f2f' : '#eee' }}; 
-                                color: {{ $isPrioritas ? '#ffffff' : '#333333' }};
-                            ">
-                                {{ $item->kol }}
-                            </span>
-                        </td>
-                        <td style="padding: 12px; text-align: center;">
-                            <button onclick="openModalEditKunjungan('{{ $item->id }}')" style="background: none; border: none; cursor: pointer;">
-                                <i class="fa-solid fa-pen-to-square" style="font-size: 18px; color: #333;"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <div class="table-container">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border: 2px solid #000; border-top: none; border-radius: 0 0 12px 12px;">
+                <table style="width: 100%; border-collapse: collapse; background-color: #fff; position: relative;">
+                    <thead>
+                        <tr style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa; border-bottom: 2px solid #000; text-align: center;">
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">Bulan</th>
+                            <th style="padding: 15px; border-right: 2px solid #000;">Nama Nasabah</th>
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Sisa Pokok</th> 
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 80px;">KOL</th>
+                            <th style="padding: 15px; width: 100px;">Option</th>
+                        </tr>
+                    </thead>
+                    <tbody style="font-weight: 800; font-size: 14px; color: #000;">
+                        @foreach($group as $index => $item)
+                        @php $isPrioritas = ($item->kol == 5); @endphp
+                        <tr class="row-kunjungan" data-no-angsuran="{{ $item->no_angsuran }}" style="border-bottom: 2px solid #000; text-align: center; {{ $isPrioritas ? 'background-color: #fff5f5;' : '' }}">
+                            <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                            <td style="padding: 12px; border-right: 2px solid #000;">{{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('F Y') }}</td>
+                            <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 15px;">
+                                <span style="font-size: 15px;">{{ $item->nama_nasabah }}</span>
+                                @if($isPrioritas)
+                                    <br><small style="color: #d32f2f; font-size: 10px; font-weight: 900;"><i class="fa-solid fa-triangle-exclamation"></i> WAJIB (KPI)</small>
+                                @endif
+                            </td>
+                            <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #4e4bc1;">{{ number_format($item->nominal ?? 0, 0, ',', '.') }}</td>
+                            <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #d32f2f;">{{ number_format($item->sisa_pokok ?? 0, 0, ',', '.') }}</td>
+                            <td style="padding: 12px; border-right: 2px solid #000;">
+                                <span style="padding: 4px 10px; border-radius: 6px; background-color: {{ $isPrioritas ? '#d32f2f' : '#eee' }}; color: {{ $isPrioritas ? '#ffffff' : '#333333' }};">
+                                    {{ $item->kol }}
+                                </span>
+                            </td>
+                            <td style="padding: 12px; text-align: center;">
+                                <button onclick="openModalEditKunjungan('{{ $item->id }}')" style="background: none; border: none; cursor: pointer;">
+                                    <i class="fa-solid fa-pen-to-square" style="font-size: 18px; color: #333;"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-    @endforeach
+@endforeach
 @endif
 
 @include('admin.partials.modals') 
@@ -139,4 +151,11 @@
     function closeModalImport() {
         document.getElementById('modalImport').style.display = 'none';
     }
+</script>
+
+<script>
+function toggleAo(element) {
+    const section = element.parentElement;
+    section.classList.toggle('active');
+}
 </script>
