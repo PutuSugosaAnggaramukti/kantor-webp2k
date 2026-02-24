@@ -147,17 +147,32 @@
 @include('admin.partials.modals') 
 
 <script>
-    function openModalImport() {
-        document.getElementById('modalImport').style.display = 'flex';
-    }
-    function closeModalImport() {
-        document.getElementById('modalImport').style.display = 'none';
-    }
-</script>
+    // Pastikan fungsi terdaftar di window agar bisa dipanggil onclick
+    window.toggleAo = function(element) {
+        const section = element.parentElement;
+        section.classList.toggle('active');
+        console.log("Section toggled");
+    };
 
-<script>
-function toggleAo(element) {
-    const section = element.parentElement;
-    section.classList.toggle('active');
-}
+    window.openModalImport = function() {
+        const modal = document.getElementById('modalImport');
+        if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeModalImport = function() {
+        const modal = document.getElementById('modalImport');
+        if (modal) modal.style.display = 'none';
+    };
+
+    // Tambahkan ini agar fungsi Tambah Jadwal tidak error
+    window.openModalKunjungan = function() {
+        const modal = document.getElementById('modalKunjungan'); // Sesuaikan ID modal tambah di modals.blade.php
+        if (modal) modal.style.display = 'flex';
+    };
+
+    // Fungsi untuk menutup modal (bisa digunakan untuk semua modal)
+    window.closeModal = function(id) {
+        const modal = document.getElementById(id);
+        if (modal) modal.style.display = 'none';
+    };
 </script>

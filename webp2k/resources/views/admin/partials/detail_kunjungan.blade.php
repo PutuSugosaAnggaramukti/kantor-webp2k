@@ -14,7 +14,7 @@
 </div>
 
 <div class="table-responsive">
-    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
+   <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
         <thead>
             <tr style="background: #f0f0f0; border-bottom: 2px solid #000;">
                 <th style="padding: 10px; border-right: 2px solid #000;">No</th>
@@ -22,47 +22,74 @@
                 <th style="padding: 10px; border-right: 2px solid #000;">No. Angsuran</th>
                 <th style="padding: 10px; border-right: 2px solid #000;">Nama Nasabah</th>
                 <th style="padding: 10px; border-right: 2px solid #000;">Alamat</th>
-                <th style="padding: 10px;">Aksi</th>
+                <th style="padding: 10px; border-right: 2px solid #000;">Hasil</th>
             </tr>
         </thead>
-       <tbody>
-          @forelse($data_detail as $item)
-            <tr style="border-bottom: 2px solid #000; text-align: center;">
-                <td style="padding: 10px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
-                
-                <td style="padding: 10px; border-right: 2px solid #000;">
-                    {{ \Carbon\Carbon::parse($item->created_at)->format('d-m-Y') }}
-                </td>
-                
-                <td style="padding: 10px; border-right: 2px solid #000;">
-                    {{-- Jika inputan AO (no_nasabah) aneh/kode AO, tampilkan nomor dari rencana --}}
-                    @if($item->no_nasabah == $kode_ao)
-                        <b style="color: blue;">{{ $item->no_rencana ?? $item->no_nasabah }}</b>
-                    @else
+        <tbody>
+            @forelse($data_detail as $item)
+                <tr style="border-bottom: 2px solid #000; text-align: center;">
+                    <td style="padding: 10px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
+                    <td style="padding: 10px; border-right: 2px solid #000;">
+                        {{ \Carbon\Carbon::parse($item->created_at)->format('d-m-Y') }}
+                    </td>
+                    <td style="padding: 10px; border-right: 2px solid #000;">
                         <b>{{ $item->no_nasabah }}</b>
-                    @endif
-                </td>
-                
-                <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
-                    {{ strtoupper($item->nama_nasabah) }}
-                </td>
-
-                <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
-                    {{-- Ambil alamat master, jika kosong ambil dari rencana --}}
-                    {{ $item->alamat_master ?? ($item->alamat_rencana ?? 'Alamat Tidak Ditemukan') }}
-                </td>
-                
-                <td style="padding: 10px;">
-                    <button type="button" 
-                            onclick="window.open('{{ route('download.docx', $item->id) }}', '_blank');" 
-                            style="border: none; background: none; cursor: pointer;">
-                        <i class="fa-regular fa-file-word" style="font-size: 20px; color: #2b579a;"></i>
-                    </button>
-                </td>
-            </tr>
-        @empty
-            <tr><td colspan="6" style="padding: 20px;">Data kunjungan tidak ditemukan.</td></tr>
-        @endforelse
+                    </td>
+                    <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
+                        {{ strtoupper($item->nama_nasabah) }}
+                    </td>
+                    <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
+                        {{ $item->alamat_master ?? ($item->alamat_rencana ?? 'Alamat Tidak Ditemukan') }}
+                    </td>
+                    <td style="padding: 10px; border-right: 2px solid #000;">
+                        <button type="button" 
+                                onclick="showVisitDetail({{ json_encode($item) }})"
+                                style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="6" style="padding: 20px;">Data kunjungan tidak ditemukan.</td></tr>
+            @endforelse
         </tbody>
     </table>
+
+    {{-- Sertakan file modal di sini --}}
+    @include('admin.partials.modals')
 </div>
+
+<script>
+    // Gunakan window.namaFungsi agar bisa dipanggil dari atribut onclick
+    window.showVisitDetail = function(data) {
+        if (!data) return;
+
+        // Isi Foto
+        const fotoPath = data.foto_kunjungan 
+            ? `/uploads/kunjungan/${data.foto_kunjungan}` 
+            : '/assets/no-image.png';
+        document.getElementById('view-foto').src = fotoPath;
+
+        // Isi Status dan Janji Bayar
+        document.getElementById('view-lokasi').innerText = data.ada_di_lokasi || '-';
+        document.getElementById('view-janji').innerText = data.tgl_janji_bayar || 'Tidak Ada Janji';
+
+        // Isi Catatan
+        document.getElementById('view-catatan').innerText = data.catatan || 'Tidak ada catatan kunjungan.';
+
+        // Tampilkan Modal
+        const modal = document.getElementById('modalDetailKunjungan');
+        if (modal) {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+    };
+
+    window.closeVisitDetail = function() {
+        const modal = document.getElementById('modalDetailKunjungan');
+        if (modal) {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    };
+</script>

@@ -80,7 +80,7 @@ class AdmKunjunganController extends Controller
         return view('admin.datakaryawan', $data);
     }
 
-    public function detail($kode_ao)
+   public function detail($kode_ao)
     {
         try {
             $data_detail = \DB::table('kunjungans')
@@ -91,21 +91,55 @@ class AdmKunjunganController extends Controller
                 })
                 ->where('kunjungans.kode_ao', $kode_ao)
                 ->select(
-                    'kunjungans.id',
-                    'kunjungans.created_at',
-                    'kunjungans.nama_nasabah',
-                    'kunjungans.no_nasabah',
+                    'kunjungans.*', // Ambil semua kolom agar aman
                     'nasabahs.alamat as alamat_master',
-                    'data_kunjungan_adms.alamat_nasabah as alamat_rencana',
-                    'data_kunjungan_adms.no_angsuran as no_rencana'
+                    'data_kunjungan_adms.alamat_nasabah as alamat_rencana'
                 )
                 ->orderBy('kunjungans.created_at', 'desc')
                 ->get();
+
+            // LOGIKA BARU: Update koordinat dari EXIF foto jika tersedia
+            foreach ($data_detail as $item) {
+                $path = public_path('uploads/kunjungan/' . $item->foto_kunjungan);
+                
+                if ($item->foto_kunjungan && file_exists($path)) {
+                    $exif = @exif_read_data($path);
+                    if (isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
+                        // Jika foto punya koordinat asli, timpa data koordinat database
+                        $item->koordinat = $this->getGps($exif);
+                    }
+                }
+            }
 
             return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
         } catch (\Exception $e) {
             return "<div style='color:red; padding:20px;'>Error: " . $e->getMessage() . "</div>";
         }
+    }
+
+    // Tambahkan helper function ini di bawah method detail atau di bawah class
+    private function getGps($exif)
+    {
+        $lat = $this->getComponent($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+        $lon = $this->getComponent($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+        return "$lat, $lon";
+    }
+
+    private function getComponent($coordinate, $ref)
+    {
+        $degrees = count($coordinate) > 0 ? $this->solveFraction($coordinate[0]) : 0;
+        $minutes = count($coordinate) > 1 ? $this->solveFraction($coordinate[1]) : 0;
+        $seconds = count($coordinate) > 2 ? $this->solveFraction($coordinate[2]) : 0;
+        $flip = ($ref == 'W' || $ref == 'S') ? -1 : 1;
+        return $flip * ($degrees + $minutes / 60 + $seconds / 3600);
+    }
+
+    private function solveFraction($fraction)
+    {
+        $parts = explode('/', $fraction);
+        if (count($parts) <= 0) return 0;
+        if (count($parts) == 1) return $parts[0];
+        return $parts[1] == 0 ? 0 : $parts[0] / $parts[1];
     }
 
    public function store(Request $request)

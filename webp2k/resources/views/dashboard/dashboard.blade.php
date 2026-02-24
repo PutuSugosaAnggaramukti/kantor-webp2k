@@ -280,48 +280,6 @@
 </div>
 
     <script>
-      const ctx = document.getElementById('visitChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: @json($labels), 
-                datasets: [
-                    {
-                        label: 'Nasabah Ada',
-                        data: @json($nasabahAda),
-                        backgroundColor: '#0E5E7E', 
-                        borderRadius: 6,
-                        maxBarThickness: 30
-                    },
-                    {
-                        label: 'Nasabah Tidak Ada',
-                        data: @json($nasabahTidakAda), 
-                        backgroundColor: '#F38120', 
-                        borderRadius: 6,
-                        maxBarThickness: 30
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true, 
-                        position: 'top',
-                        labels: { usePointStyle: true }
-                    }
-                },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { 
-                        beginAtZero: true, 
-                        ticks: { stepSize: 1 }
-                    }
-                }
-            }
-        });
-
         const trigger = document.getElementById('userTrigger');
         const dropdown = document.getElementById('userDropdown');
 

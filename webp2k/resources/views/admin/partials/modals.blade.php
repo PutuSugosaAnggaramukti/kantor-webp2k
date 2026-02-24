@@ -374,3 +374,45 @@
     </div>
 </div>
 
+<div id="modalDetailKunjungan" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: white; width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+        <div style="padding: 15px 20px; background: #f8f9fa; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-weight: bold;">Detail Hasil Kunjungan</h3>
+            <button onclick="closeVisitDetail()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        
+        <div style="padding: 20px; overflow-y: auto;">
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #666; font-size: 12px; display: block; margin-bottom: 5px;">FOTO KUNJUNGAN</label>
+                <img id="view-foto" src="" style="width: 100%; border-radius: 10px; border: 1px solid #ddd; height: 250px; object-fit: cover;">
+                <small id="view-jam" style="display: block; margin-top: 5px; color: #777; font-style: italic;"></small>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label style="font-weight: bold; color: #666; font-size: 12px; display: block;">KOORDINAT</label>
+                    <a id="view-koordinat-link" href="#" target="_blank" style="text-decoration: none;">
+                        <span id="view-koordinat" style="font-weight: bold; color: #3498db; font-size: 13px;"></span>
+                    </a>
+                </div>
+                <div>
+                    <label style="font-weight: bold; color: #666; font-size: 12px; display: block;">JANJI BAYAR</label>
+                    <span id="view-janji" style="font-weight: bold; color: #e67e22;"></span>
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-weight: bold; color: #666; font-size: 12px; display: block;">NOMINAL KESANGGUPAN</label>
+                    <span id="view-nominal" style="font-weight: bold; color: #27ae60; font-size: 16px;"></span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 5px;">
+                <label style="font-weight: bold; color: #666; font-size: 12px; display: block; margin-bottom: 5px;">CATATAN KUNJUNGAN</label>
+                <div id="view-catatan" style="background: #fdf9f4; padding: 10px; border-radius: 8px; border-left: 4px solid #f39c12; font-style: italic; font-size: 13px;"></div>
+            </div>
+        </div>
+
+        <div style="padding: 15px 20px; background: #f8f9fa; border-top: 1px solid #ddd; text-align: right;">
+            <button onclick="closeVisitDetail()" style="padding: 8px 20px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer;">Tutup</button>
+        </div>
+    </div>
+</div>

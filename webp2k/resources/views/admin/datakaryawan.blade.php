@@ -725,6 +725,64 @@ function closeModalImport() {
     }
 }
 
+window.showVisitDetail = function(data) {
+    // 1. Foto & Jam
+    document.getElementById('view-foto').src = data.foto_kunjungan 
+        ? `/uploads/kunjungan/${data.foto_kunjungan}` 
+        : '/assets/no_image.png';
+    
+    // Perbaikan pengambilan jam: pastikan data.created_at ada
+    let jam = '--:--';
+    if (data.created_at && data.created_at.includes(' ')) {
+        jam = data.created_at.split(' ')[1].substring(0, 5);
+    }
+    document.getElementById('view-jam').innerText = `Foto diambil pada jam: ${jam} WIB`;
+
+    // 2. Koordinat (Perbaikan Link Google Maps)
+    const koordinat = data.koordinat || 'Tidak ada koordinat';
+    document.getElementById('view-koordinat').innerText = koordinat;
+    
+    // Gunakan backticks ( ` ) untuk template literals
+    document.getElementById('view-koordinat-link').href = data.koordinat 
+        ? `https://www.google.com/maps?q=${data.koordinat}` 
+        : '#';
+
+    // 3. Janji Bayar
+    document.getElementById('view-janji').innerText = data.tgl_janji_bayar || 'Tidak Ada Janji';
+
+    // 4. Nominal (Format Rupiah)
+    // Pastikan nama property sesuai dengan yang di-select di Controller (nominal_janji_bayar)
+    const nominal = parseFloat(data.nominal_janji_bayar) || 0;
+    document.getElementById('view-nominal').innerText = new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0
+    }).format(nominal);
+
+    // 5. Catatan
+    document.getElementById('view-catatan').innerText = data.catatan || 'Tidak ada catatan kunjungan.';
+
+    // Tampilkan
+    document.getElementById('modalDetailKunjungan').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+window.closeVisitDetail = function() {
+    const modal = document.getElementById('modalDetailKunjungan');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Mengembalikan scroll bar halaman
+    }
+};
+
+// Opsional: Menutup modal jika user klik di luar area putih modal
+window.onclick = function(event) {
+    const modal = document.getElementById('modalDetailKunjungan');
+    if (event.target == modal) {
+        closeVisitDetail();
+    }
+}
+
 </script>
 </body>
 </html>
