@@ -147,7 +147,6 @@
 @include('admin.partials.modals') 
 
 <script>
-    // Pastikan fungsi terdaftar di window agar bisa dipanggil onclick
     window.toggleAo = function(element) {
         const section = element.parentElement;
         section.classList.toggle('active');
@@ -164,13 +163,11 @@
         if (modal) modal.style.display = 'none';
     };
 
-    // Tambahkan ini agar fungsi Tambah Jadwal tidak error
     window.openModalKunjungan = function() {
-        const modal = document.getElementById('modalKunjungan'); // Sesuaikan ID modal tambah di modals.blade.php
+        const modal = document.getElementById('modalKunjungan'); 
         if (modal) modal.style.display = 'flex';
     };
 
-    // Fungsi untuk menutup modal (bisa digunakan untuk semua modal)
     window.closeModal = function(id) {
         const modal = document.getElementById(id);
         if (modal) modal.style.display = 'none';
