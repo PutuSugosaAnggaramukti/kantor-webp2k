@@ -234,43 +234,45 @@ class KunjunganController extends Controller
     }
 
    public function store(Request $request)
-    {
-        $karyawan = Auth::guard('karyawan')->user();
+{
+    $karyawan = Auth::guard('karyawan')->user();
 
-        // 1. Cek Duplikasi
-        $exists = \DB::table('kunjungans')
-            ->where('kode_ao', $karyawan->kode_ao)
-            ->where('nama_nasabah', $request->nama_nasabah)
-            ->exists();
+    // 1. Ambil data master nasabah berdasarkan no_nasabah (Nomor Angsuran)
+    $noAngsuran = trim($request->no_nasabah);
+    $nasabahMaster = \DB::table('nasabahs')
+        ->where('no_angsuran', $noAngsuran)
+        ->first();
 
-        if ($exists) {
-            return redirect()->back()->with('error', 'Data kunjungan untuk nasabah ini sudah dilaporkan!');
-        }
-
-        // 2. Proses Upload Foto
-        $nama_file_foto = null;
-        if ($request->hasFile('foto_kunjungan')) {
-            $file = $request->file('foto_kunjungan');
-            $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
-        }
-
-        // 3. Simpan ke Database
-        \DB::table('kunjungans')->insert([
-            'kode_ao'         => $karyawan->kode_ao,
-            'no_nasabah'      => $request->no_nasabah, // Ambil dari input form, bukan kode AO
-            'nama_nasabah'    => $request->nama_nasabah,
-            'kol'             => $request->kol,        // MASUKKAN KOL (OPSIONAL)
-            'ada_di_lokasi'   => $request->ada_di_lokasi,
-            'catatan'         => $request->catatan, 
-            'tgl_janji_bayar' => $request->tgl_janji_bayar,
-            'foto_kunjungan'  => $nama_file_foto, 
-            'koordinat'       => $request->koordinat, 
-            'created_at'      => now(),
-        ]);
-
-        return redirect()->back()->with('success', 'Laporan kunjungan berhasil disimpan!');
+    // 2. Proses Upload Foto (Menggunakan logika asli kamu agar tidak error)
+    $nama_file_foto = null;
+    if ($request->hasFile('foto_kunjungan')) {
+        $file = $request->file('foto_kunjungan');
+        $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
+        $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
     }
+
+    // 3. Simpan ke Database
+    \DB::table('kunjungans')->insert([
+        'kode_ao'             => $karyawan->kode_ao,
+        'no_nasabah'          => $request->no_nasabah, 
+        'nama_nasabah'        => $request->nama_nasabah,
+        'kol'                 => $request->kol,
+        'ada_di_lokasi'       => $request->ada_di_lokasi,
+        'catatan'             => $request->catatan, 
+        'tgl_janji_bayar'     => $request->tgl_janji_bayar,
+        
+        // Logika nominal: Jika ada tgl janji bayar & nasabah ditemukan, ambil nominalnya
+        'nominal_janji_bayar' => ($request->filled('tgl_janji_bayar') && $nasabahMaster) 
+                                 ? $nasabahMaster->nominal 
+                                 : 0,
+        
+        'foto_kunjungan'      => $nama_file_foto, 
+        'koordinat'           => $request->koordinat, 
+        'created_at'          => now(),
+    ]);
+
+    return redirect()->back()->with('success', 'Laporan kunjungan berhasil disimpan!');
+}
         
     private function getGps($exifCoord, $hemi) 
     {

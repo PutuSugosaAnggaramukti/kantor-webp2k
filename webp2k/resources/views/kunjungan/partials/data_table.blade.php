@@ -131,7 +131,7 @@
                                 <i class="fa-solid fa-check" style="font-size: 18px;"></i>
                             </div>
                         @else
-                            <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}')" 
+                           <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')" 
                                     style="background-color: #A3A8AC; color: #333; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
                             </button>

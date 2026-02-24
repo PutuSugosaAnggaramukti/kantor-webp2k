@@ -156,17 +156,25 @@
                 </div>
             </div>
 
-            {{-- 4. Status Janji Bayar (Hanya Muncul Jika Ada) --}}
+           {{-- 4. Status Janji Bayar (Hanya Muncul Jika Ada) --}}
             @if($detail->tgl_janji_bayar)
             <div class="detail-section" style="background: #fff9db; border-color: #ffe066;">
                 <span class="section-label" style="color: #856404;"><i class="fa-solid fa-calendar-check"></i> Janji Bayar Nasabah</span>
-                <p class="section-value" style="color: #e67e22;">
+                <p class="section-value" style="color: #e67e22; margin-bottom: 5px;">
                     {{ \Carbon\Carbon::parse($detail->tgl_janji_bayar)->translatedFormat('d F Y') }}
                 </p>
+
+                {{-- TAMBAHAN: Tampilkan Nominal Kesanggupan --}}
+                @if($detail->nominal_janji_bayar)
+                    <div style="border-top: 1px dashed #ffe066; margin-top: 10px; padding-top: 8px;">
+                        <span class="section-label" style="color: #856404; font-size: 11px;">Nominal Kesanggupan</span>
+                        <p class="section-value" style="color: #d32f2f; font-size: 18px; font-weight: 900; margin: 0;">
+                            Rp {{ number_format($detail->nominal_janji_bayar, 0, ',', '.') }}
+                        </p>
+                    </div>
+                @endif
             </div>
             @endif
-        </div>
-    </div>
 
     {{-- Tombol Kembali --}}
     <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 25px;">

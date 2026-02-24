@@ -152,45 +152,40 @@
         }
 
         // --- Fungsi Modal Form Kunjungan ---
-      function openModal(nama, kode) {
-        document.getElementById('form-no-nasabah').value = kode;
-        document.getElementById('form-nama-nasabah').value = nama;
-        document.getElementById('display-no').value = kode;
-        document.getElementById('display-nama').value = nama;
-        
-        // Tampilkan modal
-        document.getElementById('visitModal').style.display = 'flex';
+     function openModal(nama, kodeAO, noAngsuran) {
+    // 1. Masukkan data ke input hidden (Ini yang dikirim ke database)
+    document.getElementById('form-no-nasabah').value = noAngsuran; // Nomor Angsuran asli
+    document.getElementById('form-nama-nasabah').value = nama;
 
-        // TAMBAHAN: Reset input koordinat dan ambil lokasi baru
-        const koordinatInput = document.getElementById('form-koordinat');
-        const statusText = document.getElementById('location-status');
-        
-        if (koordinatInput) koordinatInput.value = ""; // Kosongkan dulu agar data lama tidak terbawa
-        if (statusText) statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari lokasi...';
+    // 2. Tampilkan data di form (Hanya untuk dilihat AO)
+    document.getElementById('display-kode-ao').value = kodeAO; // Menampilkan Kode AO (PG.800)
+    document.getElementById('display-nama').value = nama;
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    koordinatInput.value = `${lat}, ${lng}`;
-                    if (statusText) {
-                        statusText.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci</span>`;
-                    }
-                },
-                (error) => {
-                    if (statusText) {
-                        statusText.innerHTML = `<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> Gagal akses GPS</span>`;
-                    }
-                    console.warn("Geolocation error: ", error.message);
-                },
-                { 
-                    enableHighAccuracy: true, 
-                    timeout: 10000 
-                }
-            );
-        }
+    // 3. Munculkan Modal
+    document.getElementById('visitModal').style.display = 'flex';
+
+    // 4. Logika GPS (Tetap sama)
+    const koordinatInput = document.getElementById('form-koordinat');
+    const statusText = document.getElementById('location-status');
+    
+    if (koordinatInput) koordinatInput.value = ""; 
+    if (statusText) statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari lokasi...';
+
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                koordinatInput.value = `${lat}, ${lng}`;
+                if (statusText) statusText.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci</span>`;
+            },
+            (error) => {
+                if (statusText) statusText.innerHTML = `<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> Gagal GPS</span>`;
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     }
+}
 
         function closeModal() {
         const modal = document.getElementById('visitModal');

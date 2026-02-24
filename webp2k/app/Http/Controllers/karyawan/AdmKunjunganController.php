@@ -18,20 +18,17 @@ class AdmKunjunganController extends Controller
     {
         $karyawans = Karyawan::where('status', 'aktif')->get();
         
-        // AMBIL DATA UNTUK ACCORDION (Katalog Nasabah per AO)
-        $kunjungansGrouped = \App\Models\Nasabah::with('karyawan')
-            ->orderByRaw("kol = 5 DESC")
-            ->get()
-            ->groupBy('kode_ao');
+        $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
+        ->where('bulan', now()->format('Y-m')) 
+        ->get()
+        ->groupBy('kode_ao');
 
-        // Data lama tetap diambil jika masih dibutuhkan untuk tabel bawah
         $kunjungans = DataKunjunganAdm::with('karyawan')
             ->orderBy('kode_ao', 'asc')
             ->orderBy('kol', 'desc')
             ->paginate(15); 
 
         if ($request->ajax()) {
-            // Tambahkan kunjungansGrouped di compact
             return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungans', 'kunjungansGrouped'))->render();
         }
 
@@ -160,7 +157,7 @@ class AdmKunjunganController extends Controller
         return Excel::download(new KunjunganExport($kode_ao), 'rekap_kunjungan_' . date('Y-m-d') . '.xlsx');
     }
 
-   public function importExcel(Request $request)
+  public function importExcel(Request $request)
     {
         $request->validate([
             'karyawan_id' => 'required|exists:karyawans,id',
@@ -176,31 +173,56 @@ class AdmKunjunganController extends Controller
 
             // Skip header (Baris 1)
             foreach (array_slice($data, 1) as $row) {
-                // Kita sesuaikan index dengan struktur data dummy:
-                // index 0: no_ang, 1: nama, 2: alamat, 3: nominal, 4: sisa_pokok, 5: kol
-                
-                if (!empty($row[1])) { // Cek Nama tidak kosong
-                    DataKunjunganAdm::create([
+                $noAng = $row[0] ?? null;
+                if (empty($noAng)) continue;
+
+                // 1. Simpan ke tabel Master Nasabah
+                \App\Models\Nasabah::updateOrCreate(
+                    ['no_angsuran' => (string)$noAng],
+                    [
+                        'nasabah'       => $row[1] ?? '-', 
+                        'alamat'        => $row[2] ?? '-', 
+                        'nominal'       => $row[3] ?? 0,   
+                        'sisa_pokok'    => $row[4] ?? 0,   
+                        'kol'           => $row[5] ?? 1,   
+                        'kode_ao'       => $karyawan->kode_ao, 
+                        'bulan'         => now()->format('Y-m'),
+                        'sudah_kunjung' => 0
+                    ]
+                );
+
+                // 2. Simpan ke tabel Jadwal Kunjungan agar langsung muncul di Accordion
+                \App\Models\DataKunjunganAdm::updateOrCreate(
+                    [
+                        'no_angsuran' => (string)$noAng,
+                        'bulan'       => now()->format('Y-m')
+                    ],
+                    [
                         'karyawan_id'    => $request->karyawan_id,
                         'kode_ao'        => $karyawan->kode_ao,
-                        'bulan'          => now()->format('Y-m'), // Default bulan sekarang
-                        'nama_nasabah'   => $row[1],             // Nama (Kolom B)
-                        'no_angsuran'    => $row[0] ?? '-',      // No Ang (Kolom A)
-                        'alamat_nasabah' => $row[2] ?? '-',      // Alamat (Kolom C)
-                        'nominal'        => $row[3] ?? 0,        // Nominal (Kolom D)
-                        'sisa_pokok'     => $row[4] ?? 0,        // Sisa Pokok (Kolom E)
-                        'kol'            => $row[5] ?? 1,        // KOL (Kolom F)
-                        'tanggal'        => now(), 
-                    ]);
-                }
+                        'nama_nasabah'   => $row[1] ?? '-',
+                        'alamat_nasabah' => $row[2] ?? '-',
+                        'nominal'        => $row[3] ?? 0,
+                        'sisa_pokok'     => $row[4] ?? 0,
+                        'kol'            => $row[5] ?? 1,
+                        'bulan'          => now()->format('Y-m'),
+                        'tanggal'        => now(),
+                    ]
+                );
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Data berhasil diimport dengan benar!']);
+            return response()->json([
+                'success' => true, 
+                'message' => 'Data berhasil diimport untuk AO: ' . $karyawan->nama
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()], 500);
+            return response()->json([
+                'success' => false, 
+                'message' => 'Gagal: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

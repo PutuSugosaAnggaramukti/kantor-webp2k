@@ -114,10 +114,12 @@
                         <tr class="row-kunjungan" data-no-angsuran="{{ $item->no_angsuran }}" style="border-bottom: 2px solid #000; text-align: center; {{ $isPrioritas ? 'background-color: #fff5f5;' : '' }}">
                             <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
                             <td style="padding: 12px; border-right: 2px solid #000;">{{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('F Y') }}</td>
-                            <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 15px;">
-                                <span style="font-size: 15px;">{{ $item->nama_nasabah }}</span>
+                           <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 15px;">
+                                <span style="font-size: 15px;">{{ $item->nama_nasabah ?? $item->nasabah }}</span>
                                 @if($isPrioritas)
-                                    <br><small style="color: #d32f2f; font-size: 10px; font-weight: 900;"><i class="fa-solid fa-triangle-exclamation"></i> WAJIB (KPI)</small>
+                                    <br><small style="color: #d32f2f; font-size: 10px; font-weight: 900;">
+                                        <i class="fa-solid fa-triangle-exclamation"></i> WAJIB (KPI)
+                                    </small>
                                 @endif
                             </td>
                             <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #4e4bc1;">{{ number_format($item->nominal ?? 0, 0, ',', '.') }}</td>

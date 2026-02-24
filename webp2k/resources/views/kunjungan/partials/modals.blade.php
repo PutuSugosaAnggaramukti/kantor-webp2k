@@ -22,7 +22,7 @@
 
                 <div class="form-group mb-3">
                     <label>Kode AO</label>
-                    <input type="text" id="display-no" class="form-control" disabled>
+                    <input type="text" id="display-kode-ao" class="form-control" disabled>
                 </div>
 
                 <div class="form-group mb-3">
