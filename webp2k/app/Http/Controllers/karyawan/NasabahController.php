@@ -107,31 +107,31 @@ class NasabahController extends Controller
         ]);
     }
 
-    public function importExcel(Request $request) 
+   public function importExcel(Request $request) 
     {
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         try {
+            \DB::table('nasabahs')->truncate();
             \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\NasabahImport, $request->file('file'));
             
-            return redirect()->route('admin.dashboard', ['page' => 'nasabah'])
-                            ->with('success', 'Data Nasabah berhasil diimport!');
+           return redirect()->back()->with('success', 'Data Nasabah Berhasil Diperbarui!');
         } catch (\Exception $e) {
             return "Terjadi Error Database: " . $e->getMessage(); 
         }
     }
 
   public function exportExcel(Request $request)
-{
-    $tglAwal = $request->query('tanggal_awal');
-    $tglAkhir = $request->query('tanggal_akhir');
+    {
+        $tglAwal = $request->query('tanggal_awal');
+        $tglAkhir = $request->query('tanggal_akhir');
 
-    if (!$tglAwal || !$tglAkhir) {
-        return back()->with('error', 'Silakan pilih rentang tanggal.');
+        if (!$tglAwal || !$tglAkhir) {
+            return back()->with('error', 'Silakan pilih rentang tanggal.');
+        }
+
+        $nama_file = 'Data_Nasabah_' . $tglAwal . '_sd_' . $tglAkhir . '.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new NasabahExport($tglAwal, $tglAkhir), $nama_file);
     }
-
-    $nama_file = 'Data_Nasabah_' . $tglAwal . '_sd_' . $tglAkhir . '.xlsx';
-
-    return \Maatwebsite\Excel\Facades\Excel::download(new NasabahExport($tglAwal, $tglAkhir), $nama_file);
-}
 }
