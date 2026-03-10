@@ -233,17 +233,26 @@ class KunjunganController extends Controller
         }
     }
 
-   public function store(Request $request)
+public function store(Request $request)
 {
     $karyawan = Auth::guard('karyawan')->user();
 
-    // 1. Ambil data master nasabah berdasarkan no_nasabah (Nomor Angsuran)
-    $noAngsuran = trim($request->no_nasabah);
+    // 1. Bersihkan input No Nasabah
+    $noNasabahInput = trim($request->no_nasabah);
+
+    // 2. CARI DI TABEL NASABAHS (Master)
     $nasabahMaster = \DB::table('nasabahs')
-        ->where('no_angsuran', $noAngsuran)
+        ->where('no_angsuran', $noNasabahInput)
         ->first();
 
-    // 2. Proses Upload Foto (Menggunakan logika asli kamu agar tidak error)
+    // 3. JIKA TIDAK KETEMU, CARI DI TABEL JADWAL ADMIN (Backup)
+    if (!$nasabahMaster) {
+        $nasabahMaster = \DB::table('data_kunjungan_adms')
+            ->where('no_angsuran', $noNasabahInput)
+            ->first();
+    }
+
+    // 4. Proses Foto
     $nama_file_foto = null;
     if ($request->hasFile('foto_kunjungan')) {
         $file = $request->file('foto_kunjungan');
@@ -251,19 +260,21 @@ class KunjunganController extends Controller
         $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
     }
 
-    // 3. Simpan ke Database
+    // 5. Simpan ke Database
     \DB::table('kunjungans')->insert([
         'kode_ao'             => $karyawan->kode_ao,
         'no_nasabah'          => $request->no_nasabah, 
         'nama_nasabah'        => $request->nama_nasabah,
-        'kol'                 => $request->kol,
+        
+        // AMBIL KOL DENGAN PRIORITAS: Master > Jadwal Admin > Request > Default 1
+        'kol'                 => $nasabahMaster ? $nasabahMaster->kol : ($request->kol ?: 1),
+        
         'ada_di_lokasi'       => $request->ada_di_lokasi,
         'catatan'             => $request->catatan, 
         'tgl_janji_bayar'     => $request->tgl_janji_bayar,
         
-        // Logika nominal: Jika ada tgl janji bayar & nasabah ditemukan, ambil nominalnya
         'nominal_janji_bayar' => ($request->filled('tgl_janji_bayar') && $nasabahMaster) 
-                                 ? $nasabahMaster->nominal 
+                                 ? ($nasabahMaster->nominal ?? 0) 
                                  : 0,
         
         'foto_kunjungan'      => $nama_file_foto, 
@@ -271,7 +282,7 @@ class KunjunganController extends Controller
         'created_at'          => now(),
     ]);
 
-    return redirect()->back()->with('success', 'Laporan kunjungan berhasil disimpan!');
+    return redirect()->back()->with('success', 'Laporan berhasil disimpan!');
 }
         
     private function getGps($exifCoord, $hemi) 

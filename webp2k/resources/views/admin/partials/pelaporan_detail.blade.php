@@ -9,12 +9,6 @@
     </p>
 </div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <button style="background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;">
-        <i class="fa-solid fa-file-excel"></i> Export
-    </button>
-    <input type="text" placeholder="Pencarian.." class="search-input" style="padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; width: 250px;">
-</div>
 
 <div class="table-responsive">
     <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background-color: #fff;">
