@@ -332,43 +332,48 @@ public function store(Request $request)
 
 public function exportWord($id)
 {
-    // 1. Ambil data (Nama, Alamat, dan Nominal sudah cocok di aplikasi)
+    // 1. Ambil data dengan Join
     $data = \DB::table('kunjungans')
         ->leftJoin('data_kunjungan_adms', function($join) {
             $join->on(\DB::raw('TRIM(kunjungans.nama_nasabah)'), '=', \DB::raw('TRIM(data_kunjungan_adms.nama_nasabah)'));
         })
         ->where('kunjungans.id', $id)
         ->select(
-            'kunjungans.*', 
+            'kunjungans.id',
+            'kunjungans.kode_ao',
+            'kunjungans.nama_nasabah',
+            'kunjungans.catatan',
+            'kunjungans.created_at',
             'data_kunjungan_adms.nominal', 
             'data_kunjungan_adms.sisa_pokok',
-            'data_kunjungan_adms.no_angsuran'
+            'data_kunjungan_adms.no_angsuran',
+            'data_kunjungan_adms.alamat_nasabah' // Pastikan ambil dari tabel ADM
         )
         ->first();
 
     if (!$data) return redirect()->back()->with('error', 'Data tidak ditemukan');
- 
+
     $templateProcessor = new \PhpOffice\PhpWord\TemplateProcessor(public_path('templates/template_p2k.docx'));
 
-    // 2. Isi variabel yang sudah berhasil sebelumnya
+    // 2. Isi variabel ke Word
     $templateProcessor->setValue('nama_nasabah', strtoupper($data->nama_nasabah ?? '-'));
+    
+    // Gunakan alamat_nasabah yang berasal dari data_kunjungan_adms
     $templateProcessor->setValue('alamat_nasabah', $data->alamat_nasabah ?? '-');
+
     $templateProcessor->setValue('kode_ao', $data->kode_ao ?? '-');
     $templateProcessor->setValue('no_angsuran', $data->no_angsuran ?? '-');
 
-    // 3. PEMAKSAAN VARIABEL BARU (Agar terhindar dari error XML Word)
-    // Pastikan di file Word kamu sudah diganti menjadi NOMINAL_VALUE dan SISA_VALUE
+    // 3. Format Angka
     $nominalText = number_format($data->nominal ?? 0, 0, ',', '.');
     $sisaText = number_format($data->sisa_pokok ?? 0, 0, ',', '.');
 
-    // Kita tembak ke 3 kemungkinan nama variabel sekaligus untuk berjaga-jaga
-    $templateProcessor->setValue('nominal', $nominalText); // Jika di word: ${nominal}
-    $templateProcessor->setValue('NOMINAL_VALUE', $nominalText); // Jika di word: NOMINAL_VALUE
-    
-    $templateProcessor->setValue('sisa_pokok', $sisaText); // Jika di word: ${sisa_pokok}
-    $templateProcessor->setValue('SISA_VALUE', $sisaText); // Jika di word: SISA_VALUE
+    $templateProcessor->setValue('nominal', $nominalText);
+    $templateProcessor->setValue('NOMINAL_VALUE', $nominalText);
+    $templateProcessor->setValue('sisa_pokok', $sisaText);
+    $templateProcessor->setValue('SISA_VALUE', $sisaText);
 
-    // 4. Download
+    // 4. Proses Download
     $filename = "Tagihan_" . str_replace(' ', '_', $data->nama_nasabah) . ".docx";
     
     if (ob_get_contents()) ob_end_clean();
