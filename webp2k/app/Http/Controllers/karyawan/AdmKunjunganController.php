@@ -205,58 +205,43 @@ class AdmKunjunganController extends Controller
 
             DB::beginTransaction();
 
-            // Skip header (Baris 1)
+            // Ambil data mulai dari baris ke-2 (skip header)
             foreach (array_slice($data, 1) as $row) {
-                $noAng = $row[0] ?? null;
-                if (empty($noAng)) continue;
+                // SESUAIKAN DENGAN GAMBAR EXCEL KAMU:
+                $noAngsuran  = $row[0] ?? null; // Kolom A
+                $namaNasabah = $row[1] ?? null; // Kolom B
+                $alamat      = $row[2] ?? '-';  // Kolom C
+                $nominal     = $row[3] ?? 0;    // Kolom D
+                $sisaPokok   = $row[4] ?? 0;    // Kolom E
+                $kol         = $row[5] ?? 1;    // Kolom F
 
-                // 1. Simpan ke tabel Master Nasabah
-                \App\Models\Nasabah::updateOrCreate(
-                    ['no_angsuran' => (string)$noAng],
-                    [
-                        'nasabah'       => $row[1] ?? '-', 
-                        'alamat'        => $row[2] ?? '-', 
-                        'nominal'       => $row[3] ?? 0,   
-                        'sisa_pokok'    => $row[4] ?? 0,   
-                        'kol'           => $row[5] ?? 1,   
-                        'kode_ao'       => $karyawan->kode_ao, 
-                        'bulan'         => now()->format('Y-m'),
-                        'sudah_kunjung' => 0
-                    ]
-                );
+                if (empty($namaNasabah)) continue;
 
-                // 2. Simpan ke tabel Jadwal Kunjungan agar langsung muncul di Accordion
+                // Simpan atau update ke tabel data_kunjungan_adms
                 \App\Models\DataKunjunganAdm::updateOrCreate(
                     [
-                        'no_angsuran' => (string)$noAng,
-                        'bulan'       => now()->format('Y-m')
+                        'karyawan_id'  => $request->karyawan_id,
+                        'no_angsuran'  => $noAngsuran,
+                        'bulan'        => now()->format('Y-m') // Default bulan sekarang
                     ],
                     [
-                        'karyawan_id'    => $request->karyawan_id,
                         'kode_ao'        => $karyawan->kode_ao,
-                        'nama_nasabah'   => $row[1] ?? '-',
-                        'alamat_nasabah' => $row[2] ?? '-',
-                        'nominal'        => $row[3] ?? 0,
-                        'sisa_pokok'     => $row[4] ?? 0,
-                        'kol'            => $row[5] ?? 1,
-                        'bulan'          => now()->format('Y-m'),
+                        'nama_nasabah'   => $namaNasabah,
+                        'alamat_nasabah' => $alamat,
+                        'nominal'        => (float) $nominal,
+                        'sisa_pokok'     => (float) $sisaPokok,
+                        'kol'            => $kol,
                         'tanggal'        => now(),
                     ]
                 );
             }
 
             DB::commit();
-            return response()->json([
-                'success' => true, 
-                'message' => 'Data berhasil diimport untuk AO: ' . $karyawan->nama
-            ]);
+            return response()->json(['success' => true, 'message' => 'Import Berhasil!']);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false, 
-                'message' => 'Gagal: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
 }

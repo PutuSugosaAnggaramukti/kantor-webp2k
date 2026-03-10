@@ -100,39 +100,53 @@
                     <thead>
                         <tr style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa; border-bottom: 2px solid #000; text-align: center;">
                             <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
-                            <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">Bulan</th>
-                            <th style="padding: 15px; border-right: 2px solid #000;">Nama Nasabah</th>
-                            <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 140px;">No Angsuran</th> <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Bulan</th>
+                            <th style="padding: 15px; border-right: 2px solid #000;">Data Nasabah</th> <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
                             <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Sisa Pokok</th> 
-                            <th style="padding: 15px; border-right: 2px solid #000; width: 80px;">KOL</th>
-                            <th style="padding: 15px; width: 100px;">Option</th>
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">KOL</th>
                         </tr>
                     </thead>
+
                     <tbody style="font-weight: 800; font-size: 14px; color: #000;">
                         @foreach($group as $index => $item)
                         @php $isPrioritas = ($item->kol == 5); @endphp
                         <tr class="row-kunjungan" data-no-angsuran="{{ $item->no_angsuran }}" style="border-bottom: 2px solid #000; text-align: center; {{ $isPrioritas ? 'background-color: #fff5f5;' : '' }}">
                             <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                            <td style="padding: 12px; border-right: 2px solid #000;">{{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('F Y') }}</td>
-                           <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 15px;">
-                                <span style="font-size: 15px;">{{ $item->nama_nasabah ?? $item->nasabah }}</span>
+                            
+                            <td style="padding: 12px; border-right: 2px solid #000; color: #444;">
+                                {{ $item->no_angsuran ?? '-' }}
+                            </td>
+
+                            <td style="padding: 12px; border-right: 2px solid #000;">
+                                {{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('F Y') }}
+                            </td>
+
+                            <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 15px;">
+                                <span style="font-size: 15px; display: block; margin-bottom: 4px;">{{ $item->nama_nasabah ?? $item->nasabah }}</span>
+                                
+                                <small style="color: #666; font-weight: 600; font-size: 11px; display: block; line-height: 1.2;">
+                                    <i class="fa-solid fa-location-dot"></i> {{ $item->alamat_nasabah ?? $item->alamat ?? '-' }}
+                                </small>
+
                                 @if($isPrioritas)
-                                    <br><small style="color: #d32f2f; font-size: 10px; font-weight: 900;">
+                                    <small style="color: #d32f2f; font-size: 10px; font-weight: 900; margin-top: 5px; display: block;">
                                         <i class="fa-solid fa-triangle-exclamation"></i> WAJIB (KPI)
                                     </small>
                                 @endif
                             </td>
-                            <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #4e4bc1;">{{ number_format($item->nominal ?? 0, 0, ',', '.') }}</td>
-                            <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #d32f2f;">{{ number_format($item->sisa_pokok ?? 0, 0, ',', '.') }}</td>
+
+                            <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #4e4bc1;">
+                                {{ number_format($item->nominal ?? 0, 0, ',', '.') }}
+                            </td>
+                            
+                            <td style="padding: 12px; border-right: 2px solid #000; text-align: right; color: #d32f2f;">
+                                {{ number_format($item->sisa_pokok ?? 0, 0, ',', '.') }}
+                            </td>
+
                             <td style="padding: 12px; border-right: 2px solid #000;">
                                 <span style="padding: 4px 10px; border-radius: 6px; background-color: {{ $isPrioritas ? '#d32f2f' : '#eee' }}; color: {{ $isPrioritas ? '#ffffff' : '#333333' }};">
                                     {{ $item->kol }}
                                 </span>
-                            </td>
-                            <td style="padding: 12px; text-align: center;">
-                                <button onclick="openModalEditKunjungan('{{ $item->id }}')" style="background: none; border: none; cursor: pointer;">
-                                    <i class="fa-solid fa-pen-to-square" style="font-size: 18px; color: #333;"></i>
-                                </button>
                             </td>
                         </tr>
                         @endforeach

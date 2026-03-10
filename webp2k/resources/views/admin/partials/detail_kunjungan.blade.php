@@ -59,37 +59,3 @@
     @include('admin.partials.modals')
 </div>
 
-<script>
-    // Gunakan window.namaFungsi agar bisa dipanggil dari atribut onclick
-    window.showVisitDetail = function(data) {
-        if (!data) return;
-
-        // Isi Foto
-        const fotoPath = data.foto_kunjungan 
-            ? `/uploads/kunjungan/${data.foto_kunjungan}` 
-            : '/assets/no-image.png';
-        document.getElementById('view-foto').src = fotoPath;
-
-        // Isi Status dan Janji Bayar
-        document.getElementById('view-lokasi').innerText = data.ada_di_lokasi || '-';
-        document.getElementById('view-janji').innerText = data.tgl_janji_bayar || 'Tidak Ada Janji';
-
-        // Isi Catatan
-        document.getElementById('view-catatan').innerText = data.catatan || 'Tidak ada catatan kunjungan.';
-
-        // Tampilkan Modal
-        const modal = document.getElementById('modalDetailKunjungan');
-        if (modal) {
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-    };
-
-    window.closeVisitDetail = function() {
-        const modal = document.getElementById('modalDetailKunjungan');
-        if (modal) {
-            modal.style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-    };
-</script>
