@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - P2K</title>
+    <title>Admin Dashboard SIPANTAU - P2K</title>
     <link rel="stylesheet" href="{{ asset('css/admin-dashboard.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,7 +22,7 @@
     <header class="navbar-admin">
         <div class="logo-area" style="display: flex; align-items: center; gap: 10px;">
             <img src="{{ asset('assets/logo.png') }}" alt="Logo" height="40">
-            <div style="font-weight: bold; line-height: 1.2;">Sistem Informasi <br><span style="color: #3b82f6;">P2K</span></div>
+            <div style="font-weight: bold; line-height: 1.2;">SIPANTAU <br><span style="color: #3b82f6;">P2K</span></div>
         </div>
         <div class="user-profile-tag">
             <span style="cursor: pointer;" onclick="toggleAdminDropdown()">
@@ -192,7 +192,7 @@
 </div>
 
     <footer class="footer-admin">
-        Sistem Aplikasi P2K
+        SIPANTAU P2K 2026
     </footer>
 
 

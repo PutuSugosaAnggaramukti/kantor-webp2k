@@ -2,7 +2,7 @@
 <html lang="id" class="h-full"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Informasi P2K</title>
+    <title>SIPANTAU P2K</title>
     
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
     <script src="https://cdn.tailwindcss.com"></script> 
@@ -27,7 +27,7 @@
                     <div class="p2k-brand">
                         <img src="/assets/logo.png" alt="Logo P2K" class="p2k-logo">
                         <div class="p2k-title">
-                            <span>Sistem Informasi</span>
+                            <span>SIPANTAU</span>
                             <strong>P2K</strong>
                         </div>
                     </div>

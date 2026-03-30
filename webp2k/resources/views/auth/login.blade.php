@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Login | Sistem Informasi P2K</title>
+    <title>Login | SIPANTAU P2K</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Google Font -->
@@ -19,7 +19,8 @@
     <div class="loader-content">
         <div class="spinner"></div>
         <h2>Selamat Datang</h2>
-        <p>Sistem Informasi P2K</p>
+        <p>SIPANTAU P2K</p>
+        <p>Sistem Informasi Pemantauan P2K</p>
     </div>
 </div>
 
@@ -37,7 +38,8 @@
     <div class="login-left">
         <div class="brand">
             <img src="{{ asset('assets/logo.png') }}" alt="Logo P2K">
-            <h2>Sistem Informasi P2K</h2>
+            <h2>SIPANTAU P2K</h2>
+            <H2>Sistem Informasi Pemantauan P2K</H2>
         </div>
     </div>
 
