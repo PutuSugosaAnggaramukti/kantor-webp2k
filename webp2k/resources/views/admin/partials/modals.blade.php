@@ -219,13 +219,36 @@
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama AO (Karyawan)</label>
                 <select name="karyawan_id" id="selectKaryawan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
                     <option value="">-- Pilih AO --</option>
+                    @php
+                        // Ambil data langsung jika variabel dari controller tidak sampai
+                        $list_karyawan = isset($karyawans) ? $karyawans : \App\Models\Karyawan::where('status', 'aktif')->get();
+                    @endphp
+                    @foreach($list_karyawan as $k)
+                        <option value="{{ $k->id }}">{{ $k->nama }} ({{ $k->kode_ao }})</option>
+                    @endforeach
                 </select>
             </div>
 
             <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota (Wajib Pilih KOL 5 Terlebih Dahulu)</label>
-                <select name="no_angsuran" id="dropdown_no_angsuran" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px; background-color: #fff9c4;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota / Nasabah</label>
+                <select name="no_angsuran" id="dropdown_no_angsuran" required class="select-nasabah-custom" style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
                     <option value="">-- Pilih No. Anggota --</option>
+                    
+                    @php
+                        $data_nasabah_mentah = \DB::table('nasabahs')
+                                                ->select('no_angsuran', 'nasabah', 'alamat', 'kol')
+                                                ->orderBy('nasabah', 'asc')
+                                                ->get();
+                    @endphp
+
+                    @foreach($data_nasabah_mentah as $n)
+                        <option value="{{ $n->no_angsuran }}" 
+                                data-nama="{{ $n->nasabah }}" 
+                                data-alamat="{{ $n->alamat }}" 
+                                data-kol="{{ $n->kol }}">
+                            {{ $n->no_angsuran }} - {{ strtoupper($n->nasabah) }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
 
@@ -254,9 +277,13 @@
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; padding-bottom: 10px;"> <button type="button" onclick="closeModalKunjungan()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #000; background: #fff; font-weight: 700; cursor: pointer;">Batal</button>
-                <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: #28a745; color: #fff; border: 2px solid #000; font-weight: 700; cursor: pointer;">Simpan Jadwal</button>
-            </div>
+         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; padding-bottom: 10px;"> 
+            <button type="button" onclick="closeModalKunjungan()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #000; background: #fff; font-weight: 700; cursor: pointer;">Batal</button>
+            
+            <button type="button" onclick="simpanJadwalManual()" style="padding: 10px 20px; border-radius: 8px; background: #28a745; color: #fff; border: 2px solid #000; font-weight: 700; cursor: pointer;">
+                Simpan Jadwal
+            </button>
+        </div>
         </form>
     </div>
 </div>

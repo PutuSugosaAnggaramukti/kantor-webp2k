@@ -5,15 +5,16 @@ namespace App\Http\Controllers\karyawan;
 use App\Http\Controllers\Controller;
 use App\Models\DataKunjunganAdm;
 use App\Models\Karyawan;
+use App\Models\Nasabah; 
 use Illuminate\Http\Request;
-
 use Maatwebsite\Excel\Facades\Excel; 
 use App\Exports\PelaporanExport;
 
 class PelaporanController extends Controller
 {
-    public function index(Request $request) 
+   public function index(Request $request) 
     {
+        // 1. Data Daftar AO yang sudah berkunjung (Data Lama)
         $pelaporan_all = Karyawan::whereHas('kunjungan')
             ->with(['kunjungan' => function($query) {
                 $query->orderBy('tanggal', 'desc');
@@ -25,17 +26,27 @@ class PelaporanController extends Controller
             return $karyawan;
         });
 
+        // 2. Data Daftar Nasabah yang SUDAH dikunjungi (Data Baru)
+        // Kita ambil nasabah yang sudah_kunjung = 1 dan tarik data siapa yang mengunjungi
+        $nasabah_terkunjungi = Nasabah::where('sudah_kunjung', 1)
+            ->with(['kunjungan' => function($query) {
+                $query->orderBy('tanggal', 'desc');
+            }])
+            ->orderBy('nasabah', 'asc')
+            ->get();
+
         if ($request->ajax()) {
-            return view('admin.partials.pelaporan', compact('pelaporan_all'))->render();
+            return view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
         }
+
         $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
-        $data['content'] = view('admin.partials.pelaporan', compact('pelaporan_all'))->render();
+        // Kirim kedua variabel ke view
+        $data['content'] = view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
         $data['page'] = 'pelaporan';
-        $data['title'] = 'Pelaporan';
+        $data['title'] = 'Pelaporan Kunjungan';
 
-        
         return view('admin.datakaryawan', $data);
     }
 

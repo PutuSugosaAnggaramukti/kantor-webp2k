@@ -1,26 +1,30 @@
 <style>
-    /* Membuat header bisa diklik */
     .ao-header {
         cursor: pointer;
         transition: background 0.3s ease;
     }
     .ao-header:hover {
-        background-color: #3b38a3 !important; /* Warna sedikit lebih gelap saat hover */
+        background-color: #3b38a3 !important; 
     }
-    /* Sembunyikan tabel secara default */
     .table-container {
         display: none;
     }
-    /* Saat section AO aktif, tampilkan tabel */
     .ao-section.active .table-container {
         display: block;
     }
-    /* Animasi icon panah */
     .fa-chevron-down {
         transition: transform 0.3s ease;
     }
     .ao-section.active .fa-chevron-down {
         transform: rotate(180deg);
+    }
+    #dropdown_no_angsuran option {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    .select2-results__option[aria-disabled="true"] {
+        display: block !important;
     }
 </style>
 
@@ -161,29 +165,120 @@
 @include('admin.partials.modals') 
 
 <script>
-    window.toggleAo = function(element) {
-        const section = element.parentElement;
-        section.classList.toggle('active');
-        console.log("Section toggled");
-    };
+    // Gunakan pendekatan IIFE atau pastikan fungsi tidak dideklarasikan ulang jika memungkinkan
+    (function() {
+        // 1. Fungsi Toggle Accordion AO
+        window.toggleAo = function(element) {
+            const section = element.parentElement;
+            section.classList.toggle('active');
+        };
 
-    window.openModalImport = function() {
-        const modal = document.getElementById('modalImport');
-        if (modal) modal.style.display = 'flex';
-    };
+        // 2. Fungsi Modal Import
+        window.openModalImport = function() {
+            const modal = document.getElementById('modalImport');
+            if (modal) modal.style.display = 'flex';
+        };
 
-    window.closeModalImport = function() {
-        const modal = document.getElementById('modalImport');
-        if (modal) modal.style.display = 'none';
-    };
+        // 3. Fungsi Modal Tambah Jadwal (VERSI PERBAIKAN TOTAL)
+      window.openModalKunjungan = function() {
+            const modal = document.querySelector('#modalTambahKunjungan');
+            if (modal) {
+                modal.style.display = 'flex';
+                
+                // Cari semua dropdown nasabah
+                const dropdown = modal.querySelector('#dropdown_no_angsuran');
+                if (dropdown) {
+                    // 1. Hancurkan Select2 jika ada
+                    if ($(dropdown).hasClass("select2-hidden-accessible")) {
+                        $(dropdown).select2('destroy');
+                    }
 
-    window.openModalKunjungan = function() {
-        const modal = document.getElementById('modalKunjungan'); 
-        if (modal) modal.style.display = 'flex';
-    };
+                    // 2. Bersihkan atribut 'hidden' atau 'style' yang aneh-aneh dari tiap option
+                    const options = dropdown.options;
+                    for (let i = 0; i < options.length; i++) {
+                        options[i].removeAttribute('hidden');
+                        options[i].disabled = false;
+                        options[i].style.cssText = "display: block !important; visibility: visible !important;";
+                    }
 
-    window.closeModal = function(id) {
-        const modal = document.getElementById(id);
-        if (modal) modal.style.display = 'none';
-    };
+                    // 3. Reset value ke awal
+                    dropdown.value = "";
+
+                    // 4. Inisialisasi ulang Select2 dengan Parent ke Modal
+                    $(dropdown).select2({
+                        dropdownParent: $(modal)
+                    });
+                }
+                
+                // Reset form lainnya
+                const form = modal.querySelector('#formTambahKunjungan');
+                if(form) form.reset();
+            }
+        };
+
+        window.closeModalKunjungan = function() {
+            const modals = document.querySelectorAll('#modalTambahKunjungan');
+            modals.forEach(m => m.style.display = 'none');
+        };
+
+        // --- LOGIC SIMPAN JADWAL ---
+      window.simpanJadwalManual = function() {
+            // 1. Ambil form dari modal yang sedang aktif
+            const activeModal = Array.from(document.querySelectorAll('#modalTambahKunjungan')).find(m => m.style.display === 'flex');
+            const form = activeModal ? activeModal.querySelector('#formTambahKunjungan') : document.getElementById('formTambahKunjungan');
+            
+            if (!form) return;
+
+            // 2. Cek validasi form (required fields)
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const formData = new FormData(form);
+
+            fetch('/admin/datakunjungan/store', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: data.message,
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+
+                    closeModalKunjungan();
+                    
+                    // 3. REFRESH TOTAL
+                    // Kita buang loadAdminPage karena itu penyebab Ahmad Sujarwo tersaring/hilang.
+                    // Dengan reload, semua dropdown akan ditarik ulang dengan kondisi bersih.
+                    location.reload(); 
+                    
+                } else {
+                    Swal.fire({ 
+                        icon: 'error', 
+                        title: 'Gagal', 
+                        text: data.message || 'Terjadi kesalahan' 
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({ 
+                    icon: 'error', 
+                    title: 'Error', 
+                    text: 'Gagal terhubung ke server' 
+                });
+            });
+        };
+    })();
 </script>

@@ -76,7 +76,7 @@
                     </div>
                 </div>
 
-                <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Persentase Performa Nasional <small style="font-size: 0.6rem; color: #999;">(Klik untuk detail AO)</small></h3>
+                <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Persentase Performa  <small style="font-size: 0.6rem; color: #999;">(Klik untuk detail AO)</small></h3>
 
                 <div class="stats-grid">
                     <div class="stat-card" onclick="openModalAO('target')" style="background: white; color: #333; border-left: 8px solid #3f36b1; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 20px;">

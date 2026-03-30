@@ -14,57 +14,56 @@ use App\Http\Controllers\Dashboard\DashboardAdminController;
 
 class AdmKunjunganController extends Controller
 {
-    public function index(Request $request) 
+   public function index(Request $request) 
     {
-        $karyawans = Karyawan::where('status', 'aktif')->get();
-        
-        $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
-        ->where('bulan', now()->format('Y-m')) 
-        ->get()
-        ->groupBy('kode_ao');
+        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
+        $karyawans = \App\Models\Karyawan::where('status', 'aktif')->get();
+        // $nasabah_cek = \App\Models\Nasabah::where('no_angsuran', '26000001')->first();
 
-        $kunjungans = DataKunjunganAdm::with('karyawan')
+        // dd($nasabah_cek);
+
+        $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
+            ->where('bulan', now()->format('Y-m')) 
+            ->get()
+            ->groupBy('kode_ao');
+
+        $kunjungans = \App\Models\DataKunjunganAdm::with('karyawan')
             ->orderBy('kode_ao', 'asc')
-            ->orderBy('kol', 'desc')
             ->paginate(15); 
 
+        // Jika request AJAX (saat panggil loadAdminPage)
         if ($request->ajax()) {
-            return view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungans', 'kunjungansGrouped'))->render();
-        }
-
-        try {
-            $dashboard = new DashboardAdminController();
-            $data = $dashboard->getDashboardData();
-        } catch (\Exception $e) {
-            $data = ['karyawan_count' => Karyawan::count()];
+            return view('admin.partials.input_kunjungan', [
+                'kunjungans' => $kunjungans,
+                'kunjungansGrouped' => $kunjungansGrouped,
+                'nasabah_all' => \App\Models\Nasabah::orderBy('nasabah', 'asc')->get(), // Ambil fresh
+                'karyawans' => \App\Models\Karyawan::where('status', 'aktif')->get() // WAJIB ADA
+            ])->render();
         }
 
         $data['page'] = 'adm-kunjungan';
         $data['title'] = 'Input Jadwal Kunjungan';
-        
-        // Tambahkan kunjungansGrouped di compact sini juga
-        $data['content'] = view('admin.partials.input_kunjungan', compact('karyawans', 'kunjungans', 'kunjungansGrouped'))->render();
-        $data['karyawans'] = $karyawans; 
+        // Kirim juga ke konten utama
+        $data['content'] = view('admin.partials.input_kunjungan', compact('kunjungans', 'kunjungansGrouped', 'nasabah_all', 'karyawans'))->render();
 
         return view('admin.datakaryawan', $data);
     }
     
-  public function dataKunjunganContent(Request $request)
+ public function dataKunjunganContent(Request $request)
     {
-        $karyawans = Karyawan::where('status', 'aktif')
-            ->withCount('kunjungan') 
-            ->get();
+        $karyawans = Karyawan::where('status', 'aktif')->withCount('kunjungan')->get();
+        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
 
-        // Samakan nama variabelnya dengan yang di index
-        $kunjungansGrouped = \App\Models\Nasabah::with('karyawan')
-            ->orderByRaw("kol = 5 DESC")
+        $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
+            ->where('bulan', now()->format('Y-m'))
             ->get()
             ->groupBy('kode_ao');
 
         if ($request->ajax()) {
-            return view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
+            return view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped', 'nasabah_all'))->render();
         }
 
+        // Bagian Dashboard
         try {
             $dashboard = new DashboardAdminController();
             $data = $dashboard->getDashboardData(); 
@@ -74,8 +73,9 @@ class AdmKunjunganController extends Controller
 
         $data['title'] = 'Data Kunjungan';
         $data['page'] = 'kunjungan';
-        $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped'))->render();
+        $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped', 'nasabah_all'))->render();
         $data['karyawans'] = $karyawans;
+        $data['nasabah_all'] = $nasabah_all;
 
         return view('admin.datakaryawan', $data);
     }
@@ -154,7 +154,18 @@ class AdmKunjunganController extends Controller
             'tanggal'        => 'required|date',
         ]);
 
-        // 1. Cari data nasabah di tabel master untuk ambil nominal & sisa pokok
+        $cekDuplikat = DataKunjunganAdm::where('karyawan_id', $request->karyawan_id)
+                        ->where('no_angsuran', $request->no_angsuran)
+                        ->where('bulan', $request->bulan)
+                        ->exists();
+
+        if ($cekDuplikat) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jadwal untuk nasabah ini sudah dibuat oleh AO tersebut di bulan ini!'
+            ], 422); 
+        }
+
         $nasabahMaster = \App\Models\Nasabah::where('no_angsuran', $request->no_angsuran)->first();
         $karyawan = Karyawan::find($request->karyawan_id);
 
@@ -167,8 +178,6 @@ class AdmKunjunganController extends Controller
             'no_angsuran'    => $request->no_angsuran,
             'tanggal'        => $request->tanggal,
             'kode_ao'        => $karyawan->kode_ao ?? null,
-            
-            // SINKRONISASI SALDO OTOMATIS
             'nominal'        => $nasabahMaster->nominal ?? 0,
             'sisa_pokok'     => $nasabahMaster->sisa_pokok ?? 0,
         ]);

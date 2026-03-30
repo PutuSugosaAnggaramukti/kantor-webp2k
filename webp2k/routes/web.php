@@ -70,7 +70,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // 6. DOKUMEN (Dibenahi rutenya)
     Route::get('/dokumen', [AdmDokumenController::class, 'dokumenIndex'])->name('admin.dokumen.index'); // Rute bersih
     Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumenIndex']);
-    Route::get('/download-docx/{id}', [AdmDokumenController::class, 'downloadWord'])->name('download.docx');
+    Route::get('/download-word/{id}', [AdmDokumenController::class, 'downloadWord'])->name('download.docx');
 });
 
 
