@@ -50,8 +50,18 @@
                 </div>
 
                 <div class="form-group mb-3">
-                    <label>Foto Kunjungan (Maks 5MB)</label>
-                    <input type="file" name="foto_kunjungan" class="form-control" required>
+                    <label style="font-weight: 600;">Foto Kunjungan (Wajib GPS Nyala)</label>
+                    <input type="file" name="foto_kunjungan[]" class="form-control" multiple accept=".jpg,.jpeg" required 
+                        style="border: 1px solid #ddd; padding: 8px;">
+                    
+                    <div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 10px; margin-top: 10px; border-radius: 4px;">
+                        <p style="font-size: 11px; color: #856404; margin: 0; line-height: 1.4;">
+                            <i class="fas fa-exclamation-triangle"></i> <strong>PENTING:</strong><br>
+                            - Gunakan foto <strong>ASLI</strong> dari kamera HP (format .JPG).<br>
+                            - Pastikan <strong>GPS Kamera</strong> aktif saat memotret.<br>
+                            - Foto Screenshot atau dari WhatsApp akan <strong>DITOLAK</strong> karena tidak memiliki data GPS asli.
+                        </p>
+                    </div>
                 </div>
 
                 <input type="hidden" name="koordinat" id="form-koordinat">
@@ -62,7 +72,7 @@
 
             <div class="modal-footer" style="padding: 15px 30px 20px; border-top: 1px solid #eee; background: #fff; text-align: right;">
                 <button type="button" class="btn-cancel" onclick="closeModal()" style="margin-right: 10px;">Cancel</button>
-                <button type="submit" class="btn-save">Save</button>
+                <button type="button" id="btn-save-kunjungan" class="btn-save">Save</button>
             </div>
         </form>
     </div>

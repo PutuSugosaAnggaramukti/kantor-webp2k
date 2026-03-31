@@ -69,9 +69,9 @@
                     </div>
 
                     <div class="stat-card bg-target" onclick="showDetail('target')">
-                        <div class="stat-label">AO Capai Target</div>
+                        <div class="stat-label">Kunjungan HB Selesai</div>
                         <div class="stat-value">{{ $aoSelesaiTarget ?? 0 }}</div>
-                        <div class="kpi-note">*Min 10 & Ada KOL 5</div>
+                        <div class="kpi-note">*Min 10 kunjungan & penanganan nasabah HB</div>
                         <i class="fa-solid fa-award"></i>
                     </div>
                 </div>
@@ -95,8 +95,8 @@
 
                     <div class="stat-card" onclick="openModalAO('kol5')" style="background: white; color: #333; border-left: 8px solid #e74c3c; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 20px;">
                         <div style="text-align: left;">
-                            <div class="stat-label" style="color: #666;">KOL 5 Done</div>
-                            <div style="font-size: 0.75rem; color: #999;">Target: Per Kunjungan 1 Nasabah KOL 5</div>
+                            <div class="stat-label" style="color: #666;">Nasabah HB Done</div>
+                            <div style="font-size: 0.75rem; color: #999;">Persentase penyelesaian nasabah HB</div>
                         </div>
                         <div style="position: relative; width: 70px; height: 70px;">
                             <svg viewBox="0 0 36 36" style="transform: rotate(-90deg); width: 100%; height: 100%;">
@@ -117,7 +117,7 @@
                 <div class="menu-grid">
                     <a href="javascript:void(0)" onclick="transitionToAdminPage('data-karyawan')" class="menu-item">
                         <i class="fa-solid fa-users"></i>
-                        <span>Data Karyawan</span>
+                        <span>Data Tim P2K</span>
                     </a>
 
                     <a href="javascript:void(0)" onclick="transitionToAdminPage('data-kunjungan')" class="menu-item">
@@ -291,7 +291,8 @@
         const titleMap = {
             'rencana': 'Detail Rencana Kunjungan',
             'selesai': 'Detail Kunjungan Selesai',
-            'target': 'Daftar AO Capai Target'
+            'belum': 'Detail Kunjungan Belum Selesai',
+            'target': 'Daftar Nasabah HB yang Sudah Ditangani AO'
         };
 
         document.getElementById('modalTitle').innerText = titleMap[type];

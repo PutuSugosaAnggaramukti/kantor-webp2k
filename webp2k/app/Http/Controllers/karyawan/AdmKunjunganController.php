@@ -200,38 +200,40 @@ class AdmKunjunganController extends Controller
         return Excel::download(new KunjunganExport($kode_ao), 'rekap_kunjungan_' . date('Y-m-d') . '.xlsx');
     }
 
-  public function importExcel(Request $request)
+ public function importExcel(Request $request)
     {
         $request->validate([
             'karyawan_id' => 'required|exists:karyawans,id',
-            'file_excel'  => 'required|mimes:xlsx,xls'
+            'file_excel'  => 'required|mimes:xlsx,xls',
+            'tanggal_kunjungan' => 'required|date' // 1. Validasi input tanggal dari modal
         ]);
 
         try {
             $file = $request->file('file_excel');
             $data = Excel::toArray([], $file)[0];
             $karyawan = Karyawan::find($request->karyawan_id);
+            
+            // 2. Tangkap nilai tanggal dari inputan manual di modal
+            $tglInput = $request->tanggal_kunjungan;
 
             DB::beginTransaction();
 
             // Ambil data mulai dari baris ke-2 (skip header)
             foreach (array_slice($data, 1) as $row) {
-                // SESUAIKAN DENGAN GAMBAR EXCEL KAMU:
-                $noAngsuran  = $row[0] ?? null; // Kolom A
-                $namaNasabah = $row[1] ?? null; // Kolom B
-                $alamat      = $row[2] ?? '-';  // Kolom C
-                $nominal     = $row[3] ?? 0;    // Kolom D
-                $sisaPokok   = $row[4] ?? 0;    // Kolom E
-                $kol         = $row[5] ?? 1;    // Kolom F
+                $noAngsuran  = $row[0] ?? null; 
+                $namaNasabah = $row[1] ?? null; 
+                $alamat      = $row[2] ?? '-';  
+                $nominal     = $row[3] ?? 0;    
+                $sisaPokok   = $row[4] ?? 0;    
+                $kol         = $row[5] ?? 1;    
 
                 if (empty($namaNasabah)) continue;
 
-                // Simpan atau update ke tabel data_kunjungan_adms
                 \App\Models\DataKunjunganAdm::updateOrCreate(
                     [
                         'karyawan_id'  => $request->karyawan_id,
                         'no_angsuran'  => $noAngsuran,
-                        'bulan'        => now()->format('Y-m') // Default bulan sekarang
+                        'bulan'        => now()->format('Y-m') 
                     ],
                     [
                         'kode_ao'        => $karyawan->kode_ao,
@@ -240,13 +242,13 @@ class AdmKunjunganController extends Controller
                         'nominal'        => (float) $nominal,
                         'sisa_pokok'     => (float) $sisaPokok,
                         'kol'            => $kol,
-                        'tanggal'        => now(),
+                        'tanggal'        => $tglInput, // 3. Ganti now() menjadi tanggal pilihan admin
                     ]
                 );
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Import Berhasil!']);
+            return response()->json(['success' => true, 'message' => 'Import Berhasil untuk tanggal ' . $tglInput . '!']);
 
         } catch (\Exception $e) {
             DB::rollBack();

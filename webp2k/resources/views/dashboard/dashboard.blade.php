@@ -73,7 +73,7 @@
                 </div>
 
                 <div class="card-stat cursor-pointer transition transform hover:scale-105" style="background-color: #e74c3c; color: white;" onclick="openModal('modalKOL5')">
-                    <p class="text-lg font-semibold">Wajib (KOL 5)</p>
+                    <p class="text-lg font-semibold">Nasabah HB</p>
                     <p class="text-4xl font-bold mt-2">{{ $wajib_kol5 }}</p>
                     <p class="text-xs opacity-75 mt-2"><i class="fa-solid fa-triangle-exclamation"></i> Cek Prioritas</p>
                 </div>
@@ -114,7 +114,7 @@
                 </div>
 
                 <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-red-500">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">KOL 5 Done</p>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Nasabah HB Done</p>
                     <div class="relative inline-flex items-center justify-center">
                         <svg class="w-16 h-16 transform -rotate-90">
                             <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />
@@ -165,7 +165,7 @@
         </main>
     </div> 
     
-    <footer class="p2k-footer mt-auto"> Sistem Aplikasi P2K </footer>
+    <footer class="p2k-footer mt-auto"> SIPANTAU P2K 2026 </footer>
 
     <div id="modalRencana" class="fixed inset-0 z-[999] hidden overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">

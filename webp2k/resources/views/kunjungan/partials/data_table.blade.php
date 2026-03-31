@@ -65,7 +65,11 @@
     </button>
 
     <div style="position: relative; width: 250px;">
-        <input type="text" placeholder="Cari nasabah.." style="width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; background-color: #f9f9f9; height: 38px;">
+        <input type="text" 
+           id="searchNasabah"
+           onkeyup="let f=this.value.toUpperCase(); let rows=document.querySelectorAll('#tableKunjungan tbody tr'); rows.forEach(r => { let t=r.innerText.toUpperCase(); r.style.display=t.includes(f)?'':'none'; })"
+           placeholder="Cari nasabah.." 
+           style="width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; background-color: #f9f9f9; height: 38px;">
         <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 12px; top: 11px; color: #ccc;"></i>
     </div>
 </div>
@@ -83,7 +87,7 @@
 @endif
 
 <div class="table-responsive" style="width: 100%; overflow-x: auto;">
-    <table style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #333;">
+    <table id="tableKunjungan" style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #333;">
         <thead>
             <tr style="background-color: #f5f5f5; text-align: center;">
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 60px;">No</th>
@@ -94,14 +98,18 @@
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Option</th>
             </tr>
         </thead>
-       <tbody style="font-weight: 800; font-size: 16px; color: #000;">
+        <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
             <tr class="{{ $item->is_filled ? 'row-completed' : 'row-pending' }}" style="border-bottom: 2px solid #000; text-align: center;">
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                {{-- Penyesuaian nomor urut agar berlanjut antar halaman --}}
+                <td style="padding: 15px; border-right: 2px solid #000;">
+                    {{ ($data->currentPage() - 1) * $data->perPage() + $index + 1 }}
+                </td>
+                
+                {{-- ... sisa kolom lainnya tetap sama ... --}}
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
                     {{ $item->nama_nasabah }}
-                    
                     @if($item->is_filled)
                         <span class="badge-status" style="background-color: #dcfce7; color: #166534; border: 1px solid #166534;">
                             <i class="fa-solid fa-circle-check"></i> Terisi
@@ -114,6 +122,7 @@
                 </td>
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kol }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000;">
+                    {{-- Logika Carbon Anda --}}
                     @php
                         $valBulan = $item->bulan ?? '-';
                         if (preg_match('/^[0-9]{4}-[0-9]{2}/', $valBulan)) {
@@ -124,8 +133,8 @@
                     @endphp
                 </td>
                 <td style="border: 1px solid #333; padding: 15px;">
+                    {{-- Tombol-tombol option --}}
                     <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
-                        
                         @if($item->is_filled)
                             <div style="background-color: #28a745; color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-check" style="font-size: 18px;"></i>
@@ -136,28 +145,23 @@
                                 <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
                             </button>
                         @endif
-
-                  <button onclick="openDetailModal(
-                        '{{ addslashes($item->kode_ao ?? '-') }}', 
-                        '{{ addslashes($item->no_angsuran ?? '-') }}', 
-                        '{{ addslashes($item->nama_nasabah ?? '-') }}', 
-                        '{{ addslashes($item->alamat_nasabah ?? '-') }}', 
-                        '{{ $item->nominal ?? 0 }}', 
-                        '{{ $item->sisa_pokok ?? 0 }}', 
-                        '{{ $item->kol ?? '-' }}', 
-                        '{{ $item->kode_ao ?? '-' }}', 
-                        '{{ addslashes($item->nama_ao ?? '-') }}'
-                    )" 
-                    style="background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                        <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
-                    </button>
+                        {{-- Tombol Detail --}}
+                        <button onclick="openDetailModal(...)" style="background: none; border: none; cursor: pointer;">
+                            <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
             @empty
+            <tr><td colspan="6" style="padding: 20px;">Data tidak ditemukan</td></tr>
             @endforelse
         </tbody>
     </table>
+</div>
+
+{{-- Navigasi Pagination --}}
+<div class="custom-pagination" style="margin-top: 20px; display: flex; justify-content: center;">
+    {{ $data->links() }}
 </div>
 
 <div class="instruction-box" style="margin-top: 20px; background-color: #f1f1f1; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px;">
@@ -171,3 +175,4 @@
         </p>
     </div>
 </div>
+

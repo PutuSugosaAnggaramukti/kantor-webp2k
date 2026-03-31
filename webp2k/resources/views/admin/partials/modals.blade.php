@@ -368,6 +368,8 @@
         
         <form action="{{ route('admin.datakunjungan.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
+            
+            {{-- Bagian Pilih AO --}}
             <div style="margin-bottom: 20px;">
                 <label style="display: block; font-weight: 800; margin-bottom: 8px; color: #333;">Pilih Account Officer (AO)</label>
                 <select name="karyawan_id" required style="width: 100%; padding: 12px; border: 2px solid #000; border-radius: 8px; font-weight: 700; background: #fff;">
@@ -376,6 +378,14 @@
                         <option value="{{ $ao->id }}">{{ $ao->nama }} ({{ $ao->kode_ao }})</option>
                     @endforeach
                 </select>
+            </div>
+
+            {{-- INPUT TANGGAL KUNJUNGAN BARU --}}
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 800; margin-bottom: 8px; color: #333;">Rencana Tanggal Kunjungan</label>
+                <input type="date" name="tanggal_kunjungan" required 
+                       style="width: 100%; padding: 12px; border: 2px solid #000; border-radius: 8px; font-weight: 700; font-family: inherit;">
+                <small style="color: #666; font-style: italic;">*Seluruh nasabah di Excel akan dijadwalkan pada tanggal ini.</small>
             </div>
 
             <div style="margin-bottom: 25px;">

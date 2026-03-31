@@ -105,6 +105,7 @@
                         <tr style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa; border-bottom: 2px solid #000; text-align: center;">
                             <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
                             <th style="padding: 15px; border-right: 2px solid #000; width: 140px;">No Angsuran</th> <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Bulan</th>
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 130px; background-color: #eef2ff;">Tgl Kunjungan</th>
                             <th style="padding: 15px; border-right: 2px solid #000;">Data Nasabah</th> <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
                             <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Sisa Pokok</th> 
                             <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">KOL</th>
@@ -123,6 +124,16 @@
 
                             <td style="padding: 12px; border-right: 2px solid #000;">
                                 {{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('F Y') }}
+                            </td>
+
+                            {{-- ISI TANGGAL KUNJUNGAN BARU --}}
+                            <td style="padding: 12px; border-right: 2px solid #000; color: #4e4bc1; background-color: #fcfdff;">
+                                @if($item->tanggal)
+                                    <i class="fa-regular fa-calendar-check"></i> 
+                                    {{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') }}
+                                @else
+                                    <span style="color: #ccc; font-weight: 400;">Belum diatur</span>
+                                @endif
                             </td>
 
                             <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 15px;">

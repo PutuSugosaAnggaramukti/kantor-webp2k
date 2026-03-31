@@ -4,19 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use App\Models\DataKunjunganAdm;
 use App\Models\HasilKunjungan;
 use App\Models\Nasabah;
 use App\Helpers\ExifHelper;
 use App\Models\Karyawan;
 use App\Models\Kunjungan;
-use Illuminate\Http\Request;
+use App\Exports\KunjunganExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\KunjunganExport;
 
 class KunjunganController extends Controller
 {
@@ -24,6 +26,11 @@ class KunjunganController extends Controller
     public function index()
     {
         return $this->getMergedKunjunganData();
+    }
+
+    public function boot()
+    {
+        Paginator::useBootstrapFive(); 
     }
 
    public function dataKunjunganContent()
@@ -38,10 +45,8 @@ class KunjunganController extends Controller
 
         $myCode = strtoupper(trim($karyawan->kode_ao));
         
-        // Ambil Jadwal dari Admin
+        // 1. Ambil semua data seperti biasa
         $jadwal = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
-
-        // Ambil Realisasi (Termasuk Heni / Data Mandiri)
         $realisasi = \DB::table('kunjungans')
             ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
             ->get();
@@ -49,10 +54,9 @@ class KunjunganController extends Controller
         $dataFinal = collect();
         $namaTerproses = [];
 
-        // PROSES A: Masukkan data sesuai Jadwal Admin
-       foreach ($jadwal as $j) {
+        // PROSES A: Jadwal Admin
+        foreach ($jadwal as $j) {
             $namaJadwal = strtoupper(trim(preg_replace('/\s+/', ' ', $j->nama_nasabah)));
-            
             $match = $realisasi->first(function ($r) use ($namaJadwal) {
                 $namaReal = strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah)));
                 return $namaReal === $namaJadwal;
@@ -64,22 +68,20 @@ class KunjunganController extends Controller
                 'nama_ao' => $karyawan->nama,
                 'no_angsuran' => $j->no_angsuran, 
                 'nama_nasabah' => $j->nama_nasabah,
-                'alamat_nasabah' => $j->alamat_nasabah, // TAMBAHKAN INI
-                'nominal' => $j->nominal, // TAMBAHKAN INI
-                'sisa_pokok' => $j->sisa_pokok, // TAMBAHKAN INI
+                'alamat_nasabah' => $j->alamat_nasabah,
+                'nominal' => $j->nominal,
+                'sisa_pokok' => $j->sisa_pokok,
                 'kol' => $j->kol ?? '-',
                 'bulan' => $j->bulan, 
                 'is_filled' => $match ? true : false,
                 'is_mandiri' => false
             ]);
-            
             $namaTerproses[] = $namaJadwal;
         }
 
-        // PROSES B: Masukkan data Mandiri (Nasabah yang tidak ada di jadwal)
+        // PROSES B: Data Mandiri
         foreach ($realisasi as $r) {
             $namaReal = strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah)));
-            
             if (!in_array($namaReal, $namaTerproses)) {
                 $dataFinal->push((object)[
                     'id' => $r->id,
@@ -94,14 +96,24 @@ class KunjunganController extends Controller
             }
         }
 
-        $data = $dataFinal->values();
+        // --- LOGIKA MANUAL PAGINATION ---
+        $currentPage = Paginator::resolveCurrentPage() ?: 1;
+        $perPage = 10; // Jumlah data per halaman
+        $currentItems = $dataFinal->slice(($currentPage - 1) * $perPage, $perPage)->all();
 
-        // CEK: Jika request datang dari AJAX (pindah menu), kirim POTONGAN tabel saja
+        $data = new LengthAwarePaginator(
+            $currentItems,
+            $dataFinal->count(),
+            $perPage,
+            $currentPage,
+            ['path' => Paginator::resolveCurrentPath()]
+        );
+
         if (request()->ajax()) {
+            // Jika Anda memuat tabel saja saat pindah page
             return view('kunjungan.partials.data_table', compact('data'));
         }
 
-        // Jika akses awal, kirim HALAMAN UTUH
         return view('kunjungan.datakunjungan', compact('data'));
     }
 
@@ -240,49 +252,91 @@ public function store(Request $request)
     // 1. Bersihkan input No Nasabah
     $noNasabahInput = trim($request->no_nasabah);
 
-    // 2. CARI DI TABEL NASABAHS (Master)
+    // 2. Cari Data Nasabah (Master atau Jadwal Admin)
     $nasabahMaster = \DB::table('nasabahs')
+        ->where('no_angsuran', $noNasabahInput)
+        ->first() ?: \DB::table('data_kunjungan_adms')
         ->where('no_angsuran', $noNasabahInput)
         ->first();
 
-    // 3. JIKA TIDAK KETEMU, CARI DI TABEL JADWAL ADMIN (Backup)
-    if (!$nasabahMaster) {
-        $nasabahMaster = \DB::table('data_kunjungan_adms')
-            ->where('no_angsuran', $noNasabahInput)
-            ->first();
-    }
-
-    // 4. Proses Foto
-    $nama_file_foto = null;
+    // 3. Proses Foto & Validasi EXIF
+    $daftar_nama_foto = []; 
+    
     if ($request->hasFile('foto_kunjungan')) {
-        $file = $request->file('foto_kunjungan');
-        $nama_file_foto = time() . '.' . $file->getClientOriginalExtension();
-        $file->move(public_path('uploads/kunjungan'), $nama_file_foto);
+        $files = $request->file('foto_kunjungan');
+        $filesArray = is_array($files) ? $files : [$files];
+
+        foreach ($filesArray as $file) {
+            $extension = strtolower($file->getClientOriginalExtension());
+            
+            // Validasi Format JPG
+            if (!in_array($extension, ['jpg', 'jpeg'])) {
+                return response()->json([
+                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" bukan JPG/JPEG. Sistem hanya menerima format JPG untuk validasi GPS.'
+                ], 422);
+            }
+
+            // Baca Data EXIF
+            $exif = @exif_read_data($file->getRealPath());
+
+            // Validasi Koordinat GPS di Foto
+            if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) {
+                return response()->json([
+                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data GPS. Pastikan GPS kamera HP aktif.'
+                ], 422);
+            }
+
+            // Validasi Waktu
+            if (!isset($exif['DateTimeOriginal'])) {
+                return response()->json([
+                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data waktu pengambilan asli.'
+                ], 422);
+            }
+
+            // Simpan File jika lolos validasi
+            $nama_unik = time() . '_' . uniqid() . '.' . $extension;
+            $file->move(public_path('uploads/kunjungan'), $nama_unik);
+            $daftar_nama_foto[] = $nama_unik;
+        }
+    } else {
+        return response()->json(['error' => 'Wajib melampirkan foto kunjungan!'], 422);
     }
 
-    // 5. Simpan ke Database
-    \DB::table('kunjungans')->insert([
+    try {
+        // 4. Simpan ke Database
+        \DB::table('kunjungans')->insert([
         'kode_ao'             => $karyawan->kode_ao,
         'no_nasabah'          => $request->no_nasabah, 
         'nama_nasabah'        => $request->nama_nasabah,
-        
-        // AMBIL KOL DENGAN PRIORITAS: Master > Jadwal Admin > Request > Default 1
         'kol'                 => $nasabahMaster ? $nasabahMaster->kol : ($request->kol ?: 1),
-        
         'ada_di_lokasi'       => $request->ada_di_lokasi,
         'catatan'             => $request->catatan, 
         'tgl_janji_bayar'     => $request->tgl_janji_bayar,
-        
-        'nominal_janji_bayar' => ($request->filled('tgl_janji_bayar') && $nasabahMaster) 
-                                 ? ($nasabahMaster->nominal ?? 0) 
+
+        // --- PERUBAHAN DI SINI ---
+        // Kita ambil langsung dari input form. Jika kosong, isi 0.
+        'nominal_janji_bayar' => $request->filled('nominal_janji_bayar') 
+                                 ? str_replace(['.', ','], '', $request->nominal_janji_bayar) 
                                  : 0,
-        
-        'foto_kunjungan'      => $nama_file_foto, 
+        // -------------------------
+
+        'foto_kunjungan'      => json_encode($daftar_nama_foto), 
         'koordinat'           => $request->koordinat, 
         'created_at'          => now(),
     ]);
 
-    return redirect()->back()->with('success', 'Laporan berhasil disimpan!');
+    return response()->json([
+        'success' => 'Laporan berhasil disimpan! ' . count($daftar_nama_foto) . ' foto tervalidasi GPS.'
+    ]);
+
+        // 5. Kembalikan Respon Sukses dalam JSON
+        return response()->json([
+            'success' => 'Laporan berhasil disimpan! ' . count($daftar_nama_foto) . ' foto tervalidasi GPS.'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Terjadi kesalahan database: ' . $e->getMessage()], 500);
+    }
 }
         
     private function getGps($exifCoord, $hemi) 

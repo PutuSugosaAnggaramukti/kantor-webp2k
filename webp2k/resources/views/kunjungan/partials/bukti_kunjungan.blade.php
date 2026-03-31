@@ -1,36 +1,69 @@
 @php
-    $pathFoto = public_path('uploads/kunjungan/' . $detail->foto_kunjungan);
+    /**
+     * 1. DEFINISI FUNGSI HELPER
+     */
+    if (!function_exists('getGpsDecimal')) {
+        function getGpsDecimal($exifCoord, $hemi) {
+            $degrees = count($exifCoord) > 0 ? (is_float($exifCoord[0]) ? $exifCoord[0] : eval("return {$exifCoord[0]};")) : 0;
+            $minutes = count($exifCoord) > 1 ? (is_float($exifCoord[1]) ? $exifCoord[1] : eval("return {$exifCoord[1]};")) : 0;
+            $seconds = count($exifCoord) > 2 ? (is_float($exifCoord[2]) ? $exifCoord[2] : eval("return {$exifCoord[2]};")) : 0;
+            $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
+            return $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
+        }
+    }
+
+    /**
+     * 2. LOGIKA PENGOLAHAN DATA FOTO
+     */
+    $fotos = json_decode($detail->foto_kunjungan);
+    
+    // Pastikan $fotos selalu dalam bentuk array
+    if (!is_array($fotos)) {
+        $fotos = $detail->foto_kunjungan ? [$detail->foto_kunjungan] : [];
+    }
+    
+    // Ambil foto pertama untuk EXIF
+    $namaFotoUtama = count($fotos) > 0 ? $fotos[0] : null;
+    
+    $pathFoto = $namaFotoUtama ? public_path('uploads/kunjungan/' . $namaFotoUtama) : null;
     $waktuFoto = null;
     $isOldPhoto = false;
     $koordinatExif = null;
 
-    if (!empty($detail->foto_kunjungan) && file_exists($pathFoto)) {
+    if ($pathFoto && file_exists($pathFoto)) {
         $exif = @exif_read_data($pathFoto);
-        
-        // 1. Ambil Waktu (Sudah benar)
-        $dateTag = $exif['DateTimeOriginal'] ?? $exif['DateTime'] ?? $exif['FileDateTime'] ?? null;
-        if ($dateTag) {
-            $waktuFoto = \Carbon\Carbon::parse($dateTag);
-            $waktuUpload = \Carbon\Carbon::parse($detail->created_at);
-            if ($waktuFoto->diffInHours($waktuUpload) > 2) { $isOldPhoto = true; }
-        }
-
-        // 2. LOGIKA BARU: Ambil Koordinat dari Metadata Foto (EXIF)
-        if (isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
-            // Fungsi pembantu untuk konversi koordinat EXIF (Derajat ke Desimal)
-            $lat = getGpsDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-            $lon = getGpsDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
-            $koordinatExif = $lat . ',' . $lon;
+        if ($exif) {
+            $dateTag = $exif['DateTimeOriginal'] ?? $exif['DateTime'] ?? $exif['FileDateTime'] ?? null;
+            if ($dateTag) {
+                $waktuFoto = \Carbon\Carbon::parse($dateTag);
+                $waktuUpload = \Carbon\Carbon::parse($detail->created_at);
+                if ($waktuFoto->diffInHours($waktuUpload) > 2) { 
+                    $isOldPhoto = true; 
+                }
+            }
+            if (isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
+                $lat = getGpsDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
+                $lon = getGpsDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+                $koordinatExif = $lat . ',' . $lon;
+            }
         }
     }
 
-    // Fungsi helper (taruh di luar @php jika diletakkan di Controller, tapi untuk tes bisa di sini)
-    function getGpsDecimal($exifCoord, $hemi) {
-        $degrees = count($exifCoord) > 0 ? eval("return {$exifCoord[0]};") : 0;
-        $minutes = count($exifCoord) > 1 ? eval("return {$exifCoord[1]};") : 0;
-        $seconds = count($exifCoord) > 2 ? eval("return {$exifCoord[2]};") : 0;
-        $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
-        return $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
+    /**
+     * 3. LOGIKA EKSTRAKSI NOMINAL
+     */
+    $nominalTampil = $detail->nominal_janji_bayar;
+    if ($nominalTampil <= 0 && !empty($detail->catatan)) {
+        preg_match_all('/\d+([\.]\d+)*/', $detail->catatan, $matches);
+        if (!empty($matches[0])) {
+            foreach ($matches[0] as $match) {
+                $cleanNumber = str_replace('.', '', $match);
+                if (is_numeric($cleanNumber) && $cleanNumber >= 10000) {
+                    $nominalTampil = $cleanNumber;
+                    break;
+                }
+            }
+        }
     }
 @endphp
 
@@ -72,20 +105,32 @@
     
     <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
         
-        {{-- SISI KIRI: FOTO --}}
+       {{-- SISI KIRI: FOTO --}}
         <div>
             <div class="detail-section" style="text-align: center; padding: 15px;">
-                <span class="section-label">Foto Kunjungan</span>
-                <div style="border-radius: 12px; overflow: hidden; border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    @if($detail->foto_kunjungan)
-                       <img src="{{ asset('uploads/kunjungan/' . $detail->foto_kunjungan) }}" style="width: 100%; display: block;">
-                    @else
-                        <div style="padding: 60px 20px; background: #eee; color: #999;">
+                <span class="section-label">Foto Kunjungan ({{ count($fotos) }})</span>
+                
+                {{-- Gunakan Grid agar jika ada 4 foto, tampilannya rapi --}}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+                    @forelse($fotos as $foto)
+                        <div style="border-radius: 12px; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                            <a href="{{ asset('uploads/kunjungan/' . $foto) }}" target="_blank">
+                                <img src="{{ asset('uploads/kunjungan/' . $foto) }}" 
+                                    style="width: 100%; height: 180px; object-fit: cover; display: block;"
+                                    onerror="this.src='https://placehold.co/400x600?text=Foto+Tidak+Ditemukan'">
+                            </a>
+                        </div>
+                    @empty
+                        <div style="padding: 60px 20px; background: #eee; color: #999; border-radius: 12px;">
                             <i class="fa-solid fa-image" style="font-size: 40px; margin-bottom: 10px;"></i><br>
                             <span style="font-size: 14px;">Foto tidak tersedia</span>
                         </div>
-                    @endif
+                    @endforelse
                 </div>
+                
+                <small style="display: block; margin-top: 15px; color: #888;">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i> Klik foto untuk memperbesar
+                </small>
             </div>
         </div>
 
@@ -156,25 +201,28 @@
                 </div>
             </div>
 
-           {{-- 4. Status Janji Bayar (Hanya Muncul Jika Ada) --}}
-            @if($detail->tgl_janji_bayar)
-            <div class="detail-section" style="background: #fff9db; border-color: #ffe066;">
-                <span class="section-label" style="color: #856404;"><i class="fa-solid fa-calendar-check"></i> Janji Bayar Nasabah</span>
-                <p class="section-value" style="color: #e67e22; margin-bottom: 5px;">
-                    {{ \Carbon\Carbon::parse($detail->tgl_janji_bayar)->translatedFormat('d F Y') }}
-                </p>
+           {{-- 4. Status Janji Bayar (Hanya Muncul Jika Ada Tanggal Janji) --}}
+                @if($detail->tgl_janji_bayar)
+                <div class="detail-section" style="background: #fff9db; border-color: #ffe066;">
+                    <span class="section-label" style="color: #856404;"><i class="fa-solid fa-calendar-check"></i> Janji Bayar Nasabah</span>
+                    <p class="section-value" style="color: #e67e22; margin-bottom: 5px;">
+                        {{ \Carbon\Carbon::parse($detail->tgl_janji_bayar)->translatedFormat('d F Y') }}
+                    </p>
 
-                {{-- TAMBAHAN: Tampilkan Nominal Kesanggupan --}}
-                @if($detail->nominal_janji_bayar)
+                    {{-- Tampilkan Nominal Kesanggupan (Hasil Olahan Logika di Atas) --}}
                     <div style="border-top: 1px dashed #ffe066; margin-top: 10px; padding-top: 8px;">
                         <span class="section-label" style="color: #856404; font-size: 11px;">Nominal Kesanggupan</span>
                         <p class="section-value" style="color: #d32f2f; font-size: 18px; font-weight: 900; margin: 0;">
-                            Rp {{ number_format($detail->nominal_janji_bayar, 0, ',', '.') }}
+                            {{-- GUNAKAN VARIABEL $nominalTampil DI SINI --}}
+                            @if($nominalTampil > 0)
+                                Rp {{ number_format($nominalTampil, 0, ',', '.') }}
+                            @else
+                                <span style="font-size: 14px; color: #9e7e1a; font-weight: 400;">(Nominal tidak disebutkan)</span>
+                            @endif
                         </p>
                     </div>
+                </div>
                 @endif
-            </div>
-            @endif
 
     {{-- Tombol Kembali --}}
     <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 25px;">

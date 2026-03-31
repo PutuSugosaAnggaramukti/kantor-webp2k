@@ -13,13 +13,16 @@
         <i class="fa-solid fa-file-excel" style="margin-right: 8px;"></i> Excel
     </a>
     <div style="position: relative;">
-        <input type="text" placeholder="Pencarian.." style="padding: 8px 30px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; width: 250px;">
+        <input type="text" id="searchInput" 
+       onkeyup="let f=this.value.toUpperCase(); let rows=document.querySelectorAll('#laporanTable tbody tr'); rows.forEach(r => { let t=r.innerText.toUpperCase(); r.style.display=t.includes(f)?'':'none'; })" 
+       placeholder="Cari Nama Nasabah atau Kode.." 
+       style="padding: 8px 30px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; width: 250px;">
         <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 10px; top: 10px; color: #ccc;"></i>
     </div>
 </div>
 
 <div class="table-responsive" style="width: 100%; overflow-x: auto;">
-    <table style="width: 100%; border-collapse: collapse; background: white; border: 2px solid #333;">
+    <table id="laporanTable" style="width: 100%; border-collapse: collapse; background: white; border: 2px solid #333;">
         <thead>
             <tr style="background-color: #f5f5f5; text-align: center; border-bottom: 2px solid #333;">
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 60px;">No</th>
@@ -65,3 +68,32 @@
         </tbody>
     </table>
 </div>
+
+<script>
+function filterTable() {
+    // Ambil input dan filter
+    let input = document.getElementById("searchInput");
+    let filter = input.value.toUpperCase();
+    let table = document.getElementById("laporanTable");
+    let tr = table.getElementsByTagName("tr");
+
+    // Loop semua baris tabel (lewati header di index 0)
+    for (let i = 1; i < tr.length; i++) {
+        let tdKode = tr[i].getElementsByTagName("td")[1]; // Kolom Kode
+        let tdNama = tr[i].getElementsByTagName("td")[2]; // Kolom Nasabah
+        
+        if (tdKode || tdNama) {
+            let txtValueKode = tdKode.textContent || tdKode.innerText;
+            let txtValueNama = tdNama.textContent || tdNama.innerText;
+            
+            // Cek apakah ada kecocokan di salah satu kolom
+            if (txtValueKode.toUpperCase().indexOf(filter) > -1 || 
+                txtValueNama.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
+</script>

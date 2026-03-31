@@ -22,7 +22,7 @@
         <div class="sidebar">
             <h2>Menu</h2>
             <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="nav-item" id="menu-data-karyawan">
-                <i class="fa-solid fa-users"></i> Data Karyawan
+                <i class="fa-solid fa-users"></i> Data Tim P2K
             </a>
 
             <a href="javascript:void(0)" 
@@ -509,6 +509,20 @@ function refreshKaryawanDropdown() {
             dropdown.append(`<option value="${k.id}">${k.nama}</option>`);
         });
     });
+}
+
+function toggleAo(element) {
+    // Mencari elemen konten setelah header accordion yang diklik
+    const content = element.nextElementSibling;
+    const icon = element.querySelector('.fa-chevron-down');
+
+    if (content.style.display === "block") {
+        content.style.display = "none";
+        if(icon) icon.style.transform = "rotate(0deg)";
+    } else {
+        content.style.display = "block";
+        if(icon) icon.style.transform = "rotate(180deg)";
+    }
 }
 
 function toggleDropdown() {

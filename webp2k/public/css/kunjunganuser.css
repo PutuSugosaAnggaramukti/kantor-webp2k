@@ -776,6 +776,80 @@ td {
     background-color: #2563eb;
 }
 
+.swal2-container {
+    z-index: 9999 !important;
+}
+
+.pagination {
+    display: flex;
+    padding-left: 0;
+    list-style: none;
+    gap: 5px;
+}
+
+.pagination li {
+    display: inline;
+}
+
+/* Memperbaiki ukuran teks dan tombol */
+.pagination a, .pagination span {
+    position: relative;
+    display: block;
+    padding: 8px 16px;
+    text-decoration: none;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    color: #3A3A4C;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.pagination .active span {
+    background-color: #3A3A4C;
+    color: white;
+    border-color: #3A3A4C;
+}
+
+.pagination a:hover {
+    background-color: #f8f9fa;
+}
+
+/* Sembunyikan informasi "Showing 1 to 10..." jika dirasa terlalu penuh */
+nav div.hidden {
+    display: none !important;
+}
+
+.pagination .page-item:first-child, 
+.pagination .page-item:last-child {
+    display: none !important;
+}
+
+/* Sembunyikan teks "Showing X to Y of Z results" agar lebih minimalis */
+nav div.flex.items-center.justify-between div:first-child {
+    display: none !important;
+}
+
+/* Memastikan container pagination berada di tengah */
+.custom-pagination nav {
+    display: flex;
+    justify-content: center;
+}
+
+/* Styling angka agar lebih modern */
+.pagination .page-link {
+    border-radius: 5px !important;
+    margin: 0 3px;
+    border: 1px solid #dee2e6;
+    color: #3A3A4C;
+    font-weight: 600;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #3A3A4C !important;
+    border-color: #3A3A4C !important;
+    color: white !important;
+}
+
 /* Animasi */
 @keyframes fadeIn {
     from { opacity: 0; }

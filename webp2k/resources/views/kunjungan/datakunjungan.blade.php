@@ -85,565 +85,317 @@
 
     @include('kunjungan.partials.modals')
 
-    <script>
-        function loadPage(pageName) {
-            const contentArea = document.getElementById('konten-utama');
-            contentArea.style.opacity = '0.3';
-
-            fetch(`/user/${pageName}-content`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest' 
-                }
-            }) 
-            .then(response => {
-                if (!response.ok) throw new Error('Gagal memuat halaman');
-                return response.text();
-            })
-            .then(html => {
-                contentArea.innerHTML = html;
-                contentArea.style.opacity = '1';
-                updateSidebarActive(pageName);
-            })
-            .catch(error => {
-                console.error('Fetch error:', error);
-                contentArea.style.opacity = '1';
-            });
-        }
-
-        function loadContent(url) {
-            const contentArea = document.getElementById('konten-utama');
-            contentArea.style.opacity = '0.3';
-
-            $.ajax({
-                url: url,
-                type: 'GET',
-                success: function(response) {
-                    // Mengisi ID konten-utama dengan hasil HTML bukti kunjungan
-                    $('#konten-utama').html(response); 
-                    contentArea.style.opacity = '1';
-                    console.log("Konten Bukti Kunjungan berhasil dimuat.");
-                },
-                error: function(xhr) {
-                    contentArea.style.opacity = '1';
-                    console.error("Gagal AJAX: ", xhr.responseText);
-                    alert('Gagal memuat halaman bukti.');
-                }
-            });
-        }
-
-     function updateSidebarActive(pageName) {
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            
-            let targetId = '';
-            if (pageName === 'laporan-kunjungan') {
-                targetId = 'menu-laporan';
-            } else if (pageName === 'dokumen') {
-                targetId = 'menu-dokumen';
-            } else if (pageName === 'pengaturan') { 
-                targetId = 'menu-pengaturan';
-            } else {
-                targetId = 'menu-data';
-            }
-
-            const activeEl = document.getElementById(targetId);
-            if (activeEl) {
-                activeEl.classList.add('active');
-            }
-        }
-
-        // --- Fungsi Modal Form Kunjungan ---
-     function openModal(nama, kodeAO, noAngsuran) {
-    // 1. Masukkan data ke input hidden (Ini yang dikirim ke database)
-    document.getElementById('form-no-nasabah').value = noAngsuran; // Nomor Angsuran asli
-    document.getElementById('form-nama-nasabah').value = nama;
-
-    // 2. Tampilkan data di form (Hanya untuk dilihat AO)
-    document.getElementById('display-kode-ao').value = kodeAO; // Menampilkan Kode AO (PG.800)
-    document.getElementById('display-nama').value = nama;
-
-    // 3. Munculkan Modal
-    document.getElementById('visitModal').style.display = 'flex';
-
-    // 4. Logika GPS (Tetap sama)
-    const koordinatInput = document.getElementById('form-koordinat');
-    const statusText = document.getElementById('location-status');
-    
-    if (koordinatInput) koordinatInput.value = ""; 
-    if (statusText) statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari lokasi...';
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                koordinatInput.value = `${lat}, ${lng}`;
-                if (statusText) statusText.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci</span>`;
-            },
-            (error) => {
-                if (statusText) statusText.innerHTML = `<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> Gagal GPS</span>`;
-            },
-            { enableHighAccuracy: true, timeout: 10000 }
-        );
-    }
-}
-
-        function closeModal() {
-        const modal = document.getElementById('visitModal');
-        if (modal) {
-            modal.style.display = 'none';
-            // Reset form agar tidak ada data nyangkut jika dibuka lagi
-            const form = modal.querySelector('form');
-            if (form) form.reset();
-            
-            // Bersihkan status lokasi
-            const statusText = document.getElementById('location-status');
-            if (statusText) statusText.innerHTML = '';
-        }
-    }
-
-      function openDetailModal(kode, angsuran, nama, alamat, nominal, sisa, kol, kodeAo, namaAo) {
+  <script>
+    // --- State Global ---
+    let fileSiapUpload = null;
     const formatRp = new Intl.NumberFormat('id-ID');
 
-    // Mengisi data teks
-    document.getElementById('detail-kode').innerText = kode || '-';
-    document.getElementById('detail-angsuran').innerText = angsuran || '-';
-    document.getElementById('detail-nama').innerText = nama || '-';
-    document.getElementById('detail-alamat').innerText = alamat || '-';
-    
-    // Mengisi data nominal & sisa dengan format rupiah
-    // Kita gunakan Number() untuk memastikan string dari Blade jadi angka
-    const nomVal = Number(nominal.replace(/[^0-9.-]+/g,""));
-    const sisaVal = Number(sisa.replace(/[^0-9.-]+/g,""));
+    // --- Fungsi Navigasi & Load Halaman ---
+    function loadPage(pageName) {
+        const contentArea = document.getElementById('konten-utama');
+        contentArea.style.opacity = '0.3';
 
-    document.getElementById('detail-nominal').innerText = nomVal ? 'Rp ' + formatRp.format(nomVal) : 'Rp 0';
-    document.getElementById('detail-sisa').innerText = sisaVal ? 'Rp ' + formatRp.format(sisaVal) : 'Rp 0';
-    
-    document.getElementById('detail-kol').innerText = kol || '-';
-    document.getElementById('detail-kode-ao').innerText = kodeAo || '-';
-    document.getElementById('detail-nama-ao').innerText = namaAo || '-';
+        fetch(`/user/${pageName}-content`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Gagal memuat halaman');
+            return response.text();
+        })
+        .then(html => {
+            contentArea.innerHTML = html;
+            contentArea.style.opacity = '1';
+            updateSidebarActive(pageName);
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            contentArea.style.opacity = '1';
+        });
+    }
 
-    // Munculkan modal
-    document.getElementById('detailModal').style.display = 'flex';
-}
+    function loadContent(url) {
+        const contentArea = document.getElementById('konten-utama');
+        contentArea.style.opacity = '0.3';
 
-function closeDetailModal() {
-    document.getElementById('detailModal').style.display = 'none';
-}
-
-        function closeDetailModal() {
-            document.getElementById('detailModal').style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal-overlay')) {
-                closeModal();
-                closeDetailModal();
+        $.ajax({
+            url: url,
+            type: 'GET',
+            success: function(response) {
+                $('#konten-utama').html(response);
+                contentArea.style.opacity = '1';
+            },
+            error: function(xhr) {
+                contentArea.style.opacity = '1';
+                alert('Gagal memuat konten.');
             }
-        }
-    </script>
+        });
+    }
 
-    <script>
-        function switchSettingsTab(tab) {
-            const secAkun = document.getElementById('section-akun');
-            const secSandi = document.getElementById('section-sandi');
-            const btnAkun = document.getElementById('tab-btn-akun');
-            const btnSandi = document.getElementById('tab-btn-sandi');
+    function updateSidebarActive(pageName) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const menuMap = {
+            'laporan-kunjungan': 'menu-laporan',
+            'dokumen': 'menu-dokumen',
+            'pengaturan': 'menu-pengaturan'
+        };
+        const targetId = menuMap[pageName] || 'menu-data';
+        const activeEl = document.getElementById(targetId);
+        if (activeEl) activeEl.classList.add('active');
+    }
 
-            if (!secAkun || !secSandi) return;
+    // --- Fungsi Modal (General) ---
+    function openModal(nama, kodeAO, noAngsuran) {
+        document.getElementById('form-no-nasabah').value = noAngsuran;
+        document.getElementById('form-nama-nasabah').value = nama;
+        document.getElementById('display-kode-ao').value = kodeAO;
+        document.getElementById('display-nama').value = nama;
+        document.getElementById('visitModal').style.display = 'flex';
+        updateGPSLocation('form-koordinat', 'location-status');
+    }
 
-            if (tab === 'akun') {
-                secAkun.style.display = 'block';
-                secSandi.style.display = 'none';
-                btnAkun.style.background = '#adc7ff'; 
-                btnAkun.style.color = '#3f36b1';
-                btnSandi.style.background = 'transparent'; 
-                btnSandi.style.color = '#64748b';
-            } else {
-                secSandi.style.display = 'block';
-                secAkun.style.display = 'none';
-                btnSandi.style.background = '#adc7ff'; 
-                btnSandi.style.color = '#3f36b1';
-                btnAkun.style.background = 'transparent'; 
-                btnAkun.style.color = '#64748b';
+    function openDetailModal(kode, angsuran, nama, alamat, nominal, sisa, kol, kodeAo, namaAo) {
+        document.getElementById('detail-kode').innerText = kode || '-';
+        document.getElementById('detail-angsuran').innerText = angsuran || '-';
+        document.getElementById('detail-nama').innerText = nama || '-';
+        document.getElementById('detail-alamat').innerText = alamat || '-';
+
+        const parseNominal = (val) => val ? 'Rp ' + formatRp.format(Number(val.toString().replace(/[^0-9.-]+/g,""))) : 'Rp 0';
+        document.getElementById('detail-nominal').innerText = parseNominal(nominal);
+        document.getElementById('detail-sisa').innerText = parseNominal(sisa);
+
+        document.getElementById('detail-kol').innerText = kol || '-';
+        document.getElementById('detail-kode-ao').innerText = kodeAo || '-';
+        document.getElementById('detail-nama-ao').innerText = namaAo || '-';
+        document.getElementById('detailModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        const modals = ['visitModal', 'detailModal', 'modalManual'];
+        modals.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.display = 'none';
+                const form = el.querySelector('form');
+                if (form) form.reset();
             }
-        }
-    </script>
+        });
+        const statusText = document.getElementById('location-status');
+        if (statusText) statusText.innerHTML = '';
+        fileSiapUpload = null;
+    }
 
-    <script>
-        window.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeModal();
-            closeDetailModal();
-        }
-    });
-    </script>
+    // --- Fungsi Geolocation ---
+    function updateGPSLocation(inputId, statusId) {
+        const input = document.getElementById(inputId);
+        const status = document.getElementById(statusId);
+        if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari lokasi...';
 
-    <script>
-    document.addEventListener('click', function (e) {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                    if (input) input.value = loc;
+                    if (status) status.innerHTML = '<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci</span>';
+                },
+                () => { if (status) status.innerHTML = '<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> GPS Error</span>'; },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+    }
+
+    // --- Manajemen Akun & Settings ---
+    function switchSettingsTab(tab) {
+        const isAkun = tab === 'akun';
+        document.getElementById('section-akun').style.display = isAkun ? 'block' : 'none';
+        document.getElementById('section-sandi').style.display = isAkun ? 'none' : 'block';
         
-        // --- 1. Konfirmasi Hapus Avatar ---
-        const deleteAvatarBtn = e.target.closest('.btn-settings-cancel'); // Tombol "Hapus Avatar"
-        if (deleteAvatarBtn && deleteAvatarBtn.innerText.includes('Hapus Avatar')) {
-            e.preventDefault();
-            
-            Swal.fire({
-                title: 'Hapus Foto Profil?',
-                text: "Foto profil Anda akan dikembalikan ke avatar default",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33', // Warna merah untuk aksi hapus
-                cancelButtonColor: '#cbd5e1',
-                confirmButtonText: 'Ya, Hapus!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Simulasi reset gambar ke default ui-avatars
-                    const profileImg = document.querySelector('.profile-avatar-img');
-                    if(profileImg) {
-                        profileImg.src = "https://ui-avatars.com/api/?name=User&background=0D8ABC&color=fff&size=120";
-                    }
+        document.getElementById('tab-btn-akun').classList.toggle('tab-active', isAkun);
+        document.getElementById('tab-btn-sandi').classList.toggle('tab-active', !isAkun);
+    }
 
-                    Swal.fire({
-                        title: 'Terhapus!',
-                        text: 'Foto profil telah dihapus.',
-                        icon: 'success',
-                        confirmButtonColor: '#3f36b1'
-                    });
-                }
+    async function handleAjaxSettings(route, bodyData, successMsg) {
+        const token = document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="_token"]')?.value;
+        try {
+            const response = await fetch(route, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
+                body: JSON.stringify(bodyData)
             });
+            const res = await response.json();
+            if (response.ok) {
+                Swal.fire('Berhasil!', successMsg || res.success, 'success');
+                return res;
+            }
+            throw new Error(res.error || 'Terjadi kesalahan');
+        } catch (e) {
+            Swal.fire('Gagal', e.message, 'error');
         }
+    }
 
-        // --- 2. Alert Simpan Akun ---
-        const saveAccountBtn = e.target.closest('#section-akun .btn-settings-save');
-        if (saveAccountBtn && !saveAccountBtn.innerText.includes('Upload')) { 
-            e.preventDefault();
-            Swal.fire({
-                title: 'Simpan Perubahan Akun?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3f36b1',
-                confirmButtonText: 'Ya, Simpan!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire('Berhasil!', 'Data akun telah diperbarui.', 'success');
-                }
+    // --- Avatar Management ---
+    function previewAvatar(input) {
+        if (input.files && input.files[0]) {
+            fileSiapUpload = input.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => document.getElementById('display-avatar').src = e.target.result;
+            reader.readAsDataURL(fileSiapUpload);
+        }
+    }
+
+    async function simpanAvatarKeServer() {
+        if (!fileSiapUpload) return Swal.fire('Info', 'Pilih foto terlebih dahulu!', 'info');
+        
+        const formData = new FormData();
+        formData.append('avatar', fileSiapUpload);
+        const token = document.querySelector('meta[name="csrf-token"]').content;
+
+        try {
+            const response = await fetch("{{ route('settings.avatar') }}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': token }
             });
-        }
+            const res = await response.json();
+            if (response.ok) {
+                Swal.fire('Berhasil!', 'Avatar diperbarui', 'success');
+                const url = res.url + '?t=' + new Date().getTime();
+                document.querySelectorAll('.profile-avatar-img, .user-profile img, #display-avatar').forEach(img => img.src = url);
+                fileSiapUpload = null;
+            }
+        } catch (e) { Swal.fire('Error', 'Gagal upload', 'error'); }
+    }
 
-        // --- 3. Alert Simpan Kata Sandi ---
-        const savePassBtn = e.target.closest('#section-sandi .btn-settings-save');
-        if (savePassBtn) {
-            e.preventDefault();
-            Swal.fire({
-                title: 'Simpan Perubahan Kata Sandi?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3f36b1',
-                confirmButtonText: 'Ya, Simpan!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire('Berhasil!', 'Kata sandi telah diperbarui.', 'success');
-                    document.querySelectorAll('#section-sandi input').forEach(input => input.value = '');
-                }
-            });
-        }
-    });
-</script>
-
-<script>
+    // --- Event Listeners ---
     document.addEventListener('DOMContentLoaded', function() {
+        // Deep linking page
+        const targetPage = new URLSearchParams(window.location.search).get('page');
+        if (targetPage) loadPage(targetPage);
+
+        // Alert Session
         @if(session('success'))
-            const modal = document.getElementById('visitModal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: "{{ session('success') }}",
-                showConfirmButton: false,
-                timer: 2500,
-                timerProgressBar: true
-            });
+            Swal.fire({ icon: 'success', title: 'Berhasil!', text: "{{ session('success') }}", timer: 2500, showConfirmButton: false });
         @endif
-        
+
         @if($errors->any())
-            Swal.fire({
-                icon: 'error',
-                title: 'Oops...',
-                text: 'Pastikan semua field terisi dengan benar (Foto maks 5MB)',
-            });
+            Swal.fire({ icon: 'error', title: 'Oops...', text: 'Periksa kembali inputan Anda' });
         @endif
     });
-</script>
+
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+    document.addEventListener('click', function (e) {
+        // Dropdown Toggle
+        if (e.target.closest('.user-profile')) {
+            const dd = document.getElementById("userDropdown");
+            dd.style.display = (dd.style.display === "block") ? "none" : "block";
+        } else if (!e.target.closest('.user-profile')) {
+            if(document.getElementById("userDropdown")) document.getElementById("userDropdown").style.display = "none";
+        }
+
+        // Close Modal on Overlay Click
+        if (e.target.classList.contains('modal-overlay') || e.target.id === 'visitModal' || e.target.id === 'detailModal') {
+            closeModal();
+        }
+    });
+
+    document.getElementById('btn-save-kunjungan').addEventListener('click', function() {
+        const form = this.closest('form');
+        const formData = new FormData(form);
+
+        // 1. Konfirmasi awal sebelum simpan
+        Swal.fire({
+            title: 'Simpan Laporan?',
+            text: "Pastikan foto yang diunggah memiliki data GPS (EXIF).",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3f36b1',
+            cancelButtonColor: '#cbd5e1',
+            confirmButtonText: 'Ya, Simpan!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                
+                // 2. Tampilkan Loading (Sangat penting untuk proses upload foto)
+                Swal.fire({
+                    title: 'Sedang Memproses...',
+                    html: 'Menyimpan data dan memvalidasi lokasi foto.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // 3. Kirim data menggunakan Fetch API
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 4. Notifikasi Berhasil
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: data.success,
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            // Tutup modal dan refresh konten atau halaman
+                            closeModal();
+                            location.reload(); 
+                        });
+                    } else {
+                        // 5. Notifikasi Gagal (Termasuk jika EXIF GPS tidak ditemukan)
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: data.error || 'Terjadi kesalahan saat menyimpan.',
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+                });
+            }
+        });
+    });
+
+    // --- Handler Pagination AJAX ---
+$(document).on('click', '.pagination a', function(e) {
+    e.preventDefault(); // Mencegah reload halaman
     
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const targetPage = urlParams.get('page');
-    
-    if (targetPage) {
-        loadPage(targetPage);
+    let url = $(this).attr('href');
+    if (url) {
+        // Kita ambil parameter query-nya saja agar pas dengan route Anda
+        // url biasanya: http://domain.com/user/data-kunjungan-content?page=2
+        
+        const contentArea = document.getElementById('konten-utama');
+        contentArea.style.opacity = '0.3';
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(response) {
+                $('#konten-utama').html(response);
+                contentArea.style.opacity = '1';
+                
+                // Scroll kembali ke atas tabel agar user tahu data sudah berubah
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+            error: function(xhr) {
+                contentArea.style.opacity = '1';
+                console.error("Error pagination:", xhr);
+            }
+        });
     }
 });
-</script>
-   
-<script>
-    function toggleDropdown() {
-        const dropdown = document.getElementById("userDropdown");
-        if (dropdown.style.display === "none" || dropdown.style.display === "") {
-            dropdown.style.display = "block";
-        } else {
-            dropdown.style.display = "none";
-        }
-    }
-
-    window.onclick = function(event) {
-        if (!event.target.closest('.user-profile')) {
-            const dropdown = document.getElementById("userDropdown");
-            if (dropdown) {
-                dropdown.style.display = "none";
-            }
-        }
-    }
-</script>
-
-<script>
-// Fungsi Switch Tab (Akun / Sandi)
-function switchSettingsTab(tab) {
-    const btnAkun = document.getElementById('tab-btn-akun');
-    const btnSandi = document.getElementById('tab-btn-sandi');
-    const secAkun = document.getElementById('section-akun');
-    const secSandi = document.getElementById('section-sandi');
-
-    if (tab === 'akun') {
-        btnAkun.classList.add('tab-active');
-        btnSandi.classList.remove('tab-active');
-        secAkun.style.display = 'block';
-        secSandi.style.display = 'none';
-    } else {
-        btnSandi.classList.add('tab-active');
-        btnAkun.classList.remove('tab-active');
-        secSandi.style.display = 'block';
-        secAkun.style.display = 'none';
-    }
-}
-
-// Fungsi Simpan Profil Akun
-async function simpanAkun() {
-    const nama = document.querySelector('input[name="nama"]').value;
-    const no_hp = document.querySelector('input[name="no_hp"]').value;
-    const _token = document.querySelector('input[name="_token"]').value;
-
-    try {
-        const response = await fetch("{{ route('settings.akun') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': _token
-            },
-            body: JSON.stringify({ nama, no_hp })
-        });
-
-        const res = await response.json();
-        if(response.ok) {
-            alert(res.success);
-            // Opsional: Update nama di pojok kanan atas secara instan
-            document.querySelector('.user-profile span').innerText = nama;
-        } else {
-            alert("Terjadi kesalahan.");
-        }
-    } catch (e) {
-        alert("Gagal terhubung ke server.");
-    }
-}
-
-// Fungsi Simpan Sandi
-async function simpanSandi() {
-    const current_password = document.querySelector('input[name="current_password"]').value;
-    const new_password = document.querySelector('input[name="new_password"]').value;
-    const _token = document.querySelector('input[name="_token"]').value;
-
-    const response = await fetch("{{ route('settings.sandi') }}", {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': _token
-        },
-        body: JSON.stringify({ current_password, new_password })
-    });
-
-    const res = await response.json();
-    if(response.ok) {
-        alert(res.success);
-        // Kosongkan input setelah berhasil
-        document.querySelectorAll('input[type="password"]').forEach(el => el.value = '');
-    } else {
-        alert(res.error || "Gagal ganti sandi.");
-    }
-}
-
-window.fileSiapUpload = null;
-
-window.previewAvatar = function(input) {
-    if (input.files && input.files[0]) {
-        window.fileSiapUpload = input.files[0];
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            document.getElementById('display-avatar').src = e.target.result;
-        }
-        
-        reader.readAsDataURL(window.fileSiapUpload);
-    }
-}
-
-window.simpanAvatarKeServer = async function() {
-    if (!window.fileSiapUpload) {
-        alert("Pilih foto terlebih dahulu dengan mengklik logo kamera!");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('avatar', window.fileSiapUpload);
-    formData.append('_token', document.querySelector('input[name="_token"]').value);
-
-    try {
-        const response = await fetch("{{ route('settings.avatar') }}", {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            alert('Avatar berhasil diperbarui!');
-            document.querySelectorAll('.user-profile img').forEach(img => img.src = result.url);
-            window.fileSiapUpload = null;
-        } else {
-            alert(result.error || 'Gagal mengupload foto.');
-        }
-    } catch (error) {
-        alert('Terjadi kesalahan jaringan.');
-    }
-}
-
-let fileSiapUpload = null;
-
-// Fungsi 1: Hanya menampilkan pratinjau (Preview)
-function previewAvatar(input) {
-    if (input.files && input.files[0]) {
-        fileSiapUpload = input.files[0]; // Simpan file ke variabel
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            document.getElementById('display-avatar').src = e.target.result;
-        }
-        
-        reader.readAsDataURL(fileSiapUpload);
-    }
-}
-
-window.simpanAvatarKeServer = async function() {
-    if (!window.fileSiapUpload) {
-        alert("Pilih foto terlebih dahulu!");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('avatar', window.fileSiapUpload);
-    
-    // Ambil token dari meta tag yang kita pasang di head tadi
-    const token = document.querySelector('meta[name="csrf-token"]').content;
-
-    try {
-        const response = await fetch("{{ route('settings.avatar') }}", {
-            method: 'POST',
-            body: formData,
-            headers: { 
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': token // Kirim token via Header
-            }
-        });
-
-        const result = await response.json();
-        if (response.ok) {
-            alert(result.success);
-            const newUrl = result.url + '?t=' + new Date().getTime();
-            document.getElementById('display-avatar').src = newUrl;
-            document.querySelectorAll('.user-profile img').forEach(img => img.src = newUrl);
-            window.fileSiapUpload = null;
-        } else {
-            alert(result.error || 'Gagal menyimpan.');
-        }
-    } catch (e) { alert("Terjadi kesalahan sistem."); }
-}
-
-// Fungsi 3: Reset jika tidak jadi upload
-function resetAvatarPreview() {
-    const defaultAvatar = "{{ Auth::guard('karyawan')->user()->avatar ? asset('storage/' . Auth::guard('karyawan')->user()->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode(Auth::guard('karyawan')->user()->nama) . '&background=0D8ABC&color=fff&size=120' }}";
-    document.getElementById('display-avatar').src = defaultAvatar;
-    document.getElementById('upload-avatar-input').value = "";
-    fileSiapUpload = null;
-}
-</script>
-
-<script>
-    function updateCurrentLocation() {
-    const koordinatInput = document.getElementById('form-koordinat');
-    const statusText = document.getElementById('location-status');
-
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                koordinatInput.value = `${lat}, ${lng}`;
-                if(statusText) statusText.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi terkunci</span>`;
-            },
-            (error) => {
-                if(statusText) statusText.innerHTML = `<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> GPS Error</span>`;
-            },
-            { enableHighAccuracy: true }
-        );
-    }
-}
-</script>
-
-<script>
-   function openManualModal() {
-        document.getElementById('modalManual').style.display = 'block';
-        
-        // Ambil Lokasi Realtime
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(position) {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                document.getElementById('manual_koordinat').value = lat + ", " + lng;
-            }, function(error) {
-                console.error("Gagal mengambil lokasi: ", error);
-                alert("Harap aktifkan GPS Anda untuk mengirim laporan.");
-            });
-        } else {
-            alert("Browser tidak mendukung Geolocation.");
-        }
-    }
-    
-    function closeManualModal() {
-        document.getElementById('modalManual').style.display = 'none';
-    }
-
-    // Menutup modal jika klik di luar area modal
-    window.onclick = function(event) {
-        let modal = document.getElementById('modalManual');
-        if (event.target == modal) {
-            closeManualModal();
-        }
-    }
 </script>
 
 
