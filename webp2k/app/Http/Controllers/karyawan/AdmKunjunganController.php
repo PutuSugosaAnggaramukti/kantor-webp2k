@@ -200,12 +200,12 @@ class AdmKunjunganController extends Controller
         return Excel::download(new KunjunganExport($kode_ao), 'rekap_kunjungan_' . date('Y-m-d') . '.xlsx');
     }
 
- public function importExcel(Request $request)
+public function importExcel(Request $request)
     {
         $request->validate([
             'karyawan_id' => 'required|exists:karyawans,id',
             'file_excel'  => 'required|mimes:xlsx,xls',
-            'tanggal_kunjungan' => 'required|date' // 1. Validasi input tanggal dari modal
+            'tanggal_kunjungan' => 'required|date'
         ]);
 
         try {
@@ -213,12 +213,10 @@ class AdmKunjunganController extends Controller
             $data = Excel::toArray([], $file)[0];
             $karyawan = Karyawan::find($request->karyawan_id);
             
-            // 2. Tangkap nilai tanggal dari inputan manual di modal
             $tglInput = $request->tanggal_kunjungan;
 
             DB::beginTransaction();
 
-            // Ambil data mulai dari baris ke-2 (skip header)
             foreach (array_slice($data, 1) as $row) {
                 $noAngsuran  = $row[0] ?? null; 
                 $namaNasabah = $row[1] ?? null; 
@@ -228,6 +226,10 @@ class AdmKunjunganController extends Controller
                 $kol         = $row[5] ?? 1;    
 
                 if (empty($namaNasabah)) continue;
+
+                // --- LOGIKA OTOMATIS HB ---
+                // Jika KOL di excel adalah 5, maka is_hb diset true (1)
+                $isHb = ($kol == 5) ? true : false;
 
                 \App\Models\DataKunjunganAdm::updateOrCreate(
                     [
@@ -242,7 +244,8 @@ class AdmKunjunganController extends Controller
                         'nominal'        => (float) $nominal,
                         'sisa_pokok'     => (float) $sisaPokok,
                         'kol'            => $kol,
-                        'tanggal'        => $tglInput, // 3. Ganti now() menjadi tanggal pilihan admin
+                        'is_hb'          => $isHb,      // Masukkan status HB ke database
+                        'tanggal'        => $tglInput, 
                     ]
                 );
             }
