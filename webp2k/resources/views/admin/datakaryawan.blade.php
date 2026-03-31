@@ -637,19 +637,28 @@ function refreshNoAnggotaDropdown() {
         .catch(err => console.error("Gagal refresh dropdown:", err));
 }
 
-    function openModalImportNasabah() {
-        const modal = document.getElementById('importNasabahModal');
-        if (modal) {
-            modal.style.display = 'flex';
-        }
-    }
+   function openModalImportNasabah() {
+    const modal = document.getElementById('importNasabahModal');
+    modal.style.display = 'flex'; // Gunakan flex agar centering aktif
+}
 
-    function closeModalImportNasabah() {
-        const modal = document.getElementById('importNasabahModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+function closeModalImportNasabah() {
+    const modal = document.getElementById('importNasabahModal');
+    modal.style.display = 'none';
+}
+
+function updateFileName(input, targetId) {
+    const fileNameSpan = document.getElementById(targetId);
+    if (input.files && input.files[0]) {
+        let name = input.files[0].name;
+        // Menampilkan nama file dengan ikon agar lebih keren
+        fileNameSpan.innerHTML = '<i class="fa-solid fa-file-circle-check"></i> ' + name;
+        fileNameSpan.style.color = "#1e293b"; // Warna teks jadi lebih gelap saat file terpilih
+    } else {
+        fileNameSpan.innerHTML = "Klik atau tarik file ke sini";
+        fileNameSpan.style.color = "#3b82f6";
     }
+}
 
 $(document).on('click', '.pagination a', function(e) {
     e.preventDefault();

@@ -340,21 +340,49 @@
     </div>
 </div>
 
-<div id="importNasabahModal" class="modal-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-    <div class="modal-content" style="background: white; padding: 30px; border-radius: 20px; width: 400px; position: relative;">
-        <h2 style="margin-top: 0; margin-bottom: 20px; font-weight: 700;">Import Data Nasabah</h2>
+<div id="importNasabahModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(2px); align-items: center; justify-content: center;">
+    <div style="background-color: #fff; padding: 30px; border-radius: 25px; width: 450px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); position: relative; border: 2px solid #3b82f6;">
         
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div style="background: #eff6ff; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                <i class="fa-solid fa-file-import" style="font-size: 28px; color: #3b82f6;"></i>
+            </div>
+            <h2 style="font-size: 22px; font-weight: 800; margin: 0; color: #1e293b;">Import Data Nasabah</h2>
+            <p style="font-size: 13px; color: #64748b; margin-top: 5px;">Unggah file excel untuk memperbarui data reguler</p>
+        </div>
+
         <form action="{{ route('admin.nasabah.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Pilih File (Excel/CSV)</label>
-                <input type="file" name="file" accept=".xlsx, .xls, .csv" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px;">
-                <small style="color: #666; display: block; mt-2;">Format: No_Ang, Nama, Alamat, Kol</small>
+                <label style="display: block; font-weight: 700; margin-bottom: 10px; font-size: 14px; color: #334155;">Pilih File (Excel/CSV)</label>
+                
+                <div style="border: 2px dashed #3b82f6; border-radius: 15px; padding: 25px; text-align: center; background: #f8faff; position: relative; transition: all 0.3s;">
+                    <input type="file" id="fileInputReguler" name="file" accept=".xlsx, .xls, .csv" required 
+                           style="opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer;"
+                           onchange="updateFileName(this, 'fileNameTextReguler')">
+                    
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 32px; color: #3b82f6; margin-bottom: 12px; display: block;"></i>
+                    <span id="fileNameTextReguler" style="font-size: 13px; font-weight: 700; color: #3b82f6;">Klik atau tarik file ke sini</span>
+                </div>
+                
+                <div style="margin-top: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; border-left: 4px solid #3b82f6;">
+                    <small style="display: block; font-weight: 800; color: #475569; margin-bottom: 5px; font-size: 11px; text-transform: uppercase;">Aturan Kolom Excel:</small>
+                    <small style="display: block; color: #64748b; font-size: 12px; line-height: 1.6;">
+                        • Kolom A: No_Angsuran<br>
+                        • Kolom B: Nama Nasabah<br>
+                        • Kolom C: Alamat<br>
+                        • Kolom D: KOL (1-4)
+                    </small>
+                </div>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" onclick="closeModalImportNasabah()" style="background: #eee; border: none; padding: 8px 20px; border-radius: 10px; cursor: pointer;">Batal</button>
-                <button type="submit" style="background: #2196F3; color: white; border: none; padding: 8px 20px; border-radius: 10px; font-weight: 600; cursor: pointer;">Mulai Import</button>
+            <div style="display: flex; gap: 12px; margin-top: 25px;">
+                <button type="button" onclick="closeModalImportNasabah()" style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-weight: 700; cursor: pointer; transition: 0.2s;">
+                    Batal
+                </button>
+                <button type="submit" style="flex: 1; padding: 12px; border-radius: 12px; background: #3b82f6; color: white; border: none; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #2563eb; transition: 0.2s;">
+                    Mulai Import
+                </button>
             </div>
         </form>
     </div>
@@ -451,5 +479,53 @@
         <div style="padding: 15px 20px; background: #f8f9fa; border-top: 1px solid #ddd; text-align: right;">
             <button onclick="closeVisitDetail()" style="padding: 8px 20px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer;">Tutup</button>
         </div>
+    </div>
+</div>
+
+<div id="modalImportHB" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 99999; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(2px); justify-content: center; align-items: center;">
+    <div style="background-color: #fff; padding: 30px; border-radius: 20px; width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position: relative; border: 3px solid #d9534f; margin: auto;">
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div style="background: #fff5f5; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                <i class="fa-solid fa-file-circle-exclamation" style="font-size: 28px; color: #d9534f;"></i>
+            </div>
+            <h2 style="font-size: 22px; font-weight: 800; margin: 0; color: #000;">Import Nasabah HB</h2>
+            <p style="font-size: 13px; color: #666; margin-top: 5px;">Unggah data khusus nasabah Hapus Buku</p>
+        </div>
+
+        <form action="{{ route('admin.nasabah.import_hb') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 8px; font-size: 14px;">Pilih File Excel (.xlsx)</label>
+                
+                <div style="border: 2px dashed #d9534f; border-radius: 12px; padding: 20px; text-align: center; background: #fffcfc; position: relative;">
+                    <input type="file" name="file_excel" id="fileInputHB" accept=".xlsx, .xls, .csv" required 
+                        style="opacity: 0; position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: pointer;"
+                        onchange="updateFileName(this, 'fileNameTextHB')">
+                    
+                    <i class="fa-solid fa-cloud-arrow-up" style="font-size: 30px; color: #d9534f; margin-bottom: 10px; display: block;"></i>
+                    <span id="fileNameTextHB" style="font-size: 12px; font-weight: 700; color: #d9534f;">Klik atau tarik file ke sini</span>
+                </div>
+                
+                <div style="margin-top: 15px; background: #f8f9fa; padding: 12px; border-radius: 10px; border-left: 4px solid #d9534f;">
+                    <small style="display: block; font-weight: 800; color: #333; margin-bottom: 4px;">Aturan Kolom Excel:</small>
+                    <small style="display: block; color: #555; font-size: 11px; line-height: 1.5;">
+                        • Kolom A: No. Angsuran<br>
+                        • Kolom B: Nama Nasabah<br>
+                        • Kolom C: Alamat<br>
+                        • Kolom D: Nominal (Akan tersimpan sebagai status HB)
+                    </small>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 25px;">
+                <button type="button" onclick="closeModalImportHB()" style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #ccc; background: #eee; font-weight: 700; cursor: pointer;">
+                    Batal
+                </button>
+                <button type="submit" style="flex: 1; padding: 12px; border-radius: 12px; background: #d9534f; color: white; border: none; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #a93c39;">
+                    Proses Import
+                </button>
+            </div>
+        </form>
     </div>
 </div>

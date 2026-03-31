@@ -169,11 +169,14 @@ class AdmKunjunganController extends Controller
         $nasabahMaster = \App\Models\Nasabah::where('no_angsuran', $request->no_angsuran)->first();
         $karyawan = Karyawan::find($request->karyawan_id);
 
+        $isHb = ($request->kol == 5) ? true : false;
+
         DataKunjunganAdm::create([
             'karyawan_id'    => $request->karyawan_id,
             'nama_nasabah'   => $request->nama_nasabah,
             'alamat_nasabah' => $request->alamat_nasabah,
             'kol'            => $request->kol,
+            'is_hb'          => $isHb, 
             'bulan'          => $request->bulan,
             'no_angsuran'    => $request->no_angsuran,
             'tanggal'        => $request->tanggal,
@@ -200,11 +203,11 @@ class AdmKunjunganController extends Controller
         return Excel::download(new KunjunganExport($kode_ao), 'rekap_kunjungan_' . date('Y-m-d') . '.xlsx');
     }
 
-public function importExcel(Request $request)
+    public function importExcel(Request $request)
     {
         $request->validate([
             'karyawan_id' => 'required|exists:karyawans,id',
-            'file_excel'  => 'required|mimes:xlsx,xls',
+            'file_excel'  => 'required|mimes:xlsx,xls,csv',
             'tanggal_kunjungan' => 'required|date'
         ]);
 
@@ -221,14 +224,14 @@ public function importExcel(Request $request)
                 $noAngsuran  = $row[0] ?? null; 
                 $namaNasabah = $row[1] ?? null; 
                 $alamat      = $row[2] ?? '-';  
-                $nominal     = $row[3] ?? 0;    
-                $sisaPokok   = $row[4] ?? 0;    
-                $kol         = $row[5] ?? 1;    
+                
+                $nominalRaw   = preg_replace('/[^0-9]/', '', $row[3] ?? '0');
+                $sisaPokokRaw = preg_replace('/[^0-9]/', '', $row[4] ?? '0');
+                
+                $kol = $row[5] ?? 1;    
 
                 if (empty($namaNasabah)) continue;
 
-                // --- LOGIKA OTOMATIS HB ---
-                // Jika KOL di excel adalah 5, maka is_hb diset true (1)
                 $isHb = ($kol == 5) ? true : false;
 
                 \App\Models\DataKunjunganAdm::updateOrCreate(
@@ -241,10 +244,10 @@ public function importExcel(Request $request)
                         'kode_ao'        => $karyawan->kode_ao,
                         'nama_nasabah'   => $namaNasabah,
                         'alamat_nasabah' => $alamat,
-                        'nominal'        => (float) $nominal,
-                        'sisa_pokok'     => (float) $sisaPokok,
+                        'nominal'        => (float) $nominalRaw,   
+                        'sisa_pokok'     => (float) $sisaPokokRaw, 
                         'kol'            => $kol,
-                        'is_hb'          => $isHb,      // Masukkan status HB ke database
+                        'is_hb'          => $isHb,
                         'tanggal'        => $tglInput, 
                     ]
                 );

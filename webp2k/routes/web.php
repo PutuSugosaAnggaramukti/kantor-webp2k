@@ -59,6 +59,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/nasabah/filter', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.filter');
     Route::get('/nasabah/export', [NasabahController::class, 'exportExcel'])->name('admin.nasabah.export');
     Route::post('/nasabah/import', [NasabahController::class, 'importExcel'])->name('admin.nasabah.import');
+    Route::post('/nasabah/import-hb', [NasabahController::class, 'import_hb'])->name('admin.nasabah.import_hb');
 
     // 5. PELAPORAN (Dibenahi rutenya)
     Route::get('/pelaporan', [PelaporanController::class, 'index'])->name('pelaporan.index'); // Rute bersih

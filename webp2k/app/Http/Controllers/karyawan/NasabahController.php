@@ -5,6 +5,7 @@ namespace App\Http\Controllers\karyawan;
 use App\Http\Controllers\Controller;
 use App\Exports\NasabahExport;
 use App\Imports\NasabahImport;
+use App\Imports\NasabahHBImport;  
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\Nasabah;
 use App\Models\DataKunjunganAdm;
@@ -13,20 +14,34 @@ use Illuminate\Http\Request;
 class NasabahController extends Controller
 {
 
-    public function nasabahContent(Request $request)
+   public function nasabahContent(Request $request)
     {
-
-        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')
+        // 1. Data untuk Tabel Utama (KOL 1-4)
+        // Filter agar nasabah HB (KOL 5) tidak masuk ke daftar reguler jika diinginkan
+        $nasabah_all = \App\Models\Nasabah::whereIn('kol', [1, 2, 3, 4])
+                        ->orderBy('nasabah', 'asc')
                         ->paginate(10)
                         ->withQueryString();
 
+        // 2. Data Khusus Nasabah HB (KOL 5)
+        $nasabah_hb = \App\Models\Nasabah::where('kol', '5')
+                        ->orderBy('nasabah', 'asc')
+                        ->get();
+
+        // 3. Hitung Jumlah untuk Badge Notifikasi
+        $countReguler = \App\Models\Nasabah::whereIn('kol', [1, 2, 3, 4])->count();
+        $countHB = $nasabah_hb->count();
+
+        // Jika request AJAX (untuk pagination atau filter)
         if ($request->ajax()) {
-            return view('admin.partials.nasabah_table', compact('nasabah_all'))->render();
+            return view('admin.partials.nasabah_table', compact('nasabah_all', 'nasabah_hb', 'countReguler', 'countHB'))->render();
         }
+
         $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
-        $data['content'] = view('admin.partials.nasabah_table', compact('nasabah_all'))->render();
+        // Kirim data ke view partials
+        $data['content'] = view('admin.partials.nasabah_table', compact('nasabah_all', 'nasabah_hb', 'countReguler', 'countHB'))->render();
         $data['page'] = 'nasabah';
         $data['title'] = 'Data Nasabah';
 
@@ -118,6 +133,22 @@ class NasabahController extends Controller
            return redirect()->back()->with('success', 'Data Nasabah Berhasil Diperbarui!');
         } catch (\Exception $e) {
             return "Terjadi Error Database: " . $e->getMessage(); 
+        }
+    }
+
+    public function import_hb(Request $request)
+    {
+        $request->validate([
+            // Tambahkan txt agar CSV yang terbaca sebagai plain text tetap lolos
+            'file_excel' => 'required|mimes:xlsx,xls,csv,txt',
+        ]);
+
+        try {
+            Excel::import(new NasabahHBImport, $request->file('file_excel'));
+            return back()->with('success', 'Data Nasabah HB berhasil diimport!');
+        } catch (\Exception $e) {
+            // Ini akan memunculkan pesan error spesifik jika ada kolom yang salah
+            return back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
     }
 
