@@ -14,34 +14,51 @@ use Illuminate\Http\Request;
 class NasabahController extends Controller
 {
 
-   public function nasabahContent(Request $request)
+    public function nasabahContent(Request $request)
     {
-        // 1. Data untuk Tabel Utama (KOL 1-4)
-        // Filter agar nasabah HB (KOL 5) tidak masuk ke daftar reguler jika diinginkan
-        $nasabah_all = \App\Models\Nasabah::whereIn('kol', [1, 2, 3, 4])
-                        ->orderBy('nasabah', 'asc')
-                        ->paginate(10)
-                        ->withQueryString();
+        // 1. Ambil parameter tab (default: semua)
+        $activeTab = $request->query('tab', 'semua');
 
-        // 2. Data Khusus Nasabah HB (KOL 5)
-        $nasabah_hb = \App\Models\Nasabah::where('kol', '5')
-                        ->orderBy('nasabah', 'asc')
-                        ->get();
+        // 2. Query Dasar
+        $query = \App\Models\Nasabah::orderBy('nasabah', 'asc');
 
-        // 3. Hitung Jumlah untuk Badge Notifikasi
-        $countReguler = \App\Models\Nasabah::whereIn('kol', [1, 2, 3, 4])->count();
-        $countHB = $nasabah_hb->count();
-
-        // Jika request AJAX (untuk pagination atau filter)
-        if ($request->ajax()) {
-            return view('admin.partials.nasabah_table', compact('nasabah_all', 'nasabah_hb', 'countReguler', 'countHB'))->render();
+        // 3. Logika Filter Tab
+        if ($activeTab == 'hb') {
+            // Hanya ambil KOL 5
+            $query->where('kol', '5');
+        } else {
+            // Ambil KOL 1-4 (Reguler)
+            $query->whereIn('kol', [1, 2, 3, 4]);
         }
 
+        // 4. Eksekusi Pagination
+        $nasabah_all = $query->paginate(10)->withQueryString();
+
+        // 5. Data Pendukung (Badge Notifikasi) - Tetap dihitung agar angka di tab akurat
+        $countReguler = \App\Models\Nasabah::whereIn('kol', [1, 2, 3, 4])->count();
+        $countHB = \App\Models\Nasabah::where('kol', '5')->count();
+
+        // Jika request AJAX (Dari switchTab atau Pagination)
+        if ($request->ajax()) {
+            return view('admin.partials.nasabah_table', [
+                'nasabah_all' => $nasabah_all,
+                'countReguler' => $countReguler,
+                'countHB' => $countHB,
+                'activeTab' => $activeTab // Kirim status tab aktif ke view
+            ])->render();
+        }
+
+        // Data untuk load halaman pertama kali
         $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
-        // Kirim data ke view partials
-        $data['content'] = view('admin.partials.nasabah_table', compact('nasabah_all', 'nasabah_hb', 'countReguler', 'countHB'))->render();
+        $data['content'] = view('admin.partials.nasabah_table', [
+            'nasabah_all' => $nasabah_all,
+            'countReguler' => $countReguler,
+            'countHB' => $countHB,
+            'activeTab' => $activeTab
+        ])->render();
+        
         $data['page'] = 'nasabah';
         $data['title'] = 'Data Nasabah';
 

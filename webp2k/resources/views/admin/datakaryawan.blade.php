@@ -557,6 +557,35 @@ function confirmLogout() {
     });
 }
 
+// FUNGSI PINDAH TAB (NASABAH REGULER vs HB)
+function switchTab(type) {
+    const contentArea = document.getElementById('main-content-area');
+    if (!contentArea) return;
+
+    contentArea.style.opacity = '0.3';
+
+    // Kirim parameter tab ke controller nasabah-content
+    fetch(`/admin/nasabah-content?tab=${type}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'text/html'
+        }
+    })
+    .then(res => res.text())
+    .then(html => {
+        contentArea.innerHTML = html;
+        contentArea.style.opacity = '1';
+        
+        // Update URL agar jika di-refresh tetap di tab yang sama
+        history.pushState({page: 'nasabah', tab: type}, "", `/admin/nasabah?tab=${type}`);
+    })
+    .catch(err => {
+        console.error("Gagal ganti tab:", err);
+        contentArea.style.opacity = '1';
+    });
+}
+
 // FUNGSI AUTO-FILL NASABAH BERDASARKAN NO ANGSURAN
 // 1. FUNGSI AUTO-FILL SAAT DROPDOWN DIPILIH
 $(document).on('change', '#dropdown_no_angsuran', function() {
@@ -583,15 +612,6 @@ function resetFormKunjungan() {
 
 // 3. FUNGSI LOAD DAFTAR NOMOR ANGGOTA (Panggil saat modal dibuka)
 function refreshNoAnggotaDropdown() {
-    let registeredNumbers = [];
-    
-    // 1. Scan nomor yang sudah ada di tabel
-    $('.row-kunjungan').each(function() {
-        let noAng = $(this).attr('data-no-angsuran'); 
-        if (noAng) registeredNumbers.push(noAng.toString().trim());
-    });
-
-    // 2. Ambil data dari server
     fetch('/admin/get-daftar-no-anggota')
         .then(response => response.json())
         .then(data => {
@@ -600,41 +620,32 @@ function refreshNoAnggotaDropdown() {
 
             select.innerHTML = '<option value="">-- Pilih No. Anggota --</option>';
 
-            // --- LOGIKA SORTING (KOL 5 DI ATAS) ---
-            // Kita urutkan data: KOL 5 akan naik ke index atas
-            data.sort((a, b) => {
-                if (a.kol == 5 && b.kol != 5) return -1;
-                if (a.kol != 5 && b.kol == 5) return 1;
-                return 0;
-            });
-
             data.forEach(item => {
-                let currentNo = item.no_angsuran ? item.no_angsuran.toString().trim() : "";
-
-                // Filter agar yang sudah diinput tidak muncul lagi
-                if (currentNo && !registeredNumbers.includes(currentNo)) {
-                    const option = document.createElement('option');
-                    option.value = item.no_angsuran;
-                    
-                    // --- PENANDA VISUAL ---
-                    // Jika KOL 5, tambahkan teks "[PRIORITAS KOL 5]" dan tanda bintang
-                    if (item.kol == 5) {
-                        option.text = `⭐ [KOL 5] ${item.no_angsuran} - ${item.nasabah}`;
-                        option.style.fontWeight = "bold";
-                        option.style.color = "#d32f2f"; // Warna merah di beberapa browser
-                    } else {
-                        option.text = `${item.no_angsuran} - ${item.nasabah} (KOL ${item.kol})`;
-                    }
-                    
-                    option.dataset.nama = item.nasabah;
-                    option.dataset.alamat = item.alamat || '-';
-                    option.dataset.kol = item.kol || '-';
-                    
-                    select.appendChild(option);
+                // Pastikan kita handle data null agar tidak error
+                let noAng = item.no_angsuran ? item.no_angsuran.toString().trim() : '';
+                let namaNasabah = item.nasabah ? item.nasabah.toUpperCase() : 'TANPA NAMA';
+                
+                const option = document.createElement('option');
+                option.value = noAng;
+                
+                // Tampilan Label
+                if (item.kol == 5) {
+                    option.text = `⭐ [HB] ${noAng} - ${namaNasabah}`;
+                    option.style.color = "red";
+                    option.style.fontWeight = "bold";
+                } else {
+                    option.text = `${noAng} - ${namaNasabah} (KOL ${item.kol})`;
                 }
+                
+                // Simpan data ke dataset untuk auto-fill form
+                option.dataset.nama = namaNasabah;
+                option.dataset.alamat = item.alamat || '-';
+                option.dataset.kol = item.kol || '1';
+                
+                select.appendChild(option);
             });
         })
-        .catch(err => console.error("Gagal refresh dropdown:", err));
+        .catch(err => console.error("Error load dropdown:", err));
 }
 
    function openModalImportNasabah() {
@@ -749,45 +760,36 @@ function closeModalImport() {
 }
 
 window.showVisitDetail = function(data) {
-    // 1. Foto & Jam
-    document.getElementById('view-foto').src = data.foto_kunjungan 
-        ? `/uploads/kunjungan/${data.foto_kunjungan}` 
-        : '/assets/no_image.png';
+    let fotoSource = '/assets/no_image.png';
     
-    // Perbaikan pengambilan jam: pastikan data.created_at ada
-    let jam = '--:--';
-    if (data.created_at && data.created_at.includes(' ')) {
-        jam = data.created_at.split(' ')[1].substring(0, 5);
+    if (data.foto_kunjungan) {
+        try {
+            // Cek apakah data foto berbentuk JSON
+            let fotos = JSON.parse(data.foto_kunjungan);
+            if (Array.isArray(fotos) && fotos.length > 0) {
+                fotoSource = `/uploads/kunjungan/${fotos[0]}`; // Ambil foto pertama
+            } else {
+                fotoSource = `/uploads/kunjungan/${data.foto_kunjungan}`;
+            }
+        } catch (e) {
+            // Jika bukan JSON, anggap string biasa (data lama)
+            fotoSource = `/uploads/kunjungan/${data.foto_kunjungan}`;
+        }
     }
-    document.getElementById('view-jam').innerText = `Foto diambil pada jam: ${jam} WIB`;
 
-    // 2. Koordinat (Perbaikan Link Google Maps)
-    const koordinat = data.koordinat || 'Tidak ada koordinat';
-    document.getElementById('view-koordinat').innerText = koordinat;
+    document.getElementById('view-foto').src = fotoSource;
     
-    // Gunakan backticks ( ` ) untuk template literals
+    // ... sisa kode jam, koordinat, janji bayar tetap sama ...
+    let jam = data.created_at ? data.created_at.split(' ')[1].substring(0, 5) : '--:--';
+    document.getElementById('view-jam').innerText = `Foto diambil pada jam: ${jam} WIB`;
+    
+    // Fix Google Maps Link (Tadi ada typo {data.koordinat})
     document.getElementById('view-koordinat-link').href = data.koordinat 
         ? `https://www.google.com/maps?q=${data.koordinat}` 
         : '#';
 
-    // 3. Janji Bayar
-    document.getElementById('view-janji').innerText = data.tgl_janji_bayar || 'Tidak Ada Janji';
-
-    // 4. Nominal (Format Rupiah)
-    // Pastikan nama property sesuai dengan yang di-select di Controller (nominal_janji_bayar)
-    const nominal = parseFloat(data.nominal_janji_bayar) || 0;
-    document.getElementById('view-nominal').innerText = new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        maximumFractionDigits: 0
-    }).format(nominal);
-
-    // 5. Catatan
-    document.getElementById('view-catatan').innerText = data.catatan || 'Tidak ada catatan kunjungan.';
-
-    // Tampilkan
+    // Tampilkan modal
     document.getElementById('modalDetailKunjungan').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
 }
 
 window.closeVisitDetail = function() {

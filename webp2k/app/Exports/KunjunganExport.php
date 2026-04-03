@@ -38,25 +38,55 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
     }
 
     // FUNGSI UNTUK MEMASUKKAN GAMBAR KE EXCEL
-    public function drawings()
+   public function drawings()
     {
         $drawings = [];
         $data = $this->collection();
 
         foreach ($data as $index => $row) {
             if ($row->foto_kunjungan) {
-                // Tentukan path lokasi foto disimpan
-                $path = public_path('uploads/kunjungan/' . $row->foto_kunjungan);
-                
-                if (file_exists($path)) {
-                    $drawing = new Drawing();
-                    $drawing->setName('Foto');
-                    $drawing->setDescription('Foto Kunjungan');
-                    $drawing->setPath($path);
-                    $drawing->setHeight(80); // Tinggi foto di dalam sel
-                    // Gambar diletakkan di Kolom J (Kolom ke-10), baris menyesuaikan (+2 karena heading)
-                    $drawing->setCoordinates('J' . ($index + 2)); 
-                    $drawings[] = $drawing;
+                // 1. Decode JSON karena sekarang isinya array foto
+                $fotos = json_decode($row->foto_kunjungan, true);
+
+                // 2. Cek apakah hasil decode adalah array dan tidak kosong
+                if (is_array($fotos) && count($fotos) > 0) {
+                    $offsetX = 0; // Untuk menggeser posisi jika ada lebih dari 1 foto
+
+                    foreach ($fotos as $fotoNama) {
+                        $path = public_path('uploads/kunjungan/' . $fotoNama);
+
+                        if (file_exists($path)) {
+                            $drawing = new Drawing();
+                            $drawing->setName('Foto');
+                            $drawing->setDescription('Foto Kunjungan');
+                            $drawing->setPath($path);
+                            $drawing->setHeight(80); 
+                            
+                            // Set koordinat di Kolom J
+                            $drawing->setCoordinates('J' . ($index + 2)); 
+                            
+                            // 3. Atur Offset agar foto tidak menumpuk (opsional)
+                            // Jika ingin menampilkan semua foto berjejer, gunakan setOffsetX
+                            $drawing->setOffsetX($offsetX);
+                            $offsetX += 100; // Geser 100 unit ke kanan untuk foto berikutnya
+
+                            $drawings[] = $drawing;
+                            
+                            // CATATAN: Jika sel Excel terlalu sempit untuk banyak foto, 
+                            // kamu bisa batasi hanya ambil foto pertama dengan menambahkan 'break;' di sini
+                            // break; 
+                        }
+                    }
+                } else {
+                    // FALLBACK: Jika formatnya bukan JSON (data lama yang hanya 1 foto teks biasa)
+                    $path = public_path('uploads/kunjungan/' . $row->foto_kunjungan);
+                    if (file_exists($path)) {
+                        $drawing = new Drawing();
+                        $drawing->setPath($path);
+                        $drawing->setHeight(80);
+                        $drawing->setCoordinates('J' . ($index + 2));
+                        $drawings[] = $drawing;
+                    }
                 }
             }
         }

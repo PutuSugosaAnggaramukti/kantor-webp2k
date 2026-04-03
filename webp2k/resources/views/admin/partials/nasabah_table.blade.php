@@ -37,8 +37,16 @@
             {{ $countReguler }}
         </span>
     </button>
-    <button onclick="switchTab('hb')" id="btn-tab-hb" style="padding: 10px 25px; border: 2px solid #000; border-bottom: 2px solid #000; border-radius: 10px 10px 0 0; background-color: #eee; font-weight: 800; color: #d9534f; cursor: pointer; transition: 0.3s;">
-        Nasabah HB (KOL 5) <span style="background: #d9534f; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 5px;">{{ $nasabah_hb->count() }}</span>
+    <button onclick="switchTab('hb')" 
+        id="btn-tab-hb" 
+        style="padding: 10px 25px; border: 2px solid #000; border-bottom: {{ $activeTab == 'hb' ? 'none' : '2px solid #000' }}; 
+            border-radius: 10px 10px 0 0; 
+            background-color: {{ $activeTab == 'hb' ? '#fff' : '#eee' }}; 
+            font-weight: 800; color: #d9534f; cursor: pointer; transition: 0.3s;">
+        Nasabah Hapus Buku (HB)
+        <span style="background: #d9534f; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 5px;">
+            {{ $countHB }}
+        </span>
     </button>
 </div>
 
@@ -95,7 +103,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($nasabah_hb as $hb)
+                    @forelse($nasabah_all as $hb)
                     <tr style="border-bottom: 1px solid #ddd; font-weight: 600; font-size: 13px;">
                         <td style="padding: 10px; border-right: 2px solid #000; text-align: center;">{{ $loop->iteration }}</td>
                         <td style="padding: 10px; border-right: 2px solid #000; text-align: center;">{{ $hb->no_angsuran }}</td>

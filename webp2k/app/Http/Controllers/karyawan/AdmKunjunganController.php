@@ -125,6 +125,24 @@ class AdmKunjunganController extends Controller
         return "$lat, $lon";
     }
 
+    public function getDaftarNoAnggota()
+    {
+        try {
+            // Mengambil seluruh data tanpa terkecuali
+            $nasabah = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol')
+                ->orderByRaw("CASE WHEN kol = '5' THEN 0 ELSE 1 END") 
+                ->orderBy('nasabah', 'asc')
+                ->get();
+
+            // Log jumlah data yang dikirim untuk dicek di storage/logs/laravel.log
+            // \Log::info('Jumlah nasabah dikirim ke dropdown: ' . $nasabah->count());
+
+            return response()->json($nasabah);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     private function getComponent($coordinate, $ref)
     {
         $degrees = count($coordinate) > 0 ? $this->solveFraction($coordinate[0]) : 0;
