@@ -44,6 +44,12 @@
                 </div>
 
                 <div class="form-group mb-3">
+                    <label>Nominal Kesanggupan Bayar (Rp)</label>
+                    <input type="number" name="nominal_janji_bayar" class="form-control" placeholder="Contoh: 500000">
+                    <small style="color: #f39c12;"><i class="fas fa-info-circle"></i> Isi angka saja tanpa titik/rupiah.</small>
+                </div>
+
+                <div class="form-group mb-3">
                     <label>Tanggal Kesanggupan Bayar (Opsional)</label>
                     <input type="date" name="tgl_janji_bayar" class="form-control">
                     <small style="color: #f39c12;"><i class="fas fa-info-circle"></i> Isi jika nasabah menjanjikan pembayaran.</small>

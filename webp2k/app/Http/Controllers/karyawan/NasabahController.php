@@ -34,34 +34,35 @@ class NasabahController extends Controller
         // 4. Eksekusi Pagination
         $nasabah_all = $query->paginate(10)->withQueryString();
 
-        // 5. Data Pendukung (Badge Notifikasi) - Tetap dihitung agar angka di tab akurat
+        // 5. Data Pendukung (Gunakan nama variabel yang dicari oleh View Anda)
         $countReguler = \App\Models\Nasabah::whereIn('kol', [1, 2, 3, 4])->count();
-        $countHB = \App\Models\Nasabah::where('kol', '5')->count();
+        
+        // UBAH DISINI: Dari $countHB menjadi $nasabah_hb
+        $nasabah_hb = \App\Models\Nasabah::where('kol', '5')->count(); 
+
+        // Siapkan array data agar tidak menulis ulang dua kali
+        $viewData = [
+            'nasabah_all' => $nasabah_all,
+            'countReguler' => $countReguler,
+            'nasabah_hb'  => $nasabah_hb, // Variabel ini yang ditunggu oleh View
+            'activeTab'    => $activeTab
+        ];
 
         // Jika request AJAX (Dari switchTab atau Pagination)
         if ($request->ajax()) {
-            return view('admin.partials.nasabah_table', [
-                'nasabah_all' => $nasabah_all,
-                'countReguler' => $countReguler,
-                'countHB' => $countHB,
-                'activeTab' => $activeTab // Kirim status tab aktif ke view
-            ])->render();
+            return view('admin.partials.nasabah_table', $viewData)->render();
         }
 
         // Data untuk load halaman pertama kali
         $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
-        $data['content'] = view('admin.partials.nasabah_table', [
-            'nasabah_all' => $nasabah_all,
-            'countReguler' => $countReguler,
-            'countHB' => $countHB,
-            'activeTab' => $activeTab
-        ])->render();
+        $data['content'] = view('admin.partials.nasabah_table', $viewData)->render();
         
         $data['page'] = 'nasabah';
         $data['title'] = 'Data Nasabah';
 
+        // Pastikan view 'admin.datakaryawan' memang view parent yang benar
         return view('admin.datakaryawan', $data);
     }
 

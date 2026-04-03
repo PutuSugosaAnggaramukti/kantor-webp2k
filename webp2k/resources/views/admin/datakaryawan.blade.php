@@ -593,10 +593,10 @@ $(document).on('change', '#dropdown_no_angsuran', function() {
     let noAngsuran = $(this).val();
     
     if (noAngsuran) {
-        // Ambil data langsung dari atribut yang sudah kita siapkan di atas
-        $('#display_nama').val(selected.attr('data-nama'));
-        $('#display_alamat').val(selected.attr('data-alamat'));
-        $('#display_kol').val(selected.attr('data-kol'));
+        // Menggunakan .data() lebih stabil untuk mengambil dataset HTML5
+        $('#display_nama').val(selected.data('nama'));
+        $('#display_alamat').val(selected.data('alamat'));
+        $('#display_kol').val(selected.data('kol'));
     } else {
         resetFormKunjungan();
     }
@@ -621,23 +621,22 @@ function refreshNoAnggotaDropdown() {
             select.innerHTML = '<option value="">-- Pilih No. Anggota --</option>';
 
             data.forEach(item => {
-                // Pastikan kita handle data null agar tidak error
                 let noAng = item.no_angsuran ? item.no_angsuran.toString().trim() : '';
                 let namaNasabah = item.nasabah ? item.nasabah.toUpperCase() : 'TANPA NAMA';
                 
                 const option = document.createElement('option');
                 option.value = noAng;
                 
-                // Tampilan Label
+                // Logika Tampilan HB untuk KOL 5
                 if (item.kol == 5) {
                     option.text = `⭐ [HB] ${noAng} - ${namaNasabah}`;
-                    option.style.color = "red";
+                    option.style.color = "#d32f2f";
                     option.style.fontWeight = "bold";
                 } else {
                     option.text = `${noAng} - ${namaNasabah} (KOL ${item.kol})`;
                 }
                 
-                // Simpan data ke dataset untuk auto-fill form
+                // Menyimpan data ke dataset
                 option.dataset.nama = namaNasabah;
                 option.dataset.alamat = item.alamat || '-';
                 option.dataset.kol = item.kol || '1';
@@ -688,6 +687,46 @@ $(document).on('click', '.pagination a', function(e) {
         }
     });
 });
+
+function simpanJadwalManual() {
+    const formData = {
+        karyawan_id: $('#selectKaryawan').val(),
+        no_angsuran: $('#dropdown_no_angsuran').val(),
+        nama_nasabah: $('#display_nama').val(),
+        alamat_nasabah: $('#display_alamat').val(),
+        kol: $('#display_kol').val(),
+        bulan: $('input[name="bulan"]').val(),
+        tanggal: $('input[name="tanggal"]').val(),
+        _token: '{{ csrf_token() }}'
+    };
+
+    console.log("Data dikirim ke server:", formData);
+
+    if (!formData.karyawan_id || !formData.no_angsuran || !formData.tanggal) {
+        alert('Mohon lengkapi data wajib: Nama AO, No. Anggota, dan Tanggal!');
+        return;
+    }
+
+    $.ajax({
+        // SESUAIKAN DENGAN ROUTE DI WEB.PHP: /admin/datakunjungan/store
+        url: '/admin/datakunjungan/store', 
+        type: 'POST',
+        data: formData,
+        success: function(response) {
+            if (response.success) {
+                alert(response.message);
+                location.reload(); 
+            } else {
+                alert('Gagal: ' + response.message);
+            }
+        },
+        error: function(xhr) {
+            // Jika error 404 masih muncul, cek console log URL-nya
+            console.error(xhr);
+            alert('Error ' + xhr.status + ': Route tidak ditemukan atau terjadi kesalahan server.');
+        }
+    });
+}
 
 function showDetailKunjungan(kode_ao) {
     const contentArea = document.getElementById('main-content-area');
@@ -764,31 +803,28 @@ window.showVisitDetail = function(data) {
     
     if (data.foto_kunjungan) {
         try {
-            // Cek apakah data foto berbentuk JSON
             let fotos = JSON.parse(data.foto_kunjungan);
-            if (Array.isArray(fotos) && fotos.length > 0) {
-                fotoSource = `/uploads/kunjungan/${fotos[0]}`; // Ambil foto pertama
-            } else {
-                fotoSource = `/uploads/kunjungan/${data.foto_kunjungan}`;
-            }
+            fotoSource = (Array.isArray(fotos) && fotos.length > 0) 
+                         ? `/uploads/kunjungan/${fotos[0]}` 
+                         : `/uploads/kunjungan/${data.foto_kunjungan}`;
         } catch (e) {
-            // Jika bukan JSON, anggap string biasa (data lama)
             fotoSource = `/uploads/kunjungan/${data.foto_kunjungan}`;
         }
     }
 
     document.getElementById('view-foto').src = fotoSource;
     
-    // ... sisa kode jam, koordinat, janji bayar tetap sama ...
     let jam = data.created_at ? data.created_at.split(' ')[1].substring(0, 5) : '--:--';
     document.getElementById('view-jam').innerText = `Foto diambil pada jam: ${jam} WIB`;
     
-    // Fix Google Maps Link (Tadi ada typo {data.koordinat})
-    document.getElementById('view-koordinat-link').href = data.koordinat 
-        ? `https://www.google.com/maps?q=${data.koordinat}` 
-        : '#';
+    // Perbaikan Link Google Maps (Menghapus typo bracket)
+    if (data.koordinat) {
+        let latLng = data.koordinat.replace(/[^0-9.,-]/g, ''); // Membersihkan karakter aneh
+        document.getElementById('view-koordinat-link').href = `https://www.google.com/maps?q=${latLng}`;
+    } else {
+        document.getElementById('view-koordinat-link').href = '#';
+    }
 
-    // Tampilkan modal
     document.getElementById('modalDetailKunjungan').style.display = 'flex';
 }
 
