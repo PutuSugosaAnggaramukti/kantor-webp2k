@@ -36,15 +36,14 @@ class NasabahController extends Controller
 
         // 5. Data Pendukung (Gunakan nama variabel yang dicari oleh View Anda)
         $countReguler = \App\Models\Nasabah::whereIn('kol', [1, 2, 3, 4])->count();
-        
-        // UBAH DISINI: Dari $countHB menjadi $nasabah_hb
         $nasabah_hb = \App\Models\Nasabah::where('kol', '5')->count(); 
 
-        // Siapkan array data agar tidak menulis ulang dua kali
+        // Siapkan array data
         $viewData = [
-            'nasabah_all' => $nasabah_all,
+            'nasabah_all'  => $nasabah_all,
             'countReguler' => $countReguler,
-            'nasabah_hb'  => $nasabah_hb, // Variabel ini yang ditunggu oleh View
+            'nasabah_hb'   => $nasabah_hb, // Digunakan jika ada bagian view yang pakai nama ini
+            'countHB'      => $nasabah_hb, // TAMBAHKAN INI agar error di baris 48 View hilang
             'activeTab'    => $activeTab
         ];
 

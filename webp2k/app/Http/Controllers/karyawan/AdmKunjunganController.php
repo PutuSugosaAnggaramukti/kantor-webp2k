@@ -80,7 +80,7 @@ class AdmKunjunganController extends Controller
         return view('admin.datakaryawan', $data);
     }
 
-   public function detail($kode_ao)
+  public function detail($kode_ao)
     {
         try {
             $data_detail = \DB::table('kunjungans')
@@ -91,38 +91,66 @@ class AdmKunjunganController extends Controller
                 })
                 ->where('kunjungans.kode_ao', $kode_ao)
                 ->select(
-                    'kunjungans.*', // Ambil semua kolom agar aman
+                    'kunjungans.*',
                     'nasabahs.alamat as alamat_master',
                     'data_kunjungan_adms.alamat_nasabah as alamat_rencana'
                 )
                 ->orderBy('kunjungans.created_at', 'desc')
                 ->get();
 
-            // LOGIKA BARU: Update koordinat dari EXIF foto jika tersedia
             foreach ($data_detail as $item) {
-                $path = public_path('uploads/kunjungan/' . $item->foto_kunjungan);
+                $fotos = json_decode($item->foto_kunjungan, true);
+                $namaFoto = (is_array($fotos) && count($fotos) > 0) ? $fotos[0] : $item->foto_kunjungan;
                 
-                if ($item->foto_kunjungan && file_exists($path)) {
+                $path = public_path('uploads/kunjungan/' . $namaFoto);
+                
+                if ($namaFoto && file_exists($path)) {
                     $exif = @exif_read_data($path);
-                    if (isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
-                        // Jika foto punya koordinat asli, timpa data koordinat database
-                        $item->koordinat = $this->getGps($exif);
+                    
+                    if ($exif && isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
+                        // Memanggil helper per komponen (Latitude sendiri, Longitude sendiri)
+                        $lat = $this->convertFractionToDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
+                        $log = $this->convertFractionToDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
+                        
+                        // Satukan menjadi string koordinat untuk tampilan
+                        $item->koordinat = $lat . ',' . $log;
                     }
                 }
             }
 
             return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
+
         } catch (\Exception $e) {
-            return "<div style='color:red; padding:20px;'>Error: " . $e->getMessage() . "</div>";
+            // Log error untuk debug tapi jangan hentikan aplikasi
+            \Log::error("Error EXIF: " . $e->getMessage());
+            return "<div style='color:red; padding:20px;'>Terjadi kesalahan saat memproses detail: " . $e->getMessage() . "</div>";
         }
     }
-
-    // Tambahkan helper function ini di bawah method detail atau di bawah class
-    private function getGps($exif)
+        // Tambahkan helper function ini di bawah method detail atau di bawah class
+        private function convertFractionToDecimal($exifCoord, $hemi)
     {
-        $lat = $this->getComponent($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-        $lon = $this->getComponent($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
-        return "$lat, $lon";
+        // Cek jika data koordinat valid
+        if (!is_array($exifCoord) || count($exifCoord) < 3) return 0;
+
+        $degrees = $this->evalFraction($exifCoord[0]);
+        $minutes = $this->evalFraction($exifCoord[1]);
+        $seconds = $this->evalFraction($exifCoord[2]);
+
+        $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
+
+        return $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
+    }
+
+    private function evalFraction($fraction)
+    {
+        // Jika formatnya "7/1" atau "3600/100"
+        if (is_string($fraction) && strpos($fraction, '/') !== false) {
+            $parts = explode('/', $fraction);
+            if (count($parts) == 2 && $parts[1] != 0) {
+                return (float) $parts[0] / (float) $parts[1];
+            }
+        }
+        return (float) $fraction;
     }
 
     public function getDaftarNoAnggota()

@@ -53,9 +53,9 @@
 
                     <td style="padding: 10px; border-right: 2px solid #000;">
                         <button type="button" 
-                                onclick="showVisitDetail({{ json_encode($item) }})"
-                                style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
-                            <i class="fa-solid fa-eye"></i>
+                                onclick='showVisitDetail(@json($item))' 
+                                class="btn-view">
+                            <i class="fas fa-eye"></i>
                         </button>
                     </td>
                 </tr>

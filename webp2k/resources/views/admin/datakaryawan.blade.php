@@ -799,33 +799,66 @@ function closeModalImport() {
 }
 
 window.showVisitDetail = function(data) {
+    console.log("Data yang diterima:", data); // Cek ini di console browser
+
+    // --- 1. FOTO ---
     let fotoSource = '/assets/no_image.png';
-    
     if (data.foto_kunjungan) {
         try {
             let fotos = JSON.parse(data.foto_kunjungan);
-            fotoSource = (Array.isArray(fotos) && fotos.length > 0) 
-                         ? `/uploads/kunjungan/${fotos[0]}` 
-                         : `/uploads/kunjungan/${data.foto_kunjungan}`;
+            let namaFoto = (Array.isArray(fotos) && fotos.length > 0) ? fotos[0] : data.foto_kunjungan;
+            fotoSource = `/uploads/kunjungan/${namaFoto}`;
         } catch (e) {
             fotoSource = `/uploads/kunjungan/${data.foto_kunjungan}`;
         }
     }
-
     document.getElementById('view-foto').src = fotoSource;
-    
+
+    // --- 2. JAM ---
     let jam = data.created_at ? data.created_at.split(' ')[1].substring(0, 5) : '--:--';
     document.getElementById('view-jam').innerText = `Foto diambil pada jam: ${jam} WIB`;
-    
-    // Perbaikan Link Google Maps (Menghapus typo bracket)
-    if (data.koordinat) {
-        let latLng = data.koordinat.replace(/[^0-9.,-]/g, ''); // Membersihkan karakter aneh
-        document.getElementById('view-koordinat-link').href = `https://www.google.com/maps?q=${latLng}`;
-    } else {
-        document.getElementById('view-koordinat-link').href = '#';
-    }
 
+   // --- 3. KOORDINAT ---
+    const linkElem = document.getElementById('view-koordinat-link');
+    const textElem = document.getElementById('view-koordinat');
+    
+    if (data.koordinat && data.koordinat !== '-') {
+        // Membersihkan spasi atau karakter aneh, tapi tetap menyisakan angka, titik, koma, dan minus
+        let latLng = data.koordinat.replace(/\s/g, ''); 
+        
+        // PERBAIKAN: Gunakan ${latLng} dengan simbol dollar agar variabel terbaca
+        linkElem.href = `https://www.google.com/maps/search/?api=1&query=${latLng}`;
+        
+        // Menampilkan teks koordinat asli di bawah tombol/link (opsional agar user bisa copy)
+        textElem.innerHTML = `<i class="fas fa-map-marker-alt"></i> Lihat di Google Maps<br><small style="color:#888; font-weight:normal;">(${latLng})</small>`;
+        textElem.style.color = "#3498db";
+    } else {
+        linkElem.href = "#";
+        textElem.innerText = "Tidak ada lokasi";
+        textElem.style.color = "#999";
+    }
+    // --- 4. TANGGAL JANJI BAYAR ---
+    document.getElementById('view-janji').innerText = data.tgl_janji_bayar || '-';
+
+    // --- 5. NOMINAL (Format Rupiah) ---
+    // Pastikan nama properti sesuai database: nominal_janji_bayar
+    let nominal = data.nominal_janji_bayar || 0;
+    document.getElementById('view-nominal').innerText = new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        maximumFractionDigits: 0
+    }).format(nominal);
+
+    // --- 6. CATATAN ---
+    document.getElementById('view-catatan').innerText = data.catatan || 'Tidak ada catatan.';
+
+    // Tampilkan Modal
     document.getElementById('modalDetailKunjungan').style.display = 'flex';
+}
+
+// Fungsi Tutup
+window.closeVisitDetail = function() {
+    document.getElementById('modalDetailKunjungan').style.display = 'none';
 }
 
 window.closeVisitDetail = function() {
