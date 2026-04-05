@@ -29,6 +29,7 @@
     $waktuFoto = null;
     $isOldPhoto = false;
     $koordinatExif = null;
+    $selisihTeks = null;
 
     if ($pathFoto && file_exists($pathFoto)) {
         $exif = @exif_read_data($pathFoto);
@@ -39,6 +40,10 @@
                 $waktuUpload = \Carbon\Carbon::parse($detail->created_at);
                 if ($waktuFoto->diffInHours($waktuUpload) > 2) { 
                     $isOldPhoto = true; 
+                    $selisihTeks = $waktuFoto->diffForHumans($waktuUpload, [
+                        'syntax' => \Carbon\CarbonInterface::DIFF_RELATIVE_TO_NOW,
+                        'parts' => 2,
+                    ]);
                 }
             }
             if (isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
@@ -65,6 +70,12 @@
             }
         }
     }
+
+    /**
+     * 4. LOGIKA BUKTI TRANSFER
+     */
+    $pathTransfer = $detail->bukti_transfer ? public_path('uploads/kunjungan/' . $detail->bukti_transfer) : null;
+    $hasTransfer = ($pathTransfer && file_exists($pathTransfer));
 @endphp
 
 <style>
@@ -105,34 +116,60 @@
     
     <div style="display: grid; grid-template-columns: 350px 1fr; gap: 30px;">
         
-       {{-- SISI KIRI: FOTO --}}
-        <div>
-            <div class="detail-section" style="text-align: center; padding: 15px;">
-                <span class="section-label">Foto Kunjungan ({{ count($fotos) }})</span>
-                
-                {{-- Gunakan Grid agar jika ada 4 foto, tampilannya rapi --}}
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
-                    @forelse($fotos as $foto)
-                        <div style="border-radius: 12px; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                            <a href="{{ asset('uploads/kunjungan/' . $foto) }}" target="_blank">
-                                <img src="{{ asset('uploads/kunjungan/' . $foto) }}" 
-                                    style="width: 100%; height: 180px; object-fit: cover; display: block;"
-                                    onerror="this.src='https://placehold.co/400x600?text=Foto+Tidak+Ditemukan'">
-                            </a>
-                        </div>
-                    @empty
-                        <div style="padding: 60px 20px; background: #eee; color: #999; border-radius: 12px;">
-                            <i class="fa-solid fa-image" style="font-size: 40px; margin-bottom: 10px;"></i><br>
-                            <span style="font-size: 14px;">Foto tidak tersedia</span>
-                        </div>
-                    @endforelse
+        {{-- SISI KIRI: FOTO & BUKTI TRANSFER --}}
+            <div>
+                {{-- Section 1: Foto Kunjungan --}}
+                <div class="detail-section" style="text-align: center; padding: 15px;">
+                    <span class="section-label">Foto Kunjungan ({{ count($fotos) }})</span>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+                        @forelse($fotos as $foto)
+                            <div style="border-radius: 12px; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                                <a href="{{ asset('uploads/kunjungan/' . $foto) }}" target="_blank">
+                                    <img src="{{ asset('uploads/kunjungan/' . $foto) }}" 
+                                        style="width: 100%; height: 180px; object-fit: cover; display: block;"
+                                        onerror="this.src='https://placehold.co/400x600?text=Foto+Tidak+Ditemukan'">
+                                </a>
+                            </div>
+                        @empty
+                            <div style="padding: 60px 20px; background: #eee; color: #999; border-radius: 12px; grid-column: span 2;">
+                                <i class="fa-solid fa-image" style="font-size: 40px; margin-bottom: 10px;"></i><br>
+                                <span style="font-size: 14px;">Foto tidak tersedia</span>
+                            </div>
+                        @endforelse
+                    </div>
+                    
+                    <small style="display: block; margin-top: 15px; color: #888;">
+                        <i class="fa-solid fa-magnifying-glass-plus"></i> Klik foto untuk memperbesar
+                    </small>
                 </div>
-                
-                <small style="display: block; margin-top: 15px; color: #888;">
-                    <i class="fa-solid fa-magnifying-glass-plus"></i> Klik foto untuk memperbesar
-                </small>
+
+                {{-- Section 2: Bukti Transfer (Hanya muncul jika ada datanya) --}}
+                @if($detail->bukti_transfer)
+                <div class="detail-section" style="border: 2px solid #55efc4; background: #f0fff4; text-align: center;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span class="section-label" style="color: #00b894; margin: 0;">
+                            <i class="fa-solid fa-receipt"></i> Bukti Transfer
+                        </span>
+                        <span style="background: #55efc4; color: #006266; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase;">
+                            Verified Payment
+                        </span>
+                    </div>
+
+                    <div style="border-radius: 12px; overflow: hidden; border: 3px solid white; box-shadow: 0 4px 15px rgba(85, 239, 196, 0.2); background: white;">
+                        <a href="{{ asset('uploads/kunjungan/' . $detail->bukti_transfer) }}" target="_blank">
+                            <img src="{{ asset('uploads/kunjungan/' . $detail->bukti_transfer) }}" 
+                                style="width: 100%; max-height: 350px; object-fit: contain; display: block;"
+                                onerror="this.src='https://placehold.co/400x600?text=Bukti+Transfer+Gagal+Dimuat'">
+                        </a>
+                    </div>
+                    
+                    <p style="margin-top: 10px; font-size: 11px; color: #00b894; font-weight: 600;">
+                        <i class="fa-solid fa-circle-info"></i> Nasabah melakukan pembayaran via transfer.
+                    </p>
+                </div>
+                @endif
             </div>
-        </div>
 
         {{-- SISI KANAN: DATA --}}
         <div>
@@ -152,8 +189,22 @@
                     </div>
                 </div>
                 @if($isOldPhoto)
-                    <div style="margin-top: 15px; padding: 8px 12px; background: #fff5f5; border-radius: 6px; color: #d63031; font-size: 12px; font-weight: 700;">
-                        <i class="fa-solid fa-circle-exclamation"></i> Peringatan: Foto diambil jauh sebelum laporan dikirim!
+                    {{-- TAMPILAN JIKA FOTO LAMA --}}
+                    <div style="margin-top: 15px; padding: 12px 15px; background: #fff5f5; border-radius: 10px; border: 1px solid #ff7675; color: #d63031;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i class="fa-solid fa-clock-rotate-left" style="font-size: 24px;"></i>
+                            <div>
+                                <strong style="font-size: 14px; display: block; margin-bottom: 2px;">Peringatan: Terdeteksi Foto Lama!</strong>
+                                <span style="font-size: 12px; line-height: 1.4;">
+                                    Foto ini diambil <strong>{{ $selisihTeks }}</strong> sebelum laporan dikirim.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @elseif($waktuFoto)
+                    {{-- TAMPILAN JIKA WAKTU AMAN --}}
+                    <div style="margin-top: 15px; color: #27ae60; font-size: 12px; font-weight: 700;">
+                        <i class="fa-solid fa-circle-check"></i> Waktu foto valid dan sesuai dengan waktu pelaporan.
                     </div>
                 @endif
             </div>
