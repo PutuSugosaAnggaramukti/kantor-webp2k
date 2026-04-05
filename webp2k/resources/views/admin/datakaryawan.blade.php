@@ -4,14 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - SIPANTAU P2K</title>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="{{ asset('css/karyawan.css') }}">
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -21,33 +26,64 @@
    <div class="wrapper">
         <div class="sidebar">
             <h2>Menu</h2>
-            <a href="javascript:void(0)" onclick="loadAdminPage('data-karyawan', this)" class="nav-item" id="menu-data-karyawan">
+
+            {{-- 1. DASHBOARD UTAMA --}}
+           <a href="javascript:void(0)" 
+            onclick="window.location.href='/admin/dashboard'" 
+            class="nav-item {{ request()->is('admin/dashboard*') ? 'active' : '' }}" 
+            id="menu-dashboard">
+                <i class="fa-solid fa-gauge-high"></i> Dashboard Utama
+            </a>
+
+            <hr style="border: 0.5px solid rgba(255,255,255,0.1); margin: 10px 15px;">
+
+            {{-- 2. DATA TIM P2K --}}
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('data-karyawan', this)" 
+                class="nav-item {{ request()->is('admin/data-karyawan*') ? 'active' : '' }}" 
+                id="menu-data-karyawan">
                 <i class="fa-solid fa-users"></i> Data Tim P2K
             </a>
 
+            {{-- 3. DATA KUNJUNGAN --}}
             <a href="javascript:void(0)" 
-                onclick="loadAdminPage('data-kunjungan', this)" class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}" id="menu-data-kunjungan">
+                onclick="loadAdminPage('data-kunjungan', this)" 
+                class="nav-item {{ request()->is('admin/kunjungan*') ? 'active' : '' }}" 
+                id="menu-data-kunjungan">
                 <i class="fa-solid fa-clipboard-check"></i> Data Kunjungan
             </a>
             
+            {{-- 4. DATA NASABAH --}}
             <a href="javascript:void(0)" 
                 onclick="loadAdminPage('nasabah', this)" 
-                class="nav-item {{ request()->is('admin/nasabah*') ? 'active' : '' }}" id="menu-nasabah">
+                class="nav-item {{ request()->is('admin/nasabah*') ? 'active' : '' }}" 
+                id="menu-nasabah">
                 <i class="fa-solid fa-address-card"></i> Data Nasabah
             </a>
 
-           <a href="javascript:void(0)" 
-            onclick="loadAdminPage('pelaporan', this)" class="nav-item {{ Request::is('admin/pelaporan*') ? 'active' : '' }}" id="menu-pelaporan">
+            {{-- 5. PELAPORAN --}}
+        <a href="javascript:void(0)" 
+                onclick="loadAdminPage('pelaporan', this)" 
+                class="nav-item {{ Request::is('admin/pelaporan*') ? 'active' : '' }}" 
+                id="menu-pelaporan">
                 <i class="fa-solid fa-file-signature"></i> 
                 <span>Pelaporan</span>
             </a>
 
-           <a href="javascript:void(0)" onclick="loadAdminPage('dokumen', this)" class="nav-item" id="menu-dokumen">
+            {{-- 6. DOKUMEN --}}
+        <a href="javascript:void(0)" 
+                onclick="loadAdminPage('dokumen', this)" 
+                class="nav-item {{ Request::is('admin/dokumen*') ? 'active' : '' }}" 
+                id="menu-dokumen">
                 <i class="fa-solid fa-file-word"></i> 
                 <span>Dokumen</span>
             </a>
 
-            <a href="javascript:void(0)" onclick="loadAdminPage('adm-kunjungan', this)" class="nav-item" id="menu-adm-kunjungan">
+            {{-- 7. INPUT JADWAL --}}
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('adm-kunjungan', this)" 
+                class="nav-item {{ Request::is('admin/adm-kunjungan*') ? 'active' : '' }}" 
+                id="menu-adm-kunjungan">
                 <i class="fa-solid fa-calendar-plus"></i> Input Jadwal Kunjungan
             </a>
         </div>
@@ -194,10 +230,26 @@ document.addEventListener("DOMContentLoaded", function() {
     } else if (currentPath.includes('dokumen')) {
         setActiveMenuOnly('menu-dokumen');
     } 
-    // TAMBAHKAN INI: Jika path adalah data-karyawan atau path root admin
     else if (currentPath.includes('data-karyawan') || currentPath === '/admin') {
         setActiveMenuOnly('menu-data-karyawan');
     }
+
+    // --- TAMBAHAN BARU: LOGIKA PENCARIAN (DEBOUNCE) ---
+    let searchTimer;
+    $(document).on('keyup', '#searchInput', function() {
+        clearTimeout(searchTimer);
+        let keyword = $(this).val();
+        
+        // Ambil tab aktif saat ini dari URL agar pencarian tetap di tab yang benar
+        let params = new URLSearchParams(window.location.search);
+        let currentTab = params.get('tab') || '1'; 
+
+        searchTimer = setTimeout(function() {
+            // Memanggil fungsi fetchNasabah yang sudah didefinisikan sebelumnya
+            fetchNasabah(currentTab, keyword);
+        }, 500); // Eksekusi setelah user berhenti mengetik selama 0.5 detik
+    });
+    // --- AKHIR TAMBAHAN ---
 
     // 2. Logika Load AJAX
     if (pageToLoad) {
@@ -250,14 +302,23 @@ function closeModalDetail() { document.getElementById('modalDetailKaryawan').sty
 
 // --- MODAL KUNJUNGAN ---
 function openModalKunjungan() {
-    // 1. Panggil fungsi untuk mengambil daftar karyawan terbaru
     refreshKaryawanDropdown();
-    refreshNoAnggotaDropdown();
+    refreshNoAnggotaDropdown(); 
     
-    // 2. Tampilkan modal dengan flex agar posisi di tengah
     const modal = document.getElementById('modalTambahKunjungan');
     if (modal) {
         modal.style.display = 'flex';
+        
+        // GUNAKAN TIMEOUT AGAR SEARCH BAR MUNCUL
+        setTimeout(function() {
+            $('#dropdown_no_angsuran').select2({
+                placeholder: "-- Cari No. Anggota atau Nama --",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#modalTambahKunjungan') 
+            });
+            console.log("Select2 Berhasil Diinisialisasi");
+        }, 200); // Jeda 200ms
     }
 }
 
@@ -265,8 +326,11 @@ function closeModalKunjungan() {
     const modal = document.getElementById('modalTambahKunjungan');
     if (modal) {
         modal.style.display = 'none';
-        // Reset form dan field readonly
         document.getElementById('formTambahKunjungan').reset();
+        
+        // Reset Select2 ke state awal
+        $('#dropdown_no_angsuran').val(null).trigger('change');
+        
         resetFormKunjungan(); 
     }
 }
@@ -511,6 +575,38 @@ function refreshKaryawanDropdown() {
     });
 }
 
+function fetchNasabah(tab = null, search = null) {
+    // Gunakan nilai dari parameter, atau dari URL, atau default ke '1'
+    let urlParams = new URLSearchParams(window.location.search);
+    let currentTab = tab ?? urlParams.get('tab') ?? '1'; 
+    let currentSearch = search ?? $('#searchInput').val() ?? '';
+
+    const contentArea = $('#main-content-area');
+    contentArea.css('opacity', '0.5');
+
+    $.ajax({
+        // Pastikan route name ini BENAR di web.php Anda
+        url: "/admin/nasabah-content", 
+        method: "GET",
+        data: { 
+            tab: currentTab, 
+            search: currentSearch 
+        },
+        success: function(data) {
+            contentArea.html(data);
+            contentArea.css('opacity', '1');
+            
+            // Update URL agar sinkron
+            let newUrl = window.location.pathname + '?tab=' + currentTab + '&search=' + encodeURIComponent(currentSearch);
+            window.history.pushState({path: newUrl}, '', newUrl);
+        },
+        error: function(xhr) {
+            contentArea.css('opacity', '1');
+            console.error("Error Detail:", xhr.responseText);
+        }
+    });
+}
+
 function toggleAo(element) {
     // Mencari elemen konten setelah header accordion yang diklik
     const content = element.nextElementSibling;
@@ -559,47 +655,33 @@ function confirmLogout() {
 
 // FUNGSI PINDAH TAB (NASABAH REGULER vs HB)
 function switchTab(type) {
-    const contentArea = document.getElementById('main-content-area');
-    if (!contentArea) return;
+    // 1. Ambil kata kunci pencarian yang mungkin sedang diketik user
+    let currentSearch = $('#searchInput').val() || '';
 
-    contentArea.style.opacity = '0.3';
-
-    // Kirim parameter tab ke controller nasabah-content
-    fetch(`/admin/nasabah-content?tab=${type}`, {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'text/html'
-        }
-    })
-    .then(res => res.text())
-    .then(html => {
-        contentArea.innerHTML = html;
-        contentArea.style.opacity = '1';
-        
-        // Update URL agar jika di-refresh tetap di tab yang sama
-        history.pushState({page: 'nasabah', tab: type}, "", `/admin/nasabah?tab=${type}`);
-    })
-    .catch(err => {
-        console.error("Gagal ganti tab:", err);
-        contentArea.style.opacity = '1';
-    });
+    // 2. Panggil fungsi fetchNasabah yang sudah kita buat sebelumnya
+    // Fungsi ini sudah menangani AJAX, Loading effect, dan Update URL
+    fetchNasabah(type, currentSearch);
 }
 
 // FUNGSI AUTO-FILL NASABAH BERDASARKAN NO ANGSURAN
 // 1. FUNGSI AUTO-FILL SAAT DROPDOWN DIPILIH
-$(document).on('change', '#dropdown_no_angsuran', function() {
-    let selected = $(this).find('option:selected');
-    let noAngsuran = $(this).val();
+$(document).on('select2:select', '#dropdown_no_angsuran', function(e) {
+    let data = e.params.data.element; // Mengambil elemen asli option
     
-    if (noAngsuran) {
-        // Menggunakan .data() lebih stabil untuk mengambil dataset HTML5
-        $('#display_nama').val(selected.data('nama'));
-        $('#display_alamat').val(selected.data('alamat'));
-        $('#display_kol').val(selected.data('kol'));
-    } else {
-        resetFormKunjungan();
+    let nama = $(data).data('nama');
+    let alamat = $(data).data('alamat');
+    let kol = $(data).data('kol');
+    
+    if (nama) {
+        $('#display_nama').val(nama);
+        $('#display_alamat').val(alamat);
+        $('#display_kol').val(kol);
     }
+});
+
+// Tambahkan juga handle jika user menghapus pilihan (clear)
+$(document).on('select2:unselect', '#dropdown_no_angsuran', function() {
+    resetFormKunjungan();
 });
 
 // 2. FUNGSI RESET INPUTAN MODAL
@@ -615,34 +697,32 @@ function refreshNoAnggotaDropdown() {
     fetch('/admin/get-daftar-no-anggota')
         .then(response => response.json())
         .then(data => {
-            const select = document.getElementById('dropdown_no_angsuran');
-            if (!select) return;
+            const select = $('#dropdown_no_angsuran'); // Gunakan jQuery selector agar sinkron dengan Select2
+            if (!select.length) return;
 
-            select.innerHTML = '<option value="">-- Pilih No. Anggota --</option>';
+            select.empty().append('<option value="">-- Pilih No. Anggota --</option>');
 
             data.forEach(item => {
                 let noAng = item.no_angsuran ? item.no_angsuran.toString().trim() : '';
                 let namaNasabah = item.nasabah ? item.nasabah.toUpperCase() : 'TANPA NAMA';
                 
-                const option = document.createElement('option');
-                option.value = noAng;
+                // Buat elemen option dengan template literal
+                let optionText = item.kol == 5 ? `⭐ [HB] ${noAng} - ${namaNasabah}` : `${noAng} - ${namaNasabah} (KOL ${item.kol})`;
                 
-                // Logika Tampilan HB untuk KOL 5
+                let newOption = new Option(optionText, noAng, false, false);
+                $(newOption).attr('data-nama', namaNasabah);
+                $(newOption).attr('data-alamat', item.alamat || '-');
+                $(newOption).attr('data-kol', item.kol || '1');
+                
                 if (item.kol == 5) {
-                    option.text = `⭐ [HB] ${noAng} - ${namaNasabah}`;
-                    option.style.color = "#d32f2f";
-                    option.style.fontWeight = "bold";
-                } else {
-                    option.text = `${noAng} - ${namaNasabah} (KOL ${item.kol})`;
+                    $(newOption).css({'color': '#d32f2f', 'font-weight': 'bold'});
                 }
-                
-                // Menyimpan data ke dataset
-                option.dataset.nama = namaNasabah;
-                option.dataset.alamat = item.alamat || '-';
-                option.dataset.kol = item.kol || '1';
-                
-                select.appendChild(option);
+
+                select.append(newOption);
             });
+
+            // Beritahu Select2 bahwa data dropdown telah berubah
+            select.trigger('change');
         })
         .catch(err => console.error("Error load dropdown:", err));
 }
@@ -655,6 +735,20 @@ function refreshNoAnggotaDropdown() {
 function closeModalImportNasabah() {
     const modal = document.getElementById('importNasabahModal');
     modal.style.display = 'none';
+}
+
+function openModalImportHB() {
+    document.getElementById('modalImportHB').style.display = 'flex';
+}
+
+function closeModalImportHB() {
+    document.getElementById('modalImportHB').style.display = 'none';
+}
+
+// Tambahan fungsi update nama file jika belum ada
+function updateFileName(input, targetId) {
+    const fileName = input.files[0] ? input.files[0].name : 'Klik atau tarik file ke sini';
+    document.getElementById(targetId).textContent = fileName;
 }
 
 function updateFileName(input, targetId) {
@@ -673,17 +767,30 @@ function updateFileName(input, targetId) {
 $(document).on('click', '.pagination a', function(e) {
     e.preventDefault();
     let url = $(this).attr('href');
+    if (!url || url === '#') return;
+
+    let container = $('#main-content-area');
+    container.css('opacity', '0.5');
 
     $.ajax({
         url: url,
+        type: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }, // Penting agar Controller tahu ini AJAX
         success: function(data) {
-            // Kita ambil isi HTML yang ada di dalam #container-nasabah dari response
-            // Agar strukturnya tetap datar dan tidak menumpuk
-            let tableContent = $(data).filter('#container-nasabah').html() || $(data).find('#container-nasabah').html() || data;
-            
-            $('#container-nasabah').html(tableContent);
-            
-            $('html, body').animate({ scrollTop: $("#container-nasabah").offset().top - 100 }, 100);
+            // PERBAIKAN: Karena Controller merender partial, 'data' biasanya adalah HTML mentah.
+            // Langsung masukkan ke container tanpa filter jika partial-nya tidak membungkus ID yang sama.
+            container.html(data).css('opacity', '1');
+
+            window.history.pushState(null, null, url);
+
+            // Scroll halus ke atas area konten
+            $('html, body').animate({ 
+                scrollTop: container.offset().top - 100 
+            }, 300);
+        },
+        error: function(xhr) {
+            container.css('opacity', '1');
+            console.error("Error pagination:", xhr.responseText);
         }
     });
 });

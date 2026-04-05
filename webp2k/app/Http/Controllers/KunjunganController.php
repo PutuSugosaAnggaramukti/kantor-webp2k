@@ -45,22 +45,28 @@ class KunjunganController extends Controller
 
         $myCode = strtoupper(trim($karyawan->kode_ao));
         
-        // 1. Ambil semua data seperti biasa
+        // 1. Ambil data
         $jadwal = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
         $realisasi = \DB::table('kunjungans')
             ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
             ->get();
 
         $dataFinal = collect();
-        $namaTerproses = [];
+        $realisasiTerpakaiIds = []; // Simpan ID realisasi yang sudah masuk di PROSES A
 
-        // PROSES A: Jadwal Admin
+        // PROSES A: Loop Jadwal Admin
         foreach ($jadwal as $j) {
             $namaJadwal = strtoupper(trim(preg_replace('/\s+/', ' ', $j->nama_nasabah)));
+            
+            // Cari realisasi yang namanya sama
             $match = $realisasi->first(function ($r) use ($namaJadwal) {
                 $namaReal = strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah)));
                 return $namaReal === $namaJadwal;
             });
+
+            if ($match) {
+                $realisasiTerpakaiIds[] = $match->id; // Tandai ID realisasi ini sudah dipakai
+            }
 
             $dataFinal->push((object)[
                 'id' => $j->id,
@@ -74,15 +80,15 @@ class KunjunganController extends Controller
                 'kol' => $j->kol ?? '-',
                 'bulan' => $j->bulan, 
                 'is_filled' => $match ? true : false,
-                'is_mandiri' => false
+                'is_mandiri' => false,
+                'id_kunjungan_real' => $match ? $match->id : null // Tambahan untuk link detail
             ]);
-            $namaTerproses[] = $namaJadwal;
         }
 
-        // PROSES B: Data Mandiri
+        // PROSES B: Loop Data Realisasi (Cek apakah ada yang belum masuk di PROSES A)
         foreach ($realisasi as $r) {
-            $namaReal = strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah)));
-            if (!in_array($namaReal, $namaTerproses)) {
+            // HANYA masukkan jika ID realisasi ini BELUM digunakan di PROSES A
+            if (!in_array($r->id, $realisasiTerpakaiIds)) {
                 $dataFinal->push((object)[
                     'id' => $r->id,
                     'kode_ao' => $r->kode_ao,
@@ -92,13 +98,12 @@ class KunjunganController extends Controller
                     'is_filled' => true,
                     'is_mandiri' => true
                 ]);
-                $namaTerproses[] = $namaReal;
             }
         }
 
         // --- LOGIKA MANUAL PAGINATION ---
         $currentPage = Paginator::resolveCurrentPage() ?: 1;
-        $perPage = 10; // Jumlah data per halaman
+        $perPage = 10; 
         $currentItems = $dataFinal->slice(($currentPage - 1) * $perPage, $perPage)->all();
 
         $data = new LengthAwarePaginator(
@@ -110,7 +115,6 @@ class KunjunganController extends Controller
         );
 
         if (request()->ajax()) {
-            // Jika Anda memuat tabel saja saat pindah page
             return view('kunjungan.partials.data_table', compact('data'));
         }
 
@@ -119,74 +123,74 @@ class KunjunganController extends Controller
 
     public function laporanKunjunganContent()
     {
-        $jadwal = \DB::table('nasabahs')->get();
-        $realisasi = \DB::table('kunjungans')->get();
+        $user = Auth::guard('karyawan')->user();
+        if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
 
-        $laporan = [];
+        $myCode = strtoupper(trim($user->kode_ao));
 
-        foreach ($jadwal as $j) {
-            $kunjungan = $realisasi->first(function ($value) use ($j) {
-                return strtoupper(trim($value->nama_nasabah)) === strtoupper(trim($j->nasabah));
-            });
-
-            $laporan[] = (object)[
-                'id_kunjungan' => $kunjungan ? $kunjungan->id : null,
-                'kode_ao'      => $j->kode_ao,
-                'nama_nasabah' => $j->nasabah, 
-                'kol'          => $j->kol,
-                'bulan'        => $j->bulan,
-            ];
-        }
-
-        foreach ($realisasi as $r) {
-            $adaDiJadwal = $jadwal->first(function ($value) use ($r) {
-                return strtoupper(trim($value->nasabah)) === strtoupper(trim($r->nama_nasabah));
-            });
-
-            if (!$adaDiJadwal) {
-                $laporan[] = (object)[
-                    'id_kunjungan' => $r->id,
+        $laporan = \DB::table('kunjungans')
+            ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
+            ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
+            ->select(
+                'kunjungans.id as id_kunjungan',
+                'kunjungans.kode_ao',
+                'kunjungans.nama_nasabah',
+                'kunjungans.created_at',
+                'kunjungans.kol',
+                'nasabahs.kol as kol_master'
+            )
+            ->distinct()
+            ->orderBy('kunjungans.created_at', 'desc')
+            ->get()
+            ->map(function($r) {
+                return (object)[
+                    'id_kunjungan' => $r->id_kunjungan,
                     'kode_ao'      => $r->kode_ao ?? '-',
                     'nama_nasabah' => $r->nama_nasabah,
-                    'kol'          => '-',
-                    'bulan'        => \Carbon\Carbon::parse($r->created_at)->format('Y-m'),
+                    'kol'          => $r->kol ?: ($r->kol_master ?: '-'),
+                    'bulan'        => \Carbon\Carbon::parse($r->created_at)->translatedFormat('F Y'),
                 ];
-            }
-        }
+            });
 
         return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
     }
 
-  public function indexpelaporan()
-{
-    $user = Auth::guard('karyawan')->user();
-    if (!$user) return redirect()->back();
+    public function indexpelaporan()
+    {
+        $user = Auth::guard('karyawan')->user();
+        if (!$user) return redirect()->back();
 
-    $myCode = strtoupper(trim($user->kode_ao));
+        $myCode = strtoupper(trim($user->kode_ao));
 
-    $laporan = \DB::table('kunjungans')
-        ->leftJoin('nasabahs', function($join) {
-            $join->on('kunjungans.nama_nasabah', '=', 'nasabahs.nasabah');
-        })
-        ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
-        ->select(
-            'kunjungans.*', 
-            'nasabahs.kol as kol_master' 
-        )
-        ->orderBy('kunjungans.created_at', 'desc')
-        ->get()
-        ->map(function($item) {
-            return (object)[
-                'id_kunjungan' => $item->id,
-                'kode_ao'      => $item->kode_ao,
-                'nama_nasabah' => $item->nama_nasabah,
-                'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
-                'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
-            ];
-        });
+        $laporan = \DB::table('kunjungans')
+            // Join menggunakan No Nasabah karena lebih unik dibanding Nama
+            ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
+            ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
+            ->select(
+                'kunjungans.id as id_kunjungan', 
+                'kunjungans.kode_ao', 
+                'kunjungans.nama_nasabah', 
+                'kunjungans.created_at',
+                'kunjungans.kol',
+                'nasabahs.kol as kol_master'
+            )
+            // Gunakan pembeda unik untuk menghindari duplikasi dari hasil JOIN
+            ->distinct() 
+            ->orderBy('kunjungans.created_at', 'desc')
+            ->get()
+            ->map(function($item) {
+                return (object)[
+                    'id_kunjungan' => $item->id_kunjungan,
+                    'kode_ao'      => $item->kode_ao,
+                    'nama_nasabah' => $item->nama_nasabah,
+                    // Logika: ambil kol dari kunjungan, jika kosong ambil dari master nasabah
+                    'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
+                    'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
+                ];
+            });
 
-    return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
-}
+        return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
+    }
 
     public function detailPelaporan(Request $request)
     {
@@ -259,9 +263,8 @@ public function store(Request $request)
         ->where('no_angsuran', $noNasabahInput)
         ->first();
 
-    // 3. Proses Foto & Validasi EXIF
+    // 3. Proses Foto & Validasi EXIF (Wajib)
     $daftar_nama_foto = []; 
-    
     if ($request->hasFile('foto_kunjungan')) {
         $files = $request->file('foto_kunjungan');
         $filesArray = is_array($files) ? $files : [$files];
@@ -269,31 +272,25 @@ public function store(Request $request)
         foreach ($filesArray as $file) {
             $extension = strtolower($file->getClientOriginalExtension());
             
-            // Validasi Format JPG
             if (!in_array($extension, ['jpg', 'jpeg'])) {
                 return response()->json([
                     'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" bukan JPG/JPEG. Sistem hanya menerima format JPG untuk validasi GPS.'
                 ], 422);
             }
 
-            // Baca Data EXIF
             $exif = @exif_read_data($file->getRealPath());
-
-            // Validasi Koordinat GPS di Foto
             if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) {
                 return response()->json([
-                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data GPS. Pastikan GPS kamera HP aktif.'
+                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data GPS.'
                 ], 422);
             }
 
-            // Validasi Waktu
             if (!isset($exif['DateTimeOriginal'])) {
                 return response()->json([
-                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data waktu pengambilan asli.'
+                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data waktu asli.'
                 ], 422);
             }
 
-            // Simpan File jika lolos validasi
             $nama_unik = time() . '_' . uniqid() . '.' . $extension;
             $file->move(public_path('uploads/kunjungan'), $nama_unik);
             $daftar_nama_foto[] = $nama_unik;
@@ -302,34 +299,43 @@ public function store(Request $request)
         return response()->json(['error' => 'Wajib melampirkan foto kunjungan!'], 422);
     }
 
+    // --- BARU: PROSES BUKTI TRANSFER (Opsional) ---
+    $nama_bukti_transfer = null;
+    if ($request->hasFile('bukti_transfer')) {
+        $fileTf = $request->file('bukti_transfer');
+        $extTf = strtolower($fileTf->getClientOriginalExtension());
+        
+        // Untuk bukti transfer, kita izinkan PNG (biasanya hasil screenshot m-banking)
+        if (in_array($extTf, ['jpg', 'jpeg', 'png'])) {
+            $nama_bukti_transfer = 'TF_' . time() . '_' . uniqid() . '.' . $extTf;
+            $fileTf->move(public_path('uploads/kunjungan'), $nama_bukti_transfer);
+        }
+    }
+    // ----------------------------------------------
+
     try {
         // 4. Simpan ke Database
         \DB::table('kunjungans')->insert([
-        'kode_ao'             => $karyawan->kode_ao,
-        'no_nasabah'          => $request->no_nasabah, 
-        'nama_nasabah'        => $request->nama_nasabah,
-        'kol'                 => $nasabahMaster ? $nasabahMaster->kol : ($request->kol ?: 1),
-        'ada_di_lokasi'       => $request->ada_di_lokasi,
-        'catatan'             => $request->catatan, 
-        'tgl_janji_bayar'     => $request->tgl_janji_bayar,
+            'kode_ao'             => $karyawan->kode_ao,
+            'no_nasabah'          => $request->no_nasabah, 
+            'nama_nasabah'        => $request->nama_nasabah,
+            'kol'                 => $nasabahMaster ? $nasabahMaster->kol : ($request->kol ?: 1),
+            'ada_di_lokasi'       => $request->ada_di_lokasi,
+            'catatan'             => $request->catatan, 
+            'tgl_janji_bayar'     => $request->tgl_janji_bayar,
+            'nominal_janji_bayar' => $request->filled('nominal_janji_bayar') 
+                                     ? str_replace(['.', ','], '', $request->nominal_janji_bayar) 
+                                     : 0,
+            'foto_kunjungan'      => json_encode($daftar_nama_foto), 
+            
+            // --- MASUKKAN KE DB ---
+            'bukti_transfer'      => $nama_bukti_transfer, 
+            // ----------------------
 
-        // --- PERUBAHAN DI SINI ---
-        // Kita ambil langsung dari input form. Jika kosong, isi 0.
-        'nominal_janji_bayar' => $request->filled('nominal_janji_bayar') 
-                                 ? str_replace(['.', ','], '', $request->nominal_janji_bayar) 
-                                 : 0,
-        // -------------------------
+            'koordinat'           => $request->koordinat, 
+            'created_at'          => now(),
+        ]);
 
-        'foto_kunjungan'      => json_encode($daftar_nama_foto), 
-        'koordinat'           => $request->koordinat, 
-        'created_at'          => now(),
-    ]);
-
-    return response()->json([
-        'success' => 'Laporan berhasil disimpan! ' . count($daftar_nama_foto) . ' foto tervalidasi GPS.'
-    ]);
-
-        // 5. Kembalikan Respon Sukses dalam JSON
         return response()->json([
             'success' => 'Laporan berhasil disimpan! ' . count($daftar_nama_foto) . ' foto tervalidasi GPS.'
         ]);

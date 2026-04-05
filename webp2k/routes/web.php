@@ -51,7 +51,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 
     // 4. DATA NASABAH (Dibenahi rutenya)
     Route::get('/nasabah', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.index'); // Rute bersih
-    Route::get('/nasabah-content', [NasabahController::class, 'nasabahContent']);
+    Route::get('/nasabah-content', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.content');
     Route::post('/nasabah/store', [NasabahController::class, 'store'])->name('nasabah.store');
     Route::get('/get-daftar-no-anggota', [NasabahController::class, 'getDaftarNoAnggota']);
     Route::get('/get-nasabah/{no_angsuran}', [NasabahController::class, 'getNasabah']);
@@ -67,6 +67,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/pelaporan-detail/{id_ao}', [PelaporanController::class, 'detailAo'])->name('pelaporan.detail');
     Route::get('/detail-pelaporan-nasabah', [PelaporanController::class, 'detail_nasabah']);
     Route::get('/pelaporan/export', [PelaporanController::class, 'exportExcel'])->name('admin.pelaporan.export');
+    Route::get('/pelaporan/export-detail/{id}', [PelaporanController::class, 'exportDetailAo'])->name('admin.pelaporan.export-detail');
 
     // 6. DOKUMEN (Dibenahi rutenya)
     Route::get('/dokumen', [AdmDokumenController::class, 'dokumenIndex'])->name('admin.dokumen.index'); // Rute bersih

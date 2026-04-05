@@ -243,10 +243,13 @@ class AdmKunjunganController extends Controller
         return view('admin.rekap_kunjungan_content', compact('rekap'));
     }
 
-    public function exportExcel(Request $request)
+   public function exportExcel(Request $request)
     {
         $kode_ao = $request->query('kode_ao');
-        return Excel::download(new KunjunganExport($kode_ao), 'rekap_kunjungan_' . date('Y-m-d') . '.xlsx');
+        
+        $fileName = 'Rekap_Kunjungan_' . ($kode_ao ?: 'SEMUA') . '_' . date('Y-m-d') . '.xlsx';
+
+        return Excel::download(new KunjunganExport($kode_ao), $fileName);
     }
 
     public function importExcel(Request $request)

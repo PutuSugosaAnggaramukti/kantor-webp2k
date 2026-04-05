@@ -73,7 +73,7 @@
                 <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">No. Angsuran</th>
                 <th style="padding: 15px; border-right: 2px solid #000;">Nama Nasabah</th>
                 <th style="padding: 15px; border-right: 2px solid #000;">Dikunjungi Oleh (AO)</th>
-                <th style="padding: 15px;">Tgl Terakhir Kunjung</th>
+                <th style="padding: 15px;">Tgl Kunjung</th>
             </tr>
         </thead>
         <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
@@ -84,15 +84,28 @@
                 <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 20px; text-transform: uppercase;">
                     {{ $nasabah->nasabah }}
                 </td>
-                <td style="padding: 12px; border-right: 2px solid #000;">
+               <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 10px;">
                     @if($nasabah->kunjungan->isNotEmpty())
-                        {{ $nasabah->kunjungan->first()->nama_ao }} ({{ $nasabah->kunjungan->first()->kode_ao }})
+                        @foreach($nasabah->kunjungan as $kunj)
+                            <div style="margin-bottom: 4px;">
+                                <i class="fa-solid fa-user-check" style="color: #28a745; font-size: 12px;"></i> 
+                                ({{ $kunj->kode_ao }}) {{ $kunj->karyawan->nama ?? 'Tanpa Nama' }}
+                            </div>
+                        @endforeach
                     @else
                         -
                     @endif
                 </td>
-                <td style="padding: 12px;">
-                    {{ $nasabah->kunjungan->isNotEmpty() ? \Carbon\Carbon::parse($nasabah->kunjungan->first()->tanggal)->format('d-m-Y') : '-' }}
+                <td style="padding: 12px; text-align: left; padding-left: 10px;">
+                    @if($nasabah->kunjungan->isNotEmpty())
+                        @foreach($nasabah->kunjungan as $kunj)
+                            <div style="margin-bottom: 4px; color: #666;">
+                                {{ \Carbon\Carbon::parse($kunj->tanggal)->format('d-m-Y') }}
+                            </div>
+                        @endforeach
+                    @else
+                        -
+                    @endif
                 </td>
             </tr>
             @empty

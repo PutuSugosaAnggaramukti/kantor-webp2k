@@ -41,13 +41,12 @@
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
         <i class="fa-solid fa-circle-exclamation" style="color: #ffa117; font-size: 20px;"></i>
         <h4 style="margin: 0; color: #856404; font-weight: 800; font-size: 16px; text-transform: uppercase;">
-            PENGINGAT STANDAR KPI (WAJIB)
+            PENGINGAT PENTING UNTUK INPUT JADWAL KUNJUNGAN!
         </h4>
     </div>
     <ul style="margin: 0; padding-left: 25px; color: #856404; font-weight: 700; font-size: 13px; line-height: 1.6;">
-        <li>Minimal kuota jadwal adalah <span style="text-decoration: underline;">10 kunjungan per hari</span> untuk setiap personil AO.</li>
-        <li>Wajib mencantumkan minimal satu nasabah <span style="color: #d32f2f;">KOL 5</span> sebagai target utama penilaian KPI.</li>
-        <li>Akurasi koordinat dan foto akan divalidasi sistem berdasarkan jadwal ini.</li>
+        <li>Untuk menambah jadwal secara manual, Admin bisa menekan tombol "Tambah Jadwal Baru"</li>
+        <li>Untuk mengimport jadwal dari file Excel, Admin bisa menekan tombol "Import dari Excel"</li>
     </ul>
 </div>
 

@@ -9,7 +9,7 @@ class Kunjungan extends Model
 {
     use HasFactory;
 
-   protected $table = 'data_kunjungan_adms';
+    protected $table = 'data_kunjungan_adms';
 
     protected $fillable = [
         'kode_ao',
@@ -20,6 +20,7 @@ class Kunjungan extends Model
         'ada_di_lokasi',
         'catatan',
         'foto_kunjungan',
+        'bukti_transfer', // TAMBAHKAN INI agar bisa disimpan
         'koordinat',
         'tgl_janji_bayar',
     ];
@@ -28,19 +29,16 @@ class Kunjungan extends Model
     {
         return $this->belongsTo(Karyawan::class, 'karyawan_id', 'id');
     }
-    
 
-public function detailKunjungan()
-{
-    // Kita hubungkan data_kunjungan_adms ke tabel kunjungans
-    // Gunakan 'no_nasabah' sebagai kunci penghubung
-    return $this->hasOne(Kunjungan::class, 'no_nasabah', 'no_nasabah')
-                ->from('kunjungans'); 
-}
+    public function detailKunjungan()
+    {
+        // Tetap seperti ini jika memang relasinya ke tabel 'kunjungans'
+        return $this->hasOne(Kunjungan::class, 'no_nasabah', 'no_nasabah')
+                    ->from('kunjungans'); 
+    }
+
     public function hasilKunjungan()
     {
-        // Jika di tabel ini ada foto, gunakan whereNotNull('foto_kunjungan')
-        // Jika tidak ada foto, cukup kembalikan hasOne tanpa filter agar tidak error
         return $this->hasOne(Kunjungan::class, 'id', 'id');
     }
 }

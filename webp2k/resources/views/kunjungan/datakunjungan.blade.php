@@ -28,16 +28,29 @@
     <div class="wrapper">
         <div class="sidebar">
             <h1>Menu</h1>
-            <a href="javascript:void(0)" onclick="loadPage('data-kunjungan')" class="nav-item active" id="menu-data">
+
+            {{-- TOMBOL KEMBALI KE DASHBOARD USER --}}
+         <a href="javascript:void(0)" 
+            onclick="window.location.href='/user/dashboard'" 
+            class="nav-item {{ request()->is('user/dashboard*') ? 'active' : '' }}" 
+            id="menu-dashboard">
+                <i class="fa-solid fa-gauge-high"></i> Dashboard Utama
+         </a>
+
+            {{-- Menu yang sudah ada sebelumnya --}}
+            <a href="javascript:void(0)" onclick="loadPage('data-kunjungan')" class="nav-item {{ request()->is('data-kunjungan*') ? 'active' : '' }}" id="menu-data">
                 <i class="fa-solid fa-user-plus"></i> Data Kunjungan
             </a>
-            <a href="javascript:void(0)" onclick="loadPage('laporan-kunjungan')" class="nav-item" id="menu-laporan">
+            
+            <a href="javascript:void(0)" onclick="loadPage('laporan-kunjungan')" class="nav-item {{ request()->is('laporan-kunjungan*') ? 'active' : '' }}" id="menu-laporan">
                 <i class="fa-solid fa-file-lines"></i> Laporan Kunjungan
             </a>
-            <a href="javascript:void(0)" onclick="loadPage('dokumen')" class="nav-item" id="menu-dokumen">
+            
+            <a href="javascript:void(0)" onclick="loadPage('dokumen')" class="nav-item {{ request()->is('dokumen*') ? 'active' : '' }}" id="menu-dokumen">
                 <i class="fa-solid fa-file-invoice"></i> Dokumen
             </a>
-            <a href="javascript:void(0)" onclick="loadPage('pengaturan')" class="nav-item" id="menu-pengaturan">
+            
+            <a href="javascript:void(0)" onclick="loadPage('pengaturan')" class="nav-item {{ request()->is('pengaturan*') ? 'active' : '' }}" id="menu-pengaturan">
                 <i class="fa-solid fa-gear"></i> Pengaturan
             </a>
         </div>
@@ -298,73 +311,90 @@
         }
     });
 
-    document.getElementById('btn-save-kunjungan').addEventListener('click', function() {
-        const form = this.closest('form');
-        const formData = new FormData(form);
+    document.getElementById('btn-save-kunjungan').addEventListener('click', function(e) {
+    e.preventDefault(); // Mencegah submit default browser
 
-        // 1. Konfirmasi awal sebelum simpan
-        Swal.fire({
-            title: 'Simpan Laporan?',
-            text: "Pastikan foto yang diunggah memiliki data GPS (EXIF).",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#3f36b1',
-            cancelButtonColor: '#cbd5e1',
-            confirmButtonText: 'Ya, Simpan!',
-            cancelButtonText: 'Batal'
-        }).then((result) => {
-            if (result.isConfirmed) {
+    const btn = this; // Simpan referensi tombol
+    const form = btn.closest('form');
+    const formData = new FormData(form);
+
+    // 1. Cek jika sedang loading (mencegah double click)
+    if (btn.disabled) return;
+
+    // 2. Konfirmasi awal sebelum simpan
+    Swal.fire({
+        title: 'Simpan Laporan?',
+        text: "Pastikan foto yang diunggah memiliki data GPS (EXIF).",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3f36b1',
+        cancelButtonColor: '#cbd5e1',
+        confirmButtonText: 'Ya, Simpan!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            
+            // LOCK: Matikan tombol dan ganti teksnya
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+            // 3. Tampilkan Loading (Sangat penting untuk proses upload foto)
+            Swal.fire({
+                title: 'Sedang Memproses...',
+                html: 'Menyimpan data dan memvalidasi lokasi foto.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // 4. Kirim data menggunakan Fetch API
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 5. Notifikasi Berhasil
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: data.success,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        closeModal();
+                        location.reload(); 
+                    });
+                } else {
+                    // UNLOCK: Aktifkan kembali jika gagal
+                    btn.disabled = false;
+                    btn.innerHTML = 'Ya, Simpan!';
+
+                    // 6. Notifikasi Gagal
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: data.error || 'Terjadi kesalahan saat menyimpan.',
+                    });
+                }
+            })
+            .catch(error => {
+                // UNLOCK: Aktifkan kembali jika error koneksi
+                btn.disabled = false;
+                btn.innerHTML = 'Ya, Simpan!';
                 
-                // 2. Tampilkan Loading (Sangat penting untuk proses upload foto)
-                Swal.fire({
-                    title: 'Sedang Memproses...',
-                    html: 'Menyimpan data dan memvalidasi lokasi foto.',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-
-                // 3. Kirim data menggunakan Fetch API
-                fetch(form.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // 4. Notifikasi Berhasil
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: data.success,
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            // Tutup modal dan refresh konten atau halaman
-                            closeModal();
-                            location.reload(); 
-                        });
-                    } else {
-                        // 5. Notifikasi Gagal (Termasuk jika EXIF GPS tidak ditemukan)
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal!',
-                            text: data.error || 'Terjadi kesalahan saat menyimpan.',
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
-                });
-            }
-        });
+                console.error('Error:', error);
+                Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+            });
+        }
     });
+});
 
     // --- Handler Pagination AJAX ---
 $(document).on('click', '.pagination a', function(e) {

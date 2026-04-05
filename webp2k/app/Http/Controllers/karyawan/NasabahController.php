@@ -14,54 +14,63 @@ use Illuminate\Http\Request;
 class NasabahController extends Controller
 {
 
-    public function nasabahContent(Request $request)
+   public function nasabahContent(Request $request)
     {
-        // 1. Ambil parameter tab (default: semua)
-        $activeTab = $request->query('tab', 'semua');
+        $activeTab = $request->query('tab', '1'); 
+        $search = $request->query('search'); 
 
-        // 2. Query Dasar
         $query = \App\Models\Nasabah::orderBy('nasabah', 'asc');
 
-        // 3. Logika Filter Tab
-        if ($activeTab == 'hb') {
-            // Hanya ambil KOL 5
-            $query->where('kol', '5');
+        // 1. Logika Filter Tab
+        if ($activeTab === 'hb') {
+            $query->where('is_hb', 1);
+        } elseif ($activeTab === '5') {
+            $query->where('kol', '5')->where('is_hb', 0);
         } else {
-            // Ambil KOL 1-4 (Reguler)
-            $query->whereIn('kol', [1, 2, 3, 4]);
+            $targetKol = in_array($activeTab, ['1', '2', '3', '4']) ? $activeTab : '1';
+            $query->where('kol', $targetKol)->where('is_hb', 0);
         }
 
-        // 4. Eksekusi Pagination
+        // 2. Logika Pencarian
+        if (!empty($search)) {
+            $query->where(function($q) use ($search) {
+                $q->where('nasabah', 'LIKE', "%$search%")
+                ->orWhere('no_angsuran', 'LIKE', "%$search%")
+                ->orWhere('alamat', 'LIKE', "%$search%");
+            });
+        }
+
         $nasabah_all = $query->paginate(10)->withQueryString();
 
-        // 5. Data Pendukung (Gunakan nama variabel yang dicari oleh View Anda)
-        $countReguler = \App\Models\Nasabah::whereIn('kol', [1, 2, 3, 4])->count();
-        $nasabah_hb = \App\Models\Nasabah::where('kol', '5')->count(); 
-
-        // Siapkan array data
+        // 3. Siapkan Data untuk View
         $viewData = [
-            'nasabah_all'  => $nasabah_all,
-            'countReguler' => $countReguler,
-            'nasabah_hb'   => $nasabah_hb, // Digunakan jika ada bagian view yang pakai nama ini
-            'countHB'      => $nasabah_hb, // TAMBAHKAN INI agar error di baris 48 View hilang
-            'activeTab'    => $activeTab
+            'nasabah_all' => $nasabah_all,
+            'activeTab'   => $activeTab,
+            'search'      => $search,
+            'count1'      => \App\Models\Nasabah::where('kol', '1')->where('is_hb', 0)->count(),
+            'count2'      => \App\Models\Nasabah::where('kol', '2')->where('is_hb', 0)->count(),
+            'count3'      => \App\Models\Nasabah::where('kol', '3')->where('is_hb', 0)->count(),
+            'count4'      => \App\Models\Nasabah::where('kol', '4')->where('is_hb', 0)->count(),
+            'count5'      => \App\Models\Nasabah::where('kol', '5')->where('is_hb', 0)->count(),
+            'countHB'     => \App\Models\Nasabah::where('is_hb', 1)->count(),
         ];
 
-        // Jika request AJAX (Dari switchTab atau Pagination)
+        // Response untuk AJAX (Pagination / Filter Tab / Search)
         if ($request->ajax()) {
             return view('admin.partials.nasabah_table', $viewData)->render();
         }
 
-        // Data untuk load halaman pertama kali
+        // 4. Response untuk Full Page Load (Refresh Halaman)
         $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
+        
+        // PERBAIKAN DI SINI: Gabungkan data agar variabel $activeTab dkk tersedia di datakaryawan.blade.php
+        $data = array_merge($data, $viewData); 
 
         $data['content'] = view('admin.partials.nasabah_table', $viewData)->render();
-        
-        $data['page'] = 'nasabah';
-        $data['title'] = 'Data Nasabah';
+        $data['page']    = 'nasabah';
+        $data['title']   = 'Data Nasabah';
 
-        // Pastikan view 'admin.datakaryawan' memang view parent yang benar
         return view('admin.datakaryawan', $data);
     }
 
@@ -139,17 +148,24 @@ class NasabahController extends Controller
         ]);
     }
 
-   public function importExcel(Request $request) 
+    public function importExcel(Request $request) 
     {
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         try {
-            \DB::table('nasabahs')->truncate();
-            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\NasabahImport, $request->file('file'));
+            $labelBulan = date('F Y'); 
+            \App\Models\Nasabah::truncate();
+
+            // PANGGILAN SANGAT PENTING: 
+            // Jangan masukkan '1' di parameter pertama. Biarkan null.
+            \Maatwebsite\Excel\Facades\Excel::import(
+                new \App\Imports\NasabahImport(null, $labelBulan), 
+                $request->file('file')
+            );
             
-           return redirect()->back()->with('success', 'Data Nasabah Berhasil Diperbarui!');
+            return redirect()->back()->with('success', 'Data Berhasil Diimport!');
         } catch (\Exception $e) {
-            return "Terjadi Error Database: " . $e->getMessage(); 
+            return "Error: " . $e->getMessage(); 
         }
     }
 

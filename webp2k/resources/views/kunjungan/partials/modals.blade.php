@@ -70,6 +70,12 @@
                     </div>
                 </div>
 
+                <div class="form-group mb-3">
+                    <label>Bukti Transfer (Jika Nasabah Bayar Transfer)</label>
+                    <input type="file" name="bukti_transfer" class="form-control" accept="image/*">
+                    <small class="text-muted">*Isi jika nasabah melakukan pembayaran via transfer di tempat.</small>
+                </div>
+
                 <input type="hidden" name="koordinat" id="form-koordinat">
                 <p id="location-status" style="font-size: 11px; color: #888;">
                     <i class="fas fa-spinner fa-spin"></i> Mendeteksi lokasi GPS...

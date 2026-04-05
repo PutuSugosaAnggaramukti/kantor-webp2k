@@ -11,38 +11,38 @@ class NasabahHBImport implements ToModel, WithStartRow, WithCustomCsvSettings
 {
     public function model(array $row)
     {
-        // 1. Validasi: Jika kolom No Angsuran kosong atau bukan angka, lewati baris ini
-        if (!isset($row[0]) || !is_numeric($row[0])) {
+        // 1. Validasi: Lewati jika No Angsuran kosong
+        if (empty($row[0])) {
             return null;
         }
 
-        // 2. Gunakan updateOrCreate agar data yang sama tidak dobel
+        // 2. Bersihkan No Angsuran (kadangkala ada spasi tersembunyi)
+        $noAngsuran = trim($row[0]);
+
+        // 3. Gunakan updateOrCreate agar data sinkron
         return Nasabah::updateOrCreate(
-            ['no_angsuran' => $row[0]], 
+            ['no_angsuran' => $noAngsuran], 
             [
                 'nasabah'       => $row[1] ?? '-',
                 'alamat'        => $row[2] ?? '-',
-                'nominal'       => $row[3] ?? 0,
-                'sisa_pokok'    => $row[3] ?? 0,
-                'kol'           => 5,
+                // Pastikan nominal terbaca sebagai angka bersih
+                'nominal'       => isset($row[3]) ? (float)$row[3] : 0,
+                'sisa_pokok'    => isset($row[3]) ? (float)$row[3] : 0,
+                'kol'           => '5', // String '5' agar konsisten dengan filter in_array kita sebelumnya
                 'bulan'         => date('Y-m'),
                 'kode'          => '-',
                 'sudah_kunjung' => 0,
-                
-                // TAMBAHKAN INI: Agar tidak error "Field doesn't have a default value"
                 'kode_ao'       => 'HB',
                 'nama_ao'       => 'Hapus Buku',
             ]
         );
     }
 
-    // Melompati baris pertama (Header)
     public function startRow(): int
     {
-        return 2;
+        return 2; // Lewati header
     }
 
-    // Pengaturan pembacaan CSV
     public function getCsvSettings(): array
     {
         return [

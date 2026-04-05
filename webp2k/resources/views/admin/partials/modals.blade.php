@@ -231,10 +231,11 @@
 
             <div style="margin-bottom: 12px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota / Nasabah</label>
-                <select name="no_angsuran" id="dropdown_no_angsuran" required class="select-nasabah-custom" style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
-                    <option value="">-- Pilih No. Anggota --</option>
+                <select name="no_angsuran" id="dropdown_no_angsuran" required class="select2-nasabah" style="width: 100%;">
+                    <option value="">-- Cari No. Anggota atau Nama --</option>
                     
                     @php
+                        // Tetap gunakan query Anda, tapi pastikan data terbaru
                         $data_nasabah_mentah = \DB::table('nasabahs')
                                                 ->select('no_angsuran', 'nasabah', 'alamat', 'kol')
                                                 ->orderBy('nasabah', 'asc')
@@ -243,7 +244,7 @@
 
                     @foreach($data_nasabah_mentah as $n)
                         <option value="{{ $n->no_angsuran }}" 
-                                data-nama="{{ $n->nasabah }}" 
+                                data-nama="{{ strtoupper($n->nasabah) }}" 
                                 data-alamat="{{ $n->alamat }}" 
                                 data-kol="{{ $n->kol }}">
                             {{ $n->no_angsuran }} - {{ strtoupper($n->nasabah) }}

@@ -762,6 +762,18 @@ nav div.hidden.sm\:flex-1.sm\:flex.sm\:items-center.sm\:justify-between div:firs
     display: none !important;
 }
 
+/* Pastikan dropdown Select2 berada di atas modal (Z-Index) */
+.select2-container--open {
+    z-index: 99999 !important;
+}
+
+/* Memperjelas tampilan kotak input pencarian */
+.select2-search__field {
+    height: 38px !important;
+    padding: 5px 10px !important;
+    border: 1px solid #ddd !important;
+}
+
 /* ANIMASI MODAL */
 @keyframes fadeInOverlay {
     from { opacity: 0; }

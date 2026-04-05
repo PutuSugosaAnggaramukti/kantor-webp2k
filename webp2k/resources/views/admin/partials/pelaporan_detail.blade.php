@@ -9,6 +9,13 @@
     </p>
 </div>
 
+<div style="margin-bottom: 20px; display: flex; justify-content: flex-start;">
+    <a href="{{ route('admin.pelaporan.export-detail', $ao->id) }}" 
+       style="background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; text-decoration: none; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <i class="fa-solid fa-file-excel"></i> Export Excel ({{ $ao->nama }})
+    </a>
+</div>
+
 
 <div class="table-responsive">
     <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background-color: #fff;">

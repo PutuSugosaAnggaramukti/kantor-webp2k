@@ -13,12 +13,12 @@
             <span style="margin-right: 5px;"><i class="fa-solid fa-file-excel"></i></span> Export
         </button>
 
-        <button onclick="openModalImportNasabah()" style="background-color: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-            <span style="margin-right: 5px;"><i class="fa-solid fa-file-import"></i></span> Import Data
+        <button onclick="openModalImportHB()" style="background-color: #d9534f; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+            <span style="margin-right: 5px;"><i class="fa-solid fa-file-circle-exclamation"></i></span> Import HB
         </button>
 
-        <button onclick="openModalImportHB()" style="background-color: #d9534f; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; cursor: pointer; font-size: 13px;">
-            <span style="margin-right: 5px;"><i class="fa-solid fa-file-circle-exclamation"></i></span> Import Data HB
+        <button onclick="openModalImportNasabah()" style="background-color: #2196F3; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; cursor: pointer; font-size: 13px;">
+            <span style="margin-right: 5px;"><i class="fa-solid fa-file-import"></i></span> Import Data
         </button>
 
         <button onclick="openModalTambahNasabah()" style="background-color: #4e4bc1; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; cursor: pointer; font-size: 13px;">
@@ -26,135 +26,103 @@
         </button>
     </div>
     
-    <input type="text" placeholder="Cari nama atau no. angsuran.." class="search-input" style="padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; width: 230px;">
+    <input type="text" 
+       id="searchInput" 
+       placeholder="Cari nama atau no. angsuran.." 
+       class="search-input" 
+       style="padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; width: 230px;"
+       value="{{ request('search') }}">
+       
 </div>
 
-<div style="display: flex; gap: 5px; margin-bottom: -2px; position: relative; z-index: 1;">
-   <button onclick="switchTab('all')" id="btn-tab-all" 
-        style="padding: 10px 25px; border: 2px solid #000; border-bottom: none; border-radius: 10px 10px 0 0; background-color: #fff; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center;">
-        Semua Nasabah
-        <span style="background: #4e4bc1; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.2);">
-            {{ $countReguler }}
-        </span>
-    </button>
-    <button onclick="switchTab('hb')" 
-        id="btn-tab-hb" 
-        style="padding: 10px 25px; border: 2px solid #000; border-bottom: {{ $activeTab == 'hb' ? 'none' : '2px solid #000' }}; 
-            border-radius: 10px 10px 0 0; 
-            background-color: {{ $activeTab == 'hb' ? '#fff' : '#eee' }}; 
-            font-weight: 800; color: #d9534f; cursor: pointer; transition: 0.3s;">
-        Nasabah Hapus Buku (HB)
-        <span style="background: #d9534f; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 5px;">
-            {{ $countHB }}
-        </span>
-    </button>
-</div>
+<div style="display: flex; gap: 5px; margin-bottom: -2px; position: relative; z-index: 1; flex-wrap: wrap;">
 
-<div id="container-nasabah" style="border: 2px solid #000; background: #fff; padding: 0px; border-radius: 0 0 10px 10px; overflow: hidden;">
-    
-    <div id="tab-all-content">
-        <div class="table-responsive">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #f0f0f0;">
-                        <th style="padding: 12px; border-right: 2px solid #000; width: 50px;">No</th>
-                        <th style="padding: 12px; border-right: 2px solid #000; width: 110px;">No. Ang</th>
-                        <th style="padding: 12px; border-right: 2px solid #000;">Nama Nasabah</th>
-                        <th style="padding: 12px; border-right: 2px solid #000;">Alamat</th>
-                        <th style="padding: 12px; border-right: 2px solid #000; width: 120px;">Nominal</th>
-                        <th style="padding: 12px; border-right: 2px solid #000; width: 120px;">Sisa Pokok</th>
-                        <th style="padding: 12px; width: 60px;">KOL</th>
-                    </tr>
-                </thead>
-                <tbody id="isi-tabel-nasabah">
-                    @forelse($nasabah_all as $nasabah)
-                    <tr style="border-bottom: 1px solid #ddd; font-weight: 600; font-size: 13px;">
-                        <td style="padding: 10px; border-right: 2px solid #000; text-align: center;">{{ ($nasabah_all->currentPage() - 1) * $nasabah_all->perPage() + $loop->iteration }}</td>
-                        <td style="padding: 10px; border-right: 2px solid #000; text-align: center;">{{ $nasabah->no_angsuran }}</td>
-                        <td style="padding: 10px; border-right: 2px solid #000; text-transform: uppercase;"><b>{{ $nasabah->nasabah }}</b></td>
-                        <td style="padding: 10px; border-right: 2px solid #000; font-size: 12px;">{{ $nasabah->alamat ?? '-' }}</td>
-                        <td style="padding: 10px; border-right: 2px solid #000; text-align: right; color: #2b579a;">{{ number_format($nasabah->nominal ?? 0, 0, ',', '.') }}</td>
-                        <td style="padding: 10px; border-right: 2px solid #000; text-align: right; color: #d9534f;">{{ number_format($nasabah->sisa_pokok ?? 0, 0, ',', '.') }}</td>
-                        <td style="padding: 10px; text-align: center;">
-                            <span style="padding: 4px 10px; border-radius: 5px; background: {{ $nasabah->kol == 5 ? '#ff4d4d' : '#eee' }}; color: {{ $nasabah->kol == 5 ? '#fff' : '#000' }};">{{ $nasabah->kol }}</span>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="7" style="padding: 30px; text-align: center; font-weight: bold; color: #888;">Belum ada data nasabah.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        <div class="pagination-wrapper" style="padding: 15px; border-top: 2px solid #000;">
-            {{ $nasabah_all->links() }}
-        </div>
-    </div>
+   <div style="margin-bottom: -2px; display: flex; gap: 5px; flex-wrap: wrap;">
+        <button onclick="switchTab('1')" style="padding: 10px 15px; border: 2px solid #000; border-bottom: {{ $activeTab == '1' ? 'none' : '2px solid #000' }}; border-radius: 10px 10px 0 0; background-color: {{ $activeTab == '1' ? '#fff' : '#eee' }}; font-weight: 800; color: #28a745; cursor: pointer;">
+            Lancar ({{ $count1 ?? 0 }})
+        </button>
+        <button onclick="switchTab('2')" style="padding: 10px 15px; border: 2px solid #000; border-bottom: {{ $activeTab == '2' ? 'none' : '2px solid #000' }}; border-radius: 10px 10px 0 0; background-color: {{ $activeTab == '2' ? '#fff' : '#eee' }}; font-weight: 800; color: #ffc107; cursor: pointer;">
+            DPK ({{ $count2 ?? 0 }})
+        </button>
+        <button onclick="switchTab('3')" style="padding: 10px 15px; border: 2px solid #000; border-bottom: {{ $activeTab == '3' ? 'none' : '2px solid #000' }}; border-radius: 10px 10px 0 0; background-color: {{ $activeTab == '3' ? '#fff' : '#eee' }}; font-weight: 800; color: #fd7e14; cursor: pointer;">
+            Kurang Lancar ({{ $count3 ?? 0 }})
+        </button>
+        <button onclick="switchTab('4')" style="padding: 10px 15px; border: 2px solid #000; border-bottom: {{ $activeTab == '4' ? 'none' : '2px solid #000' }}; border-radius: 10px 10px 0 0; background-color: {{ $activeTab == '4' ? '#fff' : '#eee' }}; font-weight: 800; color: #dc3545; cursor: pointer;">
+            Diragukan ({{ $count4 ?? 0 }})
+        </button>
 
-   <div id="tab-hb-content" style="display: none;">
-        <div class="table-responsive">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #ffebeb;">
-                        <th style="padding: 12px; border-right: 2px solid #000; width: 50px;">No</th>
-                        <th style="padding: 12px; border-right: 2px solid #000; width: 110px;">No. Ang</th>
-                        <th style="padding: 12px; border-right: 2px solid #000;">Nama Nasabah</th>
-                        <th style="padding: 12px; border-right: 2px solid #000;">Alamat</th>
-                        <th style="padding: 12px; width: 120px;">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($nasabah_all as $hb)
-                    <tr style="border-bottom: 1px solid #ddd; font-weight: 600; font-size: 13px;">
-                        <td style="padding: 10px; border-right: 2px solid #000; text-align: center;">{{ $loop->iteration }}</td>
-                        <td style="padding: 10px; border-right: 2px solid #000; text-align: center;">{{ $hb->no_angsuran }}</td>
-                        <td style="padding: 10px; border-right: 2px solid #000; text-transform: uppercase; color: #d9534f;"><b>{{ $hb->nasabah }}</b></td>
-                        <td style="padding: 10px; border-right: 2px solid #000; font-size: 12px;">{{ $hb->alamat ?? '-' }}</td>
-                        <td style="padding: 10px; text-align: center;">
-                            <span style="padding: 6px 15px; border-radius: 20px; background: #d9534f; color: #fff; font-size: 11px; font-weight: 800; border: 1px solid #000;">
-                               HB
-                            </span>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="5" style="padding: 30px; text-align: center; font-weight: bold; color: #888;">Tidak ada data nasabah Hapus Buku.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        <button onclick="switchTab('5')" 
+            style="padding: 10px 15px; border: 2px solid #000; border-bottom: {{ $activeTab == '5' ? 'none' : '2px solid #000' }}; border-radius: 10px 10px 0 0; background-color: {{ $activeTab == '5' ? '#fff' : '#eee' }}; font-weight: 800; color: #721c24; cursor: pointer;">
+            Macet ({{ $count5 ?? 0 }})
+        </button>
+
+        <button onclick="switchTab('hb')" 
+            style="padding: 10px 15px; border: 2px solid #000; border-bottom: {{ $activeTab == 'hb' ? 'none' : '2px solid #000' }}; border-radius: 10px 10px 0 0; background-color: {{ $activeTab == 'hb' ? '#fff' : '#eee' }}; font-weight: 800; color: #000; cursor: pointer;">
+            HB 
+            <span style="background: #333; color: white; padding: 2px 8px; border-radius: 20px; font-size: 11px; margin-left: 5px;">
+                {{ $countHB ?? 0 }}
+            </span>
+        </button>
     </div>
 </div>
 
-<script>
-function switchTab(type) {
-    const allTab = document.getElementById('tab-all-content');
-    const hbTab = document.getElementById('tab-hb-content');
-    const btnAll = document.getElementById('btn-tab-all');
-    const btnHb = document.getElementById('btn-tab-hb');
+<div id="main-content-area" style="border: 2px solid #000; background: #fff; padding: 0px; border-radius: 0 0 10px 10px; overflow: hidden; transition: opacity 0.3s;">
+   <div class="table-responsive" style="overflow-x: auto;">
+        <table class="table table-bordered table-hover" style="min-width: 2000px; font-size: 12px;">
+            <thead class="bg-light text-center">
+                <tr>
+                    <th>No</th>
+                    <th>Kode</th>
+                    <th>No. Anggota</th>
+                    <th>Rekening Kredit</th> <th>Kode Nasabah</th>    <th>Nama Nasabah</th>    <th style="min-width: 250px;">Alamat</th>
+                    <th>Tgl Pinjam</th>
+                    <th>Tgl JT</th>
+                    <th>Nominal</th>
+                    <th>Sisa Pokok</th>
+                    <th>Pokok/Bln</th>
+                    <th>Bunga/Bln</th>
+                    <th>Tunggakan Pokok</th>
+                    <th>Hari</th>
+                    <th>Tunggakan Bunga</th>
+                    <th>Hari</th>
+                    <th>Denda</th>
+                    <th>Total Tunggakan</th>
+                    <th>KOL</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($nasabah_all as $index => $row)
+                <tr>
+                    <td class="text-center">{{ $nasabah_all->firstItem() + $index }}</td>
+                    <td class="text-center">{{ $row->kode }}</td>
+                    <td>{{ $row->no_angsuran }}</td>
+                    
+                    {{-- PERBAIKAN URUTAN DI SINI --}}
+                    <td>{{ $row->rekening_kredit }}</td> <td>{{ $row->kode_nasabah }}</td>    <td>{{ $row->nasabah }}</td>         <td><small>{{ $row->alamat }}</small></td>
+                    <td class="text-center">{{ $row->tgl_pinjam ?? '-' }}</td>
+                    <td class="text-center">{{ $row->tgl_jt ?? '-' }}</td>
+                    <td class="text-end">{{ number_format($row->nominal, 0, ',', '.') }}</td>
+                    <td class="text-end">{{ number_format($row->sisa_pokok, 0, ',', '.') }}</td>
+                    <td class="text-end">{{ number_format($row->pokok_per_bulan, 0, ',', '.') }}</td>
+                    <td class="text-end">{{ number_format($row->bunga_per_bulan, 0, ',', '.') }}</td>
+                    <td class="text-end text-danger">{{ number_format($row->tunggakan_pokok, 0, ',', '.') }}</td>
+                    <td class="text-center">{{ $row->hari_pokok }}</td>
+                    <td class="text-end text-danger">{{ number_format($row->tunggakan_bunga, 0, ',', '.') }}</td>
+                    <td class="text-center">{{ $row->hari_bunga }}</td>
+                    <td class="text-end">{{ number_format($row->denda, 0, ',', '.') }}</td>
+                    <td class="text-end"><strong>{{ number_format($row->bakidebet, 0, ',', '.') }}</strong></td>
+                    <td class="text-center">
+                        <span class="badge bg-{{ $row->kol == 1 ? 'success' : ($row->kol >= 4 ? 'danger' : 'warning') }}">
+                            {{ $row->kol }}
+                        </span>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
 
-    if (type === 'all') {
-        allTab.style.display = 'block';
-        hbTab.style.display = 'none';
-        btnAll.style.backgroundColor = '#fff';
-        btnAll.style.borderBottom = 'none';
-        btnHb.style.backgroundColor = '#eee';
-        btnHb.style.borderBottom = '2px solid #000';
-    } else {
-        allTab.style.display = 'none';
-        hbTab.style.display = 'block';
-        btnHb.style.backgroundColor = '#fff';
-        btnHb.style.borderBottom = 'none';
-        btnAll.style.backgroundColor = '#eee';
-        btnAll.style.borderBottom = '2px solid #000';
-    }
-}
-
-function openModalImportHB() {
-    const modal = document.getElementById('modalImportHB');
-    modal.style.display = 'flex'; // Gunakan 'flex', bukan 'block'
-}
-
-function closeModalImportHB() {
-    const modal = document.getElementById('modalImportHB');
-    modal.style.display = 'none';
-}
-</script>
+    <div class="pagination-wrapper" style="padding: 15px; border-top: 2px solid #000;">
+        {{ $nasabah_all->links() }}
+    </div>
+</div>
