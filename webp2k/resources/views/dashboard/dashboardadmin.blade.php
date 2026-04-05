@@ -47,7 +47,7 @@
         <div id="main-content-area" style="transition: opacity 0.3s ease;">
             
             <div id="dashboard-default-view">
-                <h3 style="margin-bottom: 1.5rem;">Statistik Kinerja</h3>
+               <h3 style="margin-bottom: 1.5rem;">Statistik Kinerja</h3>
                 
                 <div class="stats-grid">
                     <div class="stat-card bg-rencana" onclick="showDetail('rencana')">
@@ -68,11 +68,11 @@
                         <i class="fa-solid fa-clock"></i>
                     </div>
 
-                    <div class="stat-card bg-target" onclick="showDetail('target')">
-                        <div class="stat-label">Kunjungan HB Selesai</div>
-                        <div class="stat-value">{{ $aoSelesaiTarget ?? 0 }}</div>
-                        <div class="kpi-note">*Min 10 kunjungan & penanganan nasabah HB</div>
-                        <i class="fa-solid fa-award"></i>
+                    <div class="stat-card" style="background-color: #e74c3c; color: white;" onclick="showDetail('gagal')">
+                        <div class="stat-label">Total Gagal Kunjungan</div>
+                        <div class="stat-value">{{ $total_gagal_global ?? 0 }}</div>
+                        <div class="kpi-note">*Berdasarkan ijin AO yang disetujui</div>
+                        <i class="fa-solid fa-user-slash"></i>
                     </div>
                 </div>
 
@@ -144,6 +144,15 @@
                         <i class="fas fa-calendar-plus"></i>
                         <span>Input Jadwal Kunjungan</span>
                     </a>
+                    <a href="javascript:void(0)" onclick="openModalHistoryIjin()" class="menu-item">
+                        <i class="fa-solid fa-user-clock"></i>
+                        <span>Konfirmasi Ijin</span>
+                        @if($pengajuan_ijin_count > 0)
+                            <span class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full border-2 border-white shadow-sm">
+                                {{ $pengajuan_ijin_count }}
+                            </span>
+                        @endif
+                    </a>
                 </div>
             </div>
         </div>
@@ -188,6 +197,73 @@
         </div>
         
         <button onclick="closeModalAO()" style="width: 100%; padding: 10px; border: none; background: #f0f0f0; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px;">Tutup</button>
+    </div>
+</div>
+
+<div id="modalHistoryIjin" style="display: none; position: fixed; z-index: 1100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); backdrop-filter: blur(5px);">
+    <div style="background-color: #fff; margin: 5% auto; border-radius: 15px; width: 95%; max-width: 900px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); overflow: hidden; border: 2px solid #000;">
+        <div style="background: #f97316; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000;">
+            <h3 style="margin: 0; font-weight: 900; text-transform: uppercase; font-style: italic;"><i class="fas fa-history mr-2"></i> Log Ijin Kunjungan AO</h3>
+            <span onclick="closeModalHistoryIjin()" style="font-size: 28px; cursor: pointer; font-weight: bold;">&times;</span>
+        </div>
+        
+        <div style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #000;">
+                        <th style="padding: 12px; border: 1px solid #ddd;">Tgl Ijin</th>
+                        <th style="padding: 12px; border: 1px solid #ddd;">AO</th>
+                        <th style="padding: 12px; border: 1px solid #ddd;">Jenis</th>
+                        <th style="padding: 12px; border: 1px solid #ddd;">Alasan</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; text-align: center;">Status & Aksi</th> </tr>
+                </thead>
+                <tbody style="font-weight: bold;">
+                    @forelse($list_pengajuan as $ijin)
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 12px; border: 1px solid #eee;">{{ date('d/m/Y', strtotime($ijin->tanggal)) }}</td>
+                        <td style="padding: 12px; border: 1px solid #eee;">
+                            {{ $ijin->karyawan->nama ?? 'N/A' }} <br>
+                            <small style="color: #666;">{{ $ijin->kode_ao }}</small>
+                        </td>
+                        <td style="padding: 12px; border: 1px solid #eee;">
+                            <span style="background: #ffedd5; color: #9a3412; padding: 2px 8px; border-radius: 5px; font-size: 10px; border: 1px solid #fb923c;">
+                                {{ $ijin->jenis_ijin }}
+                            </span>
+                        </td>
+                        <td style="padding: 12px; border: 1px solid #eee; font-style: italic; color: #444;">{{ $ijin->alasan }}</td>
+                        
+                        <td style="padding: 12px; border: 1px solid #eee; text-align: center;">
+                            @if($ijin->status == 'pending')
+                                <div style="display: flex; gap: 5px; justify-content: center;">
+                                    <button onclick="updateIjinStatus({{ $ijin->id }}, 'disetujui')" style="background: #22c55e; color: white; border: 1px solid #000; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 11px;">
+                                        <i class="fas fa-check"></i> ACC
+                                    </button>
+                                    <button onclick="updateIjinStatus({{ $ijin->id }}, 'ditolak')" style="background: #ef4444; color: white; border: 1px solid #000; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 11px;">
+                                        <i class="fas fa-times"></i> Tolak
+                                    </button>
+                                </div>
+                            @elseif($ijin->status == 'disetujui')
+                                <span style="color: #16a34a; background: #dcfce7; padding: 4px 10px; border-radius: 20px; border: 1px solid #16a34a; font-size: 11px;">
+                                    <i class="fas fa-check-circle"></i> Disetujui
+                                </span>
+                            @else
+                                <span style="color: #dc2626; background: #fee2e2; padding: 4px 10px; border-radius: 20px; border: 1px solid #dc2626; font-size: 11px;">
+                                    <i class="fas fa-times-circle"></i> Ditolak
+                                </span>
+                            @endif
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 30px; color: #999;">Belum ada data pengajuan ijin.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div style="padding: 15px; text-align: right; border-top: 1px solid #eee;">
+            <button onclick="closeModalHistoryIjin()" style="padding: 8px 20px; background: #eee; border: 2px solid #000; border-radius: 8px; font-weight: bold; cursor: pointer;">Tutup</button>
+        </div>
     </div>
 </div>
 
@@ -292,7 +368,8 @@
             'rencana': 'Detail Rencana Kunjungan',
             'selesai': 'Detail Kunjungan Selesai',
             'belum': 'Detail Kunjungan Belum Selesai',
-            'target': 'Daftar Nasabah HB yang Sudah Ditangani AO'
+            'target': 'Daftar Nasabah HB yang Sudah Ditangani AO',
+            'gagal': 'Daftar AO Gagal Kunjungan (Ijin Disetujui)'
         };
 
         document.getElementById('modalTitle').innerText = titleMap[type];
@@ -397,6 +474,84 @@
         if (event.target == modal) closeModalAO();
         if (event.target == statsModal) closeModal();
     }
+
+    // Fungsi untuk Modal History Ijin
+    function openModalHistoryIjin() {
+        document.getElementById('modalHistoryIjin').style.display = 'block';
+    }
+
+    function closeModalHistoryIjin() {
+        document.getElementById('modalHistoryIjin').style.display = 'none';
+    }
+
+    // Tambahkan pengaman klik di luar modal (update window.onclick yang sudah ada)
+    const originalOnClick = window.onclick;
+    window.onclick = function(event) {
+        if (originalOnClick) originalOnClick(event); // Jalankan fungsi asli jika ada
+        
+        const historyModal = document.getElementById('modalHistoryIjin');
+        if (event.target == historyModal) {
+            closeModalHistoryIjin();
+        }
+    }
+
+    function updateIjinStatus(id, status) {
+    const warna = status === 'disetujui' ? '#10b981' : '#ef4444';
+    
+    Swal.fire({
+        title: 'Konfirmasi Persetujuan',
+        text: `Apakah Anda yakin ingin mengubah status menjadi ${status}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: warna,
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Ya, Update!',
+        cancelButtonText: 'Batal',
+        // --- TAMBAHKAN BARIS INI ---
+        didOpen: () => {
+            const container = Swal.getContainer();
+            if (container) {
+                container.style.zIndex = "2000"; // Paksa ke depan modal (1100)
+            }
+        }
+        // ---------------------------
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Lanjutkan fetch seperti biasa...
+            Swal.fire({ 
+                title: 'Memproses...', 
+                allowOutsideClick: false, 
+                didOpen: () => { 
+                    Swal.showLoading();
+                    Swal.getContainer().style.zIndex = "2000"; // Pastikan loading juga di depan
+                } 
+            });
+
+            fetch(`/admin/ijin-kunjungan/update-status/${id}`, {
+                method: "POST",
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ status: status })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: data.message,
+                        icon: 'success',
+                        didOpen: () => { Swal.getContainer().style.zIndex = "2000"; }
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+            });
+        }
+    });
+}
     </script>
 
 </body>

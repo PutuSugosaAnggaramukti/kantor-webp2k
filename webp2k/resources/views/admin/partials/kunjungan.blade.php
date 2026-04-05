@@ -27,7 +27,8 @@
                 <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
                 <th style="padding: 15px; border-right: 2px solid #000; width: 120px;">Kode AO</th>
                 <th style="padding: 15px; border-right: 2px solid #000;">Nama</th>
-                <th style="padding: 15px; width: 180px;">Jumlah Kunjungan</th>
+                <th style="padding: 15px; border-right: 2px solid #000; width: 150px; color: #2d9d78;">Sudah Dikunjungi</th>
+                <th style="padding: 15px; width: 150px;">Total Rencana</th>
             </tr>
         </thead>
         <tbody style="font-weight: 700; font-size: 14px;">
@@ -37,8 +38,17 @@
                     <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
                     <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
                     <td style="padding: 15px; border-right: 2px solid #000; text-align: left;">{{ $item->nama }}</td>
+                    
+                    <td style="padding: 15px; border-right: 2px solid #000;">
+                        <span class="badge" style="background-color: #2d9d78; color: white; padding: 5px 12px; border-radius: 12px;">
+                            {{ $item->total_realisasi ?? 0 }}
+                        </span>
+                    </td>
+
                     <td style="padding: 15px;">
-                        <span class="badge bg-primary">{{ $item->kunjungan_count ?? 0 }}</span>
+                        <span class="badge bg-primary" style="padding: 5px 12px; border-radius: 12px;">
+                            {{ $item->kunjungan_count ?? 0 }}
+                        </span>
                     </td>
                 </tr>
             @endforeach

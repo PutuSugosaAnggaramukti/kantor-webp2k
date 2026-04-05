@@ -13,9 +13,13 @@ use App\Exports\PelaporanDetailExport;
 
 class PelaporanController extends Controller
 {
-   public function index(Request $request) 
+  public function index(Request $request) 
     {
-        // 1. Data Daftar AO yang sudah berkunjung (Data Lama) - Tetap
+        // Ambil keyword dari input search
+        $keyword = $request->search;
+
+        // 1. Data Daftar AO (Tabel Atas)
+        // Filter dihapus agar tabel ini tidak ikut berubah saat mengetik di search
         $pelaporan_all = Karyawan::whereHas('kunjungan')
             ->with(['kunjungan' => function($query) {
                 $query->orderBy('tanggal', 'desc');
@@ -27,23 +31,28 @@ class PelaporanController extends Controller
             return $karyawan;
         });
 
-        // 2. Data Daftar Nasabah yang SUDAH dikunjungi (Data Baru)
-        // PERBAIKAN: Gunakan whereHas('kunjungan') alih-alih where('sudah_kunjung', 1)
+        // 2. Data Daftar Nasabah (Tabel Bawah)
+        // Tetap menggunakan filter agar data menyusut sesuai pencarian
         $nasabah_terkunjungi = Nasabah::whereHas('kunjungan') 
-            ->with(['kunjungan' => function($query) {
-                $query->orderBy('tanggal', 'desc');
-            }])
+            ->when($keyword, function ($query) use ($keyword) {
+                $query->where(function($q) use ($keyword) {
+                    $q->where('nasabah', 'like', "%{$keyword}%")
+                    ->orWhere('no_angsuran', 'like', "%{$keyword}%");
+                });
+            })
+            ->with(['kunjungan.karyawan']) // Eager load karyawan agar tidak N+1
             ->orderBy('nasabah', 'asc')
             ->get();
 
+        // Jika Request AJAX (saat user mengetik di search)
         if ($request->ajax()) {
             return view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
         }
 
+        // Load data dashboard seperti biasa untuk tampilan awal
         $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
-        // Kirim kedua variabel ke view
         $data['content'] = view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
         $data['page'] = 'pelaporan';
         $data['title'] = 'Pelaporan Kunjungan';

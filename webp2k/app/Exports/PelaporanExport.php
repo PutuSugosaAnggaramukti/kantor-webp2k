@@ -16,22 +16,19 @@ class PelaporanExport implements FromView, ShouldAutoSize
         $this->tglAkhir = $tglAkhir;
     }
 
-public function view(): View 
-{
-    // Ambil Karyawan yang punya kunjungan di tabel administrasi (data_kunjungan_adms)
-    $data_gabungan = Karyawan::whereHas('kunjungan', function($query) {
-            $query->whereBetween('tanggal', [$this->tglAwal, $this->tglAkhir]);
-        })
-        ->with(['kunjungan' => function($query) {
-            $query->whereBetween('tanggal', [$this->tglAwal, $this->tglAkhir])
-                  ->orderBy('tanggal', 'desc');
-        }])
-        ->get();
+    public function view(): View 
+    {
+        // Kita langsung query ke tabel kunjungan agar datanya "Flat"
+        $data_kunjungan = \App\Models\DataKunjunganAdm::with('karyawan')
+            ->whereBetween('tanggal', [$this->tglAwal, $this->tglAkhir])
+            ->orderBy('tanggal', 'desc')
+            ->orderBy('kode_ao', 'asc')
+            ->get();
 
-    return view('admin.exports.pelaporan_excel', [
-        'data_ao' => $data_gabungan,
-        'tglAwal' => $this->tglAwal,
-        'tglAkhir' => $this->tglAkhir
-    ]);
-}
+        return view('admin.exports.pelaporan_excel', [
+            'data_ao' => $data_kunjungan,
+            'tglAwal' => $this->tglAwal,
+            'tglAkhir' => $this->tglAkhir
+        ]);
+    }
 }

@@ -13,6 +13,7 @@ use App\Http\Controllers\karyawan\AdmKunjunganController;
 use App\Http\Controllers\karyawan\AdmDokumenController;
 use App\Http\Controllers\karyawan\NasabahController;
 use App\Http\Controllers\karyawan\PelaporanController;
+use App\Http\Controllers\IjinKunjunganController;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,6 +74,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dokumen', [AdmDokumenController::class, 'dokumenIndex'])->name('admin.dokumen.index'); // Rute bersih
     Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumenIndex']);
     Route::get('/download-word/{id}', [AdmDokumenController::class, 'downloadWord'])->name('download.docx');
+
+    // 7. IJIN KUNJUNGAN (Fitur Persetujuan Admin)
+    Route::get('/ijin-kunjungan', [IjinKunjunganController::class, 'indexAdmin'])->name('admin.ijin.index');
+    Route::post('/ijin-kunjungan/update-status/{id}', [IjinKunjunganController::class, 'updateStatus'])->name('admin.ijin.updateStatus');
 });
 
 
@@ -93,6 +98,8 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::get('/export-pdf/{id}', [KunjunganController::class, 'exportPDF'])->name('export.pdf');
     Route::get('/export-word/{id}', [KunjunganController::class, 'exportWord'])->name('export.word');
     Route::get('/export-excel', [KunjunganController::class, 'exportExcel'])->name('export.excel');
+    Route::get('/pengajuan-ijin', [IjinKunjunganController::class, 'create'])->name('user.ijin.create');
+    Route::post('/pengajuan-ijin/store', [IjinKunjunganController::class, 'store'])->name('user.ijin.store');
 });
 
 

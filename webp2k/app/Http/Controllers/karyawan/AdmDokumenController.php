@@ -13,8 +13,20 @@ class AdmDokumenController extends Controller
 {
   public function dokumenIndex(Request $request) 
 {
-    // Gunakan paginate(10) untuk menampilkan 10 data per halaman
-    $dokumen_all = Nasabah::orderBy('nasabah', 'asc')->paginate(10)->withQueryString();
+    // 1. Tambahkan logika pencarian di sini
+    $query = Nasabah::query();
+
+    if ($request->has('search') && $request->search != '') {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('nasabah', 'like', '%' . $search . '%')
+              ->orWhere('no_angsuran', 'like', '%' . $search . '%')
+              ->orWhere('alamat', 'like', '%' . $search . '%');
+        });
+    }
+
+    // 2. Ambil data dengan pagination dan tetap bawa query string (agar page 2 tidak hilang filternya)
+    $dokumen_all = $query->orderBy('nasabah', 'asc')->paginate(10)->withQueryString();
 
     if ($request->ajax()) {
         return view('admin.partials.dokumen', compact('dokumen_all'))->render();
@@ -37,7 +49,6 @@ class AdmDokumenController extends Controller
 
     return view('admin.datakaryawan', $data);
 }
-
    public function downloadWord($no_angsuran)
     {
         // PERUBAHAN DI SINI: Cari berdasarkan no_angsuran di tabel Nasabah

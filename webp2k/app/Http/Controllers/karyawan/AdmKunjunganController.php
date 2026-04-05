@@ -49,37 +49,65 @@ class AdmKunjunganController extends Controller
         return view('admin.datakaryawan', $data);
     }
     
- public function dataKunjunganContent(Request $request)
-    {
-        $karyawans = Karyawan::where('status', 'aktif')->withCount('kunjungan')->get();
-        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
+   public function dataKunjunganContent(Request $request)
+{
+    // 1. Ambil keyword dari request search
+    $keyword = $request->search;
 
-        $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
+    // Tambahkan filter 'when' agar database hanya menarik data yang sesuai keyword
+    $karyawans = Karyawan::where('status', 'aktif')
+        ->when($keyword, function($query) use ($keyword) {
+            $query->where(function($q) use ($keyword) {
+                $q->where('nama', 'like', "%$keyword%")
+                  ->orWhere('kode_ao', 'like', "%$keyword%");
+            });
+        })
+        ->get();
+
+    // 2. Kita hitung manual angka-angkanya (Logika Sam tetap dipertahankan)
+    $karyawans->map(function($karyawan) {
+        $karyawan->kunjungan_count = \DB::table('data_kunjungan_adms')
+            ->where('kode_ao', $karyawan->kode_ao)
             ->where('bulan', now()->format('Y-m'))
-            ->get()
-            ->groupBy('kode_ao');
+            ->count();
 
-        if ($request->ajax()) {
-            return view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped', 'nasabah_all'))->render();
-        }
+        $karyawan->total_realisasi = \DB::table('kunjungans')
+            ->where('kode_ao', $karyawan->kode_ao)
+            ->whereNotNull('catatan')
+            ->where('catatan', '!=', '')
+            ->count();
+        
+        return $karyawan;
+    });
 
-        // Bagian Dashboard
-        try {
-            $dashboard = new DashboardAdminController();
-            $data = $dashboard->getDashboardData(); 
-        } catch (\Exception $e) {
-            $data = ['karyawan_count' => Karyawan::count()];
-        }
+    $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
 
-        $data['title'] = 'Data Kunjungan';
-        $data['page'] = 'kunjungan';
-        $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped', 'nasabah_all'))->render();
-        $data['karyawans'] = $karyawans;
-        $data['nasabah_all'] = $nasabah_all;
+    $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
+        ->where('bulan', now()->format('Y-m'))
+        ->get()
+        ->groupBy('kode_ao');
 
-        return view('admin.datakaryawan', $data);
+    // Cek jika request datang dari AJAX (saat user mengetik di searchInput)
+    if ($request->ajax()) {
+        return view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped', 'nasabah_all'))->render();
     }
 
+    // Bagian Dashboard (untuk load halaman pertama kali)
+    try {
+        $dashboard = new DashboardAdminController();
+        $data = $dashboard->getDashboardData(); 
+    } catch (\Exception $e) {
+        $data = ['karyawan_count' => Karyawan::count()];
+    }
+
+    $data['title'] = 'Data Kunjungan';
+    $data['page'] = 'kunjungan';
+    $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped', 'nasabah_all'))->render();
+    $data['karyawans'] = $karyawans;
+    $data['nasabah_all'] = $nasabah_all;
+
+    return view('admin.datakaryawan', $data);
+}
   public function detail($kode_ao)
     {
         try {

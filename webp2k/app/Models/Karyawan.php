@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Model;
 
 class Karyawan extends Authenticatable
 {
@@ -19,10 +18,28 @@ class Karyawan extends Authenticatable
         return 'user'; 
     }
 
+    /**
+     * RELASI RENCANA (ADM)
+     * Menghitung target yang di-input Admin di tabel data_kunjungan_adms
+     */
     public function kunjungan()
     {
-        // Kita hubungkan 'id' di tabel karyawans 
-        // ke kolom 'karyawan_id' di tabel data_kunjungan_adms
-        return $this->hasMany(Kunjungan::class, 'karyawan_id', 'id');
+        return $this->hasMany(DataKunjunganAdm::class, 'karyawan_id', 'id');
+    }
+
+    /**
+     * RELASI REALISASI (AO)
+     * Menghitung kunjungan yang sudah dilakukan AO di tabel kunjungans
+     * Kita hubungkan via 'kode_ao' karena biasanya di tabel realisasi 
+     * AO diidentifikasi melalui kode mereka.
+     */
+    public function realisasiKunjungan()
+    {
+        return $this->hasMany(Kunjungan::class, 'kode_ao', 'kode_ao');
+    }
+
+    public function ijinKunjungan()
+    {
+        return $this->hasMany(IjinKunjungan::class, 'karyawan_id', 'id');
     }
 }

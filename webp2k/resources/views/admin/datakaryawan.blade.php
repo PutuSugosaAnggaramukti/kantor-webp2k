@@ -239,16 +239,119 @@ document.addEventListener("DOMContentLoaded", function() {
     $(document).on('keyup', '#searchInput', function() {
         clearTimeout(searchTimer);
         let keyword = $(this).val();
-        
-        // Ambil tab aktif saat ini dari URL agar pencarian tetap di tab yang benar
-        let params = new URLSearchParams(window.location.search);
-        let currentTab = params.get('tab') || '1'; 
+        let currentPath = window.location.pathname; // Cek Sam lagi di menu mana
 
         searchTimer = setTimeout(function() {
-            // Memanggil fungsi fetchNasabah yang sudah didefinisikan sebelumnya
-            fetchNasabah(currentTab, keyword);
-        }, 500); // Eksekusi setelah user berhenti mengetik selama 0.5 detik
+            // 1. Jika Sam lagi di halaman NASABAH
+            if (currentPath.includes('nasabah')) {
+                let params = new URLSearchParams(window.location.search);
+                let currentTab = params.get('tab') || '1'; 
+                fetchNasabah(currentTab, keyword);
+            } 
+            
+            // 2. Jika Sam lagi di halaman DOKUMEN
+            else if (currentPath.includes('dokumen')) {
+                fetchDokumen(keyword); 
+            }
+
+            else if (currentPath.includes('pelaporan')) {
+                fetchPelaporan(keyword);
+            }
+
+            // 3. Jika Sam lagi di halaman DATA KARYAWAN (opsional jika butuh cari karyawan)
+            else if (currentPath.includes('data-karyawan')) {
+                // fetchKaryawan(keyword); // Jika ada fungsinya
+            }
+        }, 500); 
     });
+
+    // --- FUNGSI KHUSUS PENCARIAN DOKUMEN ---
+    function fetchDokumen(keyword) {
+        const contentArea = $('#main-content-area');
+        contentArea.css('opacity', '0.5');
+
+        $.ajax({
+            url: "/admin/dokumen-content", // Route khusus dokumen
+            method: "GET",
+            data: { search: keyword },
+            success: function(data) {
+                contentArea.html(data);
+                contentArea.css('opacity', '1');
+                
+                // Update URL agar saat direfresh, hasil pencarian tetap nempel di URL
+                let newUrl = window.location.pathname + '?search=' + encodeURIComponent(keyword);
+                window.history.pushState({path: newUrl}, '', newUrl);
+            },
+            error: function(xhr) {
+                contentArea.css('opacity', '1');
+                console.error("Error Search Dokumen:", xhr.responseText);
+            }
+        });
+    }
+
+    $(document).on('keyup', '#searchInput', function() {
+    clearTimeout(searchTimer);
+    let keyword = $(this).val();
+    let currentPath = window.location.pathname;
+
+    searchTimer = setTimeout(function() {
+        if (currentPath.includes('nasabah')) {
+            fetchNasabah(null, keyword);
+        } 
+        else if (currentPath.includes('dokumen')) {
+            fetchDokumen(keyword); 
+        }
+        else if (currentPath.includes('data-kunjungan')) {
+            fetchRekapKunjungan(keyword);
+        }
+        else if (currentPath.includes('pelaporan')) {
+            console.log("Mengirim request pencarian pelaporan..."); // Cek di console
+            fetchPelaporan(keyword);
+        }
+    }, 500); 
+});
+
+// Fungsi penarik data Rekap Kunjungan
+    function fetchRekapKunjungan(keyword) {
+        const container = $('#isi-tabel-rekap');
+        container.css('opacity', '0.5');
+
+        $.ajax({
+            url: "/admin/data-kunjungan-content", // Sesuaikan dengan route content kamu
+            method: "GET",
+            data: { search: keyword },
+            success: function(data) {
+                container.html(data);
+                container.css('opacity', '1');
+            }
+        });
+    }
+
+   function fetchPelaporan(keyword) {
+    // Kita pakai ID yang sudah kita buat di HTML tadi: isi-tabel-pelaporan
+    const container = $('#isi-tabel-pelaporan'); 
+    
+    // Kasih efek loading di wadah tabelnya
+    container.css('opacity', '0.5');
+
+    $.ajax({
+        url: "/admin/pelaporan", 
+        method: "GET",
+        data: { 
+            search: keyword,
+            ajax: true 
+        },
+        success: function(data) {
+            // Tumpahkan datanya ke wadah yang benar
+            container.html(data); 
+            container.css('opacity', '1');
+        },
+        error: function(xhr) {
+            container.css('opacity', '1');
+            console.error("Error Search Pelaporan:", xhr.responseText);
+        }
+    });
+}
     // --- AKHIR TAMBAHAN ---
 
     // 2. Logika Load AJAX

@@ -68,8 +68,6 @@
    @foreach($kunjungansGrouped as $kodeAo => $group)
     @php 
         $totalJadwal = $group->count();
-        $hasKol5 = $group->contains('kol', 5);
-        $isTargetMet = $totalJadwal >= 10;
     @endphp
     
     <div class="ao-section" style="margin-bottom: 20px;">
@@ -81,18 +79,11 @@
             </h3>
             
             <div style="display: flex; gap: 10px; align-items: center;">
-                @if($hasKol5)
-                    <span style="background: #27ae60; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid white;">
-                        <i class="fa-solid fa-check"></i> KOL 5 ADA
-                    </span>
-                @else
-                    <span style="background: #d32f2f; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid white;">
-                        <i class="fa-solid fa-xmark"></i> KOL 5 BELUM ADA
-                    </span>
-                @endif
-
-                <span style="background: {{ $isTargetMet ? '#27ae60' : '#d32f2f' }}; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; border: 1px solid white;">
-                    Total: {{ $totalJadwal }} / 10
+                {{-- Keterangan KOL 5 dihapus sesuai permintaan --}}
+                
+                {{-- Badge Total hanya menghitung jumlah data di dalam grup --}}
+                <span style="background: #27ae60; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; border: 1px solid white;">
+                    Total: {{ $totalJadwal }}
                 </span>
             </div>
         </div>
@@ -103,9 +94,11 @@
                     <thead>
                         <tr style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa; border-bottom: 2px solid #000; text-align: center;">
                             <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
-                            <th style="padding: 15px; border-right: 2px solid #000; width: 140px;">No Angsuran</th> <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Bulan</th>
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 140px;">No Angsuran</th> 
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Bulan</th>
                             <th style="padding: 15px; border-right: 2px solid #000; width: 130px; background-color: #eef2ff;">Tgl Kunjungan</th>
-                            <th style="padding: 15px; border-right: 2px solid #000;">Data Nasabah</th> <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
+                            <th style="padding: 15px; border-right: 2px solid #000;">Data Nasabah</th> 
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
                             <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Sisa Pokok</th> 
                             <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">KOL</th>
                         </tr>
@@ -125,7 +118,6 @@
                                 {{ \Carbon\Carbon::parse($item->bulan)->translatedFormat('F Y') }}
                             </td>
 
-                            {{-- ISI TANGGAL KUNJUNGAN BARU --}}
                             <td style="padding: 12px; border-right: 2px solid #000; color: #4e4bc1; background-color: #fcfdff;">
                                 @if($item->tanggal)
                                     <i class="fa-regular fa-calendar-check"></i> 
@@ -175,52 +167,37 @@
 @include('admin.partials.modals') 
 
 <script>
-    // Gunakan pendekatan IIFE atau pastikan fungsi tidak dideklarasikan ulang jika memungkinkan
     (function() {
-        // 1. Fungsi Toggle Accordion AO
         window.toggleAo = function(element) {
             const section = element.parentElement;
             section.classList.toggle('active');
         };
 
-        // 2. Fungsi Modal Import
         window.openModalImport = function() {
             const modal = document.getElementById('modalImport');
             if (modal) modal.style.display = 'flex';
         };
 
-        // 3. Fungsi Modal Tambah Jadwal (VERSI PERBAIKAN TOTAL)
       window.openModalKunjungan = function() {
             const modal = document.querySelector('#modalTambahKunjungan');
             if (modal) {
                 modal.style.display = 'flex';
-                
-                // Cari semua dropdown nasabah
                 const dropdown = modal.querySelector('#dropdown_no_angsuran');
                 if (dropdown) {
-                    // 1. Hancurkan Select2 jika ada
                     if ($(dropdown).hasClass("select2-hidden-accessible")) {
                         $(dropdown).select2('destroy');
                     }
-
-                    // 2. Bersihkan atribut 'hidden' atau 'style' yang aneh-aneh dari tiap option
                     const options = dropdown.options;
                     for (let i = 0; i < options.length; i++) {
                         options[i].removeAttribute('hidden');
                         options[i].disabled = false;
                         options[i].style.cssText = "display: block !important; visibility: visible !important;";
                     }
-
-                    // 3. Reset value ke awal
                     dropdown.value = "";
-
-                    // 4. Inisialisasi ulang Select2 dengan Parent ke Modal
                     $(dropdown).select2({
                         dropdownParent: $(modal)
                     });
                 }
-                
-                // Reset form lainnya
                 const form = modal.querySelector('#formTambahKunjungan');
                 if(form) form.reset();
             }
@@ -231,15 +208,12 @@
             modals.forEach(m => m.style.display = 'none');
         };
 
-        // --- LOGIC SIMPAN JADWAL ---
       window.simpanJadwalManual = function() {
-            // 1. Ambil form dari modal yang sedang aktif
             const activeModal = Array.from(document.querySelectorAll('#modalTambahKunjungan')).find(m => m.style.display === 'flex');
             const form = activeModal ? activeModal.querySelector('#formTambahKunjungan') : document.getElementById('formTambahKunjungan');
             
             if (!form) return;
 
-            // 2. Cek validasi form (required fields)
             if (!form.checkValidity()) {
                 form.reportValidity();
                 return;
@@ -265,14 +239,8 @@
                         showConfirmButton: false,
                         timer: 1500
                     });
-
                     closeModalKunjungan();
-                    
-                    // 3. REFRESH TOTAL
-                    // Kita buang loadAdminPage karena itu penyebab Ahmad Sujarwo tersaring/hilang.
-                    // Dengan reload, semua dropdown akan ditarik ulang dengan kondisi bersih.
                     location.reload(); 
-                    
                 } else {
                     Swal.fire({ 
                         icon: 'error', 

@@ -131,9 +131,23 @@ class DashboardController extends Controller
             ->where($applyAoFilter)
             ->where('created_at', '>=', now()->subDays(7)) 
             ->groupBy('tgl')->orderBy('tgl', 'asc')->get();
+        
+        // --- 6. DATA RIWAYAT IJIN USER ---
+        $list_pengajuan = DB::table('ijin_kunjungans')
+            ->where('karyawan_id', $user->id) // Filter hanya milik user ini
+            ->orderBy('created_at', 'desc')
+            ->get();
+        
+        $list_gagal_kunjungan = $list_pengajuan->where('status', 'disetujui');
+        
+        // Hitung jumlah ijin yang disetujui (Gagal Kunjungan)
+        $total_gagal_kunjungan = $list_pengajuan->where('status', 'disetujui')->count();
+
+        $notif_acc = $list_pengajuan->where('status', 'disetujui')->where('updated_at', '>=', now()->subHours(24))->first();
 
         return view('dashboard.dashboard', array_merge(
-            compact('total_rencana', 'total_kunjungan', 'belum_dikunjungi', 'wajib_kol5', 'kunjungan_hari_ini', 'detail_rencana', 'detail_sudah_dikunjungi', 'detail_kol5','detail_belum_dikunjungi','nama_sudah_visit'),
+            compact('total_rencana', 'total_kunjungan', 'belum_dikunjungi', 'wajib_kol5', 'kunjungan_hari_ini', 'detail_rencana', 'detail_sudah_dikunjungi', 'detail_kol5',
+            'detail_belum_dikunjungi','nama_sudah_visit','notif_acc','list_pengajuan','total_gagal_kunjungan','list_gagal_kunjungan'),
             [
                 'labels' => $dataGrafik->pluck('tgl'),
                 'nasabahAda' => $dataGrafik->pluck('ada')->map(fn($v) => (int)$v),
