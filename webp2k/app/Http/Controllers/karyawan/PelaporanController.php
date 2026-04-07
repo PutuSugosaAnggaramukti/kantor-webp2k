@@ -99,4 +99,5 @@ class PelaporanController extends Controller
         return Excel::download(new PelaporanDetailExport($id), $fileName);
     }
 
+    
 }

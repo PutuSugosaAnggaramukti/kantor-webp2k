@@ -1,4 +1,4 @@
-@if(!request()->ajax())
+{{-- JUDUL DAN BREADCRUMB: Dikeluarkan agar tidak hilang saat AJAX --}}
 <div class="page-title" style="margin-bottom: 25px;">
     <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Pelaporan</h2>
     <p style="font-size: 14px; font-weight: 600;">
@@ -8,6 +8,7 @@
     </p>
 </div>
 
+{{-- TOMBOL EXPORT DAN SEARCH: Dikeluarkan agar selalu ikut ter-render --}}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <button onclick="openModalExportPelaporan()" style="background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;">
         <i class="fa-solid fa-file-excel"></i> Export Excel
@@ -19,6 +20,7 @@
         style="padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; width: 250px;">
 </div>
 
+@if(!request()->ajax())
 <div id="isi-tabel-pelaporan">
 @endif
 
@@ -112,5 +114,5 @@
     </div>
 
 @if(!request()->ajax())
-</div> {{-- Penutup isi-tabel-pelaporan --}}
+</div>
 @endif

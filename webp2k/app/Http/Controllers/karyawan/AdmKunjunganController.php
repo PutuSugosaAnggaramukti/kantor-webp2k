@@ -108,25 +108,39 @@ class AdmKunjunganController extends Controller
 
     return view('admin.datakaryawan', $data);
 }
-  public function detail($kode_ao)
-    {
-        try {
-            $data_detail = \DB::table('kunjungans')
-                ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
-                ->leftJoin('data_kunjungan_adms', function ($join) {
-                    $join->on('kunjungans.nama_nasabah', '=', 'data_kunjungan_adms.nama_nasabah')
-                        ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao');
-                })
-                ->where('kunjungans.kode_ao', $kode_ao)
-                ->select(
-                    'kunjungans.*',
-                    'nasabahs.alamat as alamat_master',
-                    'data_kunjungan_adms.alamat_nasabah as alamat_rencana'
-                )
-                ->orderBy('kunjungans.created_at', 'desc')
-                ->get();
 
-            foreach ($data_detail as $item) {
+public function detail($kode_ao)
+{
+    $kode_ao_clean = str_replace('-content', '', $kode_ao);
+
+    try {
+        // QUERY DIBALIK: Mulai dari data_kunjungan_adms (Tabel Rencana)
+        $data_detail = \DB::table('data_kunjungan_adms')
+            // Hubungkan ke hasil kunjungan (kunjungans) jika sudah ada
+            ->leftJoin('kunjungans', function ($join) {
+                $join->on('data_kunjungan_adms.no_angsuran', '=', 'kunjungans.no_nasabah')
+                     ->on('data_kunjungan_adms.kode_ao', '=', 'kunjungans.kode_ao');
+            })
+            // Hubungkan ke master nasabah untuk alamat jika perlu
+            ->leftJoin('nasabahs', 'data_kunjungan_adms.no_angsuran', '=', 'nasabahs.no_angsuran')
+            ->where('data_kunjungan_adms.kode_ao', $kode_ao_clean)
+            ->select(
+                    'data_kunjungan_adms.*', 
+                    'kunjungans.id as id_kunjungan',
+                    'kunjungans.status as status_kunjungan',
+                    'kunjungans.catatan as catatan_lapangan',
+                    'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
+                    'kunjungans.foto_kunjungan', 
+                    'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
+                    'kunjungans.created_at as tgl_realisasi',
+                    'nasabahs.alamat as alamat_master'
+                )
+            ->orderBy('data_kunjungan_adms.created_at', 'desc')
+            ->get();
+
+        // Logika pengolahan foto (Hanya dilakukan jika id_kunjungan tidak null)
+        foreach ($data_detail as $item) {
+            if ($item->id_kunjungan) {
                 $fotos = json_decode($item->foto_kunjungan, true);
                 $namaFoto = (is_array($fotos) && count($fotos) > 0) ? $fotos[0] : $item->foto_kunjungan;
                 
@@ -134,26 +148,33 @@ class AdmKunjunganController extends Controller
                 
                 if ($namaFoto && file_exists($path)) {
                     $exif = @exif_read_data($path);
-                    
                     if ($exif && isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
-                        // Memanggil helper per komponen (Latitude sendiri, Longitude sendiri)
                         $lat = $this->convertFractionToDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
                         $log = $this->convertFractionToDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
-                        
-                        // Satukan menjadi string koordinat untuk tampilan
                         $item->koordinat = $lat . ',' . $log;
                     }
                 }
+            } else {
+                // Jika belum dikunjungi, set koordinat kosong
+                $item->koordinat = null;
             }
-
-            return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
-
-        } catch (\Exception $e) {
-            // Log error untuk debug tapi jangan hentikan aplikasi
-            \Log::error("Error EXIF: " . $e->getMessage());
-            return "<div style='color:red; padding:20px;'>Terjadi kesalahan saat memproses detail: " . $e->getMessage() . "</div>";
         }
+
+        $kode_ao = $kode_ao_clean;
+
+        if (request()->ajax()) {
+            return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
+        }
+
+        return view('admin.kunjungan_detail_full', compact('data_detail', 'kode_ao'));
+
+    } catch (\Exception $e) {
+        \Log::error("Error Detail Kunjungan: " . $e->getMessage());
+        return request()->ajax() 
+            ? "<div class='alert alert-danger'>Gagal: " . $e->getMessage() . "</div>" 
+            : redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
     }
+}
         // Tambahkan helper function ini di bawah method detail atau di bawah class
         private function convertFractionToDecimal($exifCoord, $hemi)
     {
@@ -336,6 +357,27 @@ class AdmKunjunganController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+        public function updateStatus(Request $request, $id)
+    {
+        try {
+            \DB::table('kunjungans')->where('id', $id)->update([
+                'status' => $request->status,
+                'updated_at' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status berhasil diperbarui!'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui status: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

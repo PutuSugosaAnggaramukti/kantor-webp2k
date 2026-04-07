@@ -137,6 +137,7 @@ class KunjunganController extends Controller
                 'kunjungans.nama_nasabah',
                 'kunjungans.created_at',
                 'kunjungans.kol',
+                'kunjungans.status',
                 'nasabahs.kol as kol_master'
             )
             ->distinct()
@@ -155,42 +156,42 @@ class KunjunganController extends Controller
         return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
     }
 
-    public function indexpelaporan()
-    {
-        $user = Auth::guard('karyawan')->user();
-        if (!$user) return redirect()->back();
+   public function indexpelaporan()
+{
+    $user = Auth::guard('karyawan')->user();
+    if (!$user) return redirect()->back();
 
-        $myCode = strtoupper(trim($user->kode_ao));
+    $myCode = strtoupper(trim($user->kode_ao));
 
-        $laporan = \DB::table('kunjungans')
-            // Join menggunakan No Nasabah karena lebih unik dibanding Nama
-            ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
-            ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
-            ->select(
-                'kunjungans.id as id_kunjungan', 
-                'kunjungans.kode_ao', 
-                'kunjungans.nama_nasabah', 
-                'kunjungans.created_at',
-                'kunjungans.kol',
-                'nasabahs.kol as kol_master'
-            )
-            // Gunakan pembeda unik untuk menghindari duplikasi dari hasil JOIN
-            ->distinct() 
-            ->orderBy('kunjungans.created_at', 'desc')
-            ->get()
-            ->map(function($item) {
-                return (object)[
-                    'id_kunjungan' => $item->id_kunjungan,
-                    'kode_ao'      => $item->kode_ao,
-                    'nama_nasabah' => $item->nama_nasabah,
-                    // Logika: ambil kol dari kunjungan, jika kosong ambil dari master nasabah
-                    'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
-                    'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
-                ];
-            });
+    $laporan = \DB::table('kunjungans')
+        ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
+        ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
+        ->select(
+            'kunjungans.id as id_kunjungan', 
+            'kunjungans.kode_ao', 
+            'kunjungans.nama_nasabah', 
+            'kunjungans.created_at',
+            'kunjungans.kol',
+            'kunjungans.status', // 1. Pastikan kolom ini diselect
+            'nasabahs.kol as kol_master'
+        )
+        ->distinct() 
+        ->orderBy('kunjungans.created_at', 'desc')
+        ->get()
+        ->map(function($item) {
+            return (object)[
+                'id_kunjungan' => $item->id_kunjungan,
+                'kode_ao'      => $item->kode_ao,
+                'nama_nasabah' => $item->nama_nasabah,
+                'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
+                'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
+                // 2. WAJIB TAMBAHKAN INI agar status terbawa ke View
+                'status'       => $item->status, 
+            ];
+        });
 
-        return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
-    }
+    return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
+}
 
     public function detailPelaporan(Request $request)
     {

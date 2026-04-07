@@ -149,68 +149,65 @@ window.loadAdminPage = function(pageName, element) {
     // 1. Reset class active dari semua menu
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
 
-    // 2. Tentukan Menu Mana yang Harus Aktif (Prioritas Berurutan)
+    // 2. Tentukan Menu Mana yang Harus Aktif
     let menuToActive = element;
-
     if (!menuToActive) {
-        // CEK PELAPORAN DULU (Agar tidak tertabrak kata 'nasabah' di halaman detail)
         if (pageName.includes('pelaporan') || pageName.includes('laporan')) {
             menuToActive = document.getElementById('menu-pelaporan');
-        } 
-        // Cek Input Jadwal (Agar tidak tertukar dengan Data Kunjungan)
-        else if (pageName.includes('adm-kunjungan')) {
+        } else if (pageName.includes('adm-kunjungan')) {
             menuToActive = document.getElementById('menu-adm-kunjungan');
-        }
-        // Cek Data Kunjungan
-        else if (pageName.includes('kunjungan')) {
+        } else if (pageName.includes('kunjungan')) {
             menuToActive = document.getElementById('menu-data-kunjungan');
-        }
-        // Cek Nasabah
-        else if (pageName.includes('nasabah')) {
+        } else if (pageName.includes('nasabah')) {
             menuToActive = document.getElementById('menu-nasabah');
-        }
-        // Cek Dokumen
-        else if (pageName.includes('dokumen')) {
+        } else if (pageName.includes('dokumen')) {
             menuToActive = document.getElementById('menu-dokumen');
-        }
-        // Cek Karyawan
-        else if (pageName.includes('karyawan')) {
+        } else if (pageName.includes('karyawan')) {
             menuToActive = document.getElementById('menu-data-karyawan');
-        }
-        else {
+        } else {
             menuToActive = document.getElementById(`menu-${pageName}`);
         }
-
     }
 
-     if (menuToActive) menuToActive.classList.add('active');
+    if (menuToActive) menuToActive.classList.add('active');
 
-     contentArea.style.opacity = '0.3';
+    contentArea.style.opacity = '0.3';
     
-        let cleanName = pageName.replace('-content', '');
-        let fetchUrl = `/admin/${cleanName}-content`;
+    let cleanName = pageName.replace('-content', '');
+    let fetchUrl = `/admin/${cleanName}-content`;
 
-        fetch(fetchUrl, {
-            method: 'GET',
-            headers: {
-                // Header ini wajib agar Controller mendeteksi $request->ajax()
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'text/html'
-            }
-        })
-        .then(res => res.text())
-        .then(html => {
-            // Tempelkan kontennya (Partial saja, tanpa sidebar)
-            contentArea.innerHTML = html;
-            contentArea.style.opacity = '1';
-            
-            // Update URL tanpa reload
-            history.pushState({page: cleanName}, "", `/admin/${cleanName}`);
-        })
-        .catch(err => {
-            console.error("Gagal memuat:", err);
-            contentArea.style.opacity = '1';
+    fetch(fetchUrl, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'text/html'
+        }
+    })
+    .then(res => res.text())
+    .then(html => {
+        // --- BAGIAN YANG BERUBAH ---
+        contentArea.innerHTML = html;
+        contentArea.style.opacity = '1';
+        
+        // JALANKAN ULANG SCRIPT (Agar Tombol Export/Fitur JS muncul kembali)
+        const scripts = contentArea.querySelectorAll("script");
+        scripts.forEach(oldScript => {
+            const newScript = document.createElement("script");
+            // Salin atribut script (jika ada src, type, dll)
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            // Salin isi script-nya
+            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+            // Ganti script lama dengan yang baru agar dieksekusi browser
+            oldScript.parentNode.replaceChild(newScript, oldScript);
         });
+        // --- AKHIR PERUBAHAN ---
+
+        history.pushState({page: cleanName}, "", `/admin/${cleanName}`);
+    })
+    .catch(err => {
+        console.error("Gagal memuat:", err);
+        contentArea.style.opacity = '1';
+    });
 };
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -499,6 +496,43 @@ function closeModalTambahNasabah() {
         modal.style.display = 'none';
     }
 }
+
+$(document).on('change', '.status-select', function() {
+    let status = $(this).val();
+    let id = $(this).data('id');
+    let kode_ao = $(this).data('kode-ao'); 
+    
+    // Pakai path absolut dari root agar aman dari dobel prefix
+    let url = "/admin/kunjungan/update-status/" + id;
+
+    $.ajax({
+        url: url,
+        type: 'PATCH',
+        data: {
+            _token: '{{ csrf_token() }}',
+            status: status
+        },
+        success: function(response) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: 'Status diperbarui.',
+                timer: 1000,
+                showConfirmButton: false
+            });
+
+            // Refresh konten menggunakan fungsi loadAdminPage
+            if (kode_ao) {
+                loadAdminPage('kunjungan-detail/' + kode_ao);
+            }
+        },
+        error: function(xhr) {
+            console.log("URL Hit:", url);
+            console.log("Error Detail:", xhr.responseText);
+            Swal.fire('Error', 'Rute tidak ditemukan atau Server Error', 'error');
+        }
+    });
+});
 
 $(document).on('submit', '#modalTambahNasabah form', function(e) {
     e.preventDefault();

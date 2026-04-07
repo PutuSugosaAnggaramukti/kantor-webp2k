@@ -30,10 +30,11 @@
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700;">Nasabah</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 100px;">KOL</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Bulan</th>
+                <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 180px;">Status Pembayaran</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Kunjungan</th>
             </tr>
         </thead>
-      <tbody>
+        <tbody>
             @forelse($laporan as $index => $item)
             <tr style="text-align: center; border-bottom: 1px solid #333;">
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $index + 1 }}</td>
@@ -43,16 +44,34 @@
                 </td>
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->kol }}</td>
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->bulan }}</td>
+                
+                <td style="border: 1px solid #333; padding: 15px;">
+                    @php
+                        $status = $item->status ?? 'Menunggu Pembayaran';
+                        $color = '#856404'; // Coklat/Kuning (Default)
+                        $bg = '#fff3cd';
+
+                        if ($status == 'Sudah Bayar') {
+                            $color = '#155724'; // Hijau
+                            $bg = '#d4edda';
+                        } elseif ($status == 'Gagal Bayar') {
+                            $color = '#721c24'; // Merah
+                            $bg = '#f8d7da';
+                        }
+                    @endphp
+                    <span style="display: inline-block; padding: 5px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; color: {{ $color }}; background-color: {{ $bg }}; border: 1px solid {{ $color }};">
+                        {{ $status }}
+                    </span>
+                </td>
+
                 <td style="border: 1px solid #333; padding: 10px;">
                     <div style="display: flex; justify-content: center; align-items: center;">
                         @if($item->id_kunjungan)
-                            {{-- TOMBOL HIJAU: Jika sudah lapor (Termasuk Eko & Ingram) --}}
                             <button onclick="loadPage('detail-pelaporan?id={{ $item->id_kunjungan }}')" 
                                     style="border: none; background: #28a745; color: white; width: 35px; height: 35px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-check"></i>
                             </button>
                         @else
-                            {{-- TOMBOL BIRU: Jika belum ada laporan --}}
                             <div style="background-color: #007bff; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-minus"></i>
                             </div>
@@ -62,7 +81,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="6" style="padding: 20px; text-align: center;">Belum ada data kunjungan.</td>
+                <td colspan="7" style="padding: 20px; text-align: center;">Belum ada data kunjungan.</td>
             </tr>
             @endforelse
         </tbody>

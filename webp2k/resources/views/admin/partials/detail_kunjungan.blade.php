@@ -21,46 +21,79 @@
                 <th style="padding: 10px; border-right: 2px solid #000;">Catatan Kunjungan</th>
                 <th style="padding: 10px; border-right: 2px solid #000;">Janji Bayar</th>
                 <th style="padding: 10px; border-right: 2px solid #000;">Nominal Sanggup</th>
-                <th style="padding: 10px; border-right: 2px solid #000;">Hasil</th>
+                <th style="padding: 10px; border-right: 2px solid #000;">Status</th>
+                <th style="padding: 10px;">Hasil</th>
             </tr>
         </thead>
-        <tbody>
+                <tbody>
             @forelse($data_detail as $item)
                 <tr style="border-bottom: 2px solid #000; text-align: center;">
                     <td style="padding: 10px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
                     <td style="padding: 10px; border-right: 2px solid #000;">
-                        {{ \Carbon\Carbon::parse($item->created_at)->format('d-m-Y') }}
+                        {{-- Prioritas tgl realisasi (dari AO), fallback ke tgl rencana (dari Admin) --}}
+                        {{ \Carbon\Carbon::parse($item->tgl_realisasi ?? ($item->tanggal ?? $item->created_at))->format('d-m-Y') }}
                     </td>
                     <td style="padding: 10px; border-right: 2px solid #000;">
-                        <b>{{ $item->no_nasabah }}</b>
+                        <b>{{ $item->no_angsuran }}</b>
                     </td>
                     <td style="padding: 10px; border-right: 2px solid #000; text-align: left;">
                         {{ strtoupper($item->nama_nasabah) }}
                     </td>
-                    <td style="padding: 10px; border-right: 2px solid #000; text-align: left; font-size: 12px;">
-                        {{ $item->alamat_master ?? ($item->alamat_rencana ?? 'Alamat Tidak Ditemukan') }}
+                    <td style="padding: 10px; border-right: 2px solid #000; text-align: left; font-size: 11px;">
+                        {{ $item->alamat_master ?? ($item->alamat_nasabah ?? 'Alamat Tidak Ditemukan') }}
                     </td>
                     
-                    <td style="padding: 10px; border-right: 2px solid #000; text-align: left; font-size: 12px;">
-                        {{ $item->catatan ?? '-' }}
-                    </td>
-                    <td style="padding: 10px; border-right: 2px solid #000;">
-                        {{ $item->tgl_janji_bayar ? \Carbon\Carbon::parse($item->tgl_janji_bayar)->format('d-m-Y') : '-' }}
-                    </td>
-                    <td style="padding: 10px; border-right: 2px solid #000; text-align: right;">
-                        {{ $item->nominal_janji_bayar > 0 ? 'Rp ' . number_format($item->nominal_janji_bayar, 0, ',', '.') : '-' }}
+                    <td style="padding: 10px; border-right: 2px solid #000; text-align: left; font-size: 11px;">
+                        {{-- Ambil catatan lapangan AO, jika kosong baru tampilkan catatan rencana admin --}}
+                        {{ $item->catatan_lapangan ?? ($item->catatan ?? '-') }}
                     </td>
 
                     <td style="padding: 10px; border-right: 2px solid #000;">
-                        <button type="button" 
-                                onclick='showVisitDetail(@json($item))' 
-                                class="btn-view">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                        {{-- Ambil tgl janji dari hasil AO, fallback ke data rencana --}}
+                        @php $tgl = $item->tgl_janji_hasil ?? ($item->tgl_janji_bayar ?? null); @endphp
+                        {{ $tgl ? \Carbon\Carbon::parse($tgl)->format('d-m-Y') : '-' }}
+                    </td>
+
+                    <td style="padding: 10px; border-right: 2px solid #000; text-align: right;">
+                        {{-- Ambil nominal dari hasil AO, fallback ke data rencana --}}
+                        @php $nominal = $item->nominal_janji_hasil ?? ($item->nominal_janji_bayar ?? 0); @endphp
+                        {{ $nominal > 0 ? 'Rp ' . number_format($nominal, 0, ',', '.') : '-' }}
+                    </td>
+
+                    <td style="padding: 10px; border-right: 2px solid #000;">
+                        @if($item->id_kunjungan)
+                            <select class="status-select" 
+                                    data-id="{{ $item->id_kunjungan }}"
+                                    data-kode-ao="{{ $kode_ao }}"
+                                    style="padding: 5px; border-radius: 5px; font-weight: bold; font-size: 11px; cursor: pointer;
+                                    {{ $item->status_kunjungan == 'Sudah Bayar' ? 'background-color: #d4edda; color: #155724;' : '' }}
+                                    {{ $item->status_kunjungan == 'Gagal Bayar' ? 'background-color: #f8d7da; color: #721c24;' : '' }}
+                                    {{ $item->status_kunjungan == 'Menunggu Pembayaran' ? 'background-color: #fff3cd; color: #856404;' : '' }}">
+                                <option value="Menunggu Pembayaran" {{ $item->status_kunjungan == 'Menunggu Pembayaran' ? 'selected' : '' }}>⏳ Menunggu</option>
+                                <option value="Sudah Bayar" {{ $item->status_kunjungan == 'Sudah Bayar' ? 'selected' : '' }}>✅ Sudah Bayar</option>
+                                <option value="Gagal Bayar" {{ $item->status_kunjungan == 'Gagal Bayar' ? 'selected' : '' }}>❌ Gagal Bayar</option>
+                            </select>
+                        @else
+                            <span style="background-color: #e9ecef; color: #6c757d; padding: 5px 10px; border-radius: 5px; font-size: 10px; font-weight: bold; display: inline-block; border: 1px dashed #adb5bd;">
+                                Belum Kunjungan
+                            </span>
+                        @endif
+                    </td>
+
+                    <td style="padding: 10px;">
+                        @if($item->id_kunjungan)
+                            <button type="button" onclick='showVisitDetail(@json($item))' class="btn-view" style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        @else
+                            <button disabled style="background: #ccc; color: #666; border: none; padding: 5px 10px; border-radius: 5px; cursor: not-allowed;">
+                                <i class="fas fa-eye-slash"></i>
+                            </button>
+                        @endif
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="9" style="padding: 20px; text-align: center;">Data kunjungan tidak ditemukan.</td></tr>
+                <tr><td colspan="10" style="padding: 20px; text-align: center;">Data tidak ditemukan.</td></tr>
             @endforelse
         </tbody>
     </table>
