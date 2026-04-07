@@ -44,7 +44,11 @@ class DashboardAdminController extends Controller
             ->take(50) 
             ->get();
         
-        $pengajuan_ijin_count = $list_pengajuan->count();
+        $user = auth()->user();
+        
+       $pengajuan_ijin_count = $user->unreadNotifications
+        ->where('type', 'App\Notifications\IjinKunjunganNotification')
+        ->count();
 
         $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) {
             $kodeAO = trim($karyawan->kode_ao);

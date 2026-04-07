@@ -289,53 +289,124 @@
     </div>
 </div>
 
-<div id="modalTambahNasabah" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
-    <div style="background-color: #fff; padding: 30px; border-radius: 20px; width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;">
+<div id="modalTambahNasabah" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; overflow-y: auto;">
+    <div style="background-color: #fff; padding: 30px; border-radius: 20px; width: 95%; max-width: 1100px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); margin: 20px auto;">
         
         <h2 style="text-align: center; font-size: 24px; font-weight: 800; margin-bottom: 25px;">Tambah Data Nasabah</h2>
 
         <form action="{{ route('nasabah.store') }}" method="POST">
             @csrf
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota*</label>
-                <input type="text" name="no_angsuran" required placeholder="Masukkan nomor angsuran" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px;">
-            </div>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                
+                <div style="flex: 1; min-width: 300px;">
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Kode</label>
+                        <input type="text" name="kode" placeholder="Contoh: PG.001" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">No. Angsuran*</label>
+                        <input type="text" name="no_angsuran" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Rekening Kredit</label>
+                        <input type="text" name="rekening_kredit" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Kode Nasabah</label>
+                        <input type="text" name="kode_nasabah" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Nama Nasabah*</label>
+                        <input type="text" name="nasabah" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Alamat*</label>
+                        <textarea name="alamat" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; height: 50px;"></textarea>
+                    </div>
+                </div>
 
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama Nasabah*</label>
-                <input type="text" name="nasabah" required placeholder="Nama lengkap nasabah" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px;">
-            </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Lama (Tenor)</label>
+                        <input type="number" name="lama" placeholder="Bulan" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-weight: 700; margin-bottom: 3px;">Tgl Pinjam</label>
+                            <input type="date" name="tgl_pinjam" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-weight: 700; margin-bottom: 3px;">Tgl JT</label>
+                            <input type="date" name="tgl_jt" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Nominal (Plafond)</label>
+                        <input type="number" name="nominal" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px; color: red;">Sisa Pokok (OS)</label>
+                        <input type="number" name="sisa_pokok" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <label style="display: block; font-weight: 700; margin-bottom: 3px;">Pokok/Bln</label>
+                            <input type="number" name="pokok_per_bulan" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-weight: 700; margin-bottom: 3px;">Bunga/Bln</label>
+                            <input type="number" name="bunga_per_bulan" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Kode AO</label>
+                        <input type="text" name="kode_ao" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                </div>
 
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Alamat*</label>
-                <textarea name="alamat" required placeholder="Alamat lengkap" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px; height: 60px;"></textarea>
-            </div>
+                <div style="flex: 1; min-width: 300px;">
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                        <div style="flex: 2;">
+                            <label style="display: block; font-weight: 700; margin-bottom: 3px;">Tgk. Pokok</label>
+                            <input type="number" name="tunggakan_pokok" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-weight: 700; margin-bottom: 3px;">Hari</label>
+                            <input type="number" name="hari_pokok" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                        <div style="flex: 2;">
+                            <label style="display: block; font-weight: 700; margin-bottom: 3px;">Tgk. Bunga</label>
+                            <input type="number" name="tunggakan_bunga" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="display: block; font-weight: 700; margin-bottom: 3px;">Hari</label>
+                            <input type="number" name="hari_bunga" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 3px;">Denda</label>
+                        <input type="number" name="denda" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: 700; margin-bottom: 5px; color: #007bff;">Klasifikasi Nasabah (Kualitas)*</label>
+                        <select name="kol" required style="width: 100%; padding: 10px; border: 2px solid #007bff; border-radius: 8px; background: white; font-weight: 700;">
+                            <option value="">-- Pilihan Klasifikasi Nasabah --</option>
+                            <option value="1">LANCAR</option>
+                            <option value="2">DALAM PERHATIAN KHUSUS</option>
+                            <option value="3">KURANG LANCAR</option>
+                            <option value="4">DIRAGUKAN</option>
+                            <option value="5">MACET</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 25px;">
+                        <button type="button" onclick="closeModalTambahNasabah()" style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ccc; background: #eee; font-weight: 700; cursor: pointer;">Batal</button>
+                        <button type="submit" style="flex: 2; padding: 12px; border-radius: 10px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: 700;">Simpan Data</button>
+                    </div>
+                </div>
 
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Plafond (Nominal)</label>
-                <input type="number" name="nominal" placeholder="Contoh: 10000000" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px;">
-            </div>
-
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">Sisa Pokok (OS)</label>
-                <input type="number" name="sisa_pokok" placeholder="Contoh: 8500000" style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px;">
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px;">KOL*</label>
-                <select name="kol" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 8px; background: white;">
-                    <option value="">-- Pilih KOL --</option>
-                    <option value="1">KOL 1</option>
-                    <option value="2">KOL 2</option>
-                    <option value="3">KOL 3</option>
-                    <option value="4">KOL 4</option>
-                    <option value="5">KOL 5</option>
-                </select>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; gap: 20px;">
-                <button type="button" onclick="closeModalTambahNasabah()" style="flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ccc; background: #eee; font-weight: 700; cursor: pointer;">Batal</button>
-                <button type="submit" style="flex: 1; padding: 12px; border-radius: 10px; background: #28a745; color: white; border: none; cursor: pointer; font-weight: 700;">Simpan Data</button>
             </div>
         </form>
     </div>

@@ -498,38 +498,45 @@ function closeModalTambahNasabah() {
 }
 
 $(document).on('change', '.status-select', function() {
-    let status = $(this).val();
+    let statusPilihan = $(this).val(); 
     let id = $(this).data('id');
     let kode_ao = $(this).data('kode-ao'); 
     
-    // Pakai path absolut dari root agar aman dari dobel prefix
-    let url = "/admin/kunjungan/update-status/" + id;
+    // Tampilkan loading sebentar biar user tahu proses sedang jalan
+    $(this).css('opacity', '0.5');
 
     $.ajax({
-        url: url,
+        url: "/admin/kunjungan/update-status/" + id,
         type: 'PATCH',
         data: {
-            _token: '{{ csrf_token() }}',
-            status: status
+            _token: $('meta[name="csrf-token"]').attr('content'),
+            status: statusPilihan,
+            is_filled: 1
         },
         success: function(response) {
+            // 1. Notifikasi Berhasil
             Swal.fire({
                 icon: 'success',
                 title: 'Berhasil!',
-                text: 'Status diperbarui.',
+                text: 'Status kunjungan diperbarui.',
                 timer: 1000,
                 showConfirmButton: false
             });
 
-            // Refresh konten menggunakan fungsi loadAdminPage
+            // 2. Refresh Konten (Penting agar data tidak balik ke default)
             if (kode_ao) {
                 loadAdminPage('kunjungan-detail/' + kode_ao);
+            } else {
+                // Jika tidak ada kode_ao, refresh halaman saat ini saja
+                const currentPath = window.location.pathname.replace('/admin/', '');
+                loadAdminPage(currentPath);
             }
         },
         error: function(xhr) {
-            console.log("URL Hit:", url);
-            console.log("Error Detail:", xhr.responseText);
-            Swal.fire('Error', 'Rute tidak ditemukan atau Server Error', 'error');
+            console.error("Detail Error:", xhr.responseText);
+            Swal.fire('Error', 'Gagal menyimpan ke database!', 'error');
+            // Balikin opacity kalau error
+            $('.status-select').css('opacity', '1');
         }
     });
 });

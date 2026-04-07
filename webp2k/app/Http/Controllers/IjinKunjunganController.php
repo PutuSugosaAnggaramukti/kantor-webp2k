@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\IjinKunjungan; // Import Model
 use Illuminate\Support\Facades\Auth; // Untuk ambil data login
 
+
 class IjinKunjunganController extends Controller
 {
     // 1. Menampilkan Halaman Form Ijin
@@ -15,55 +16,75 @@ class IjinKunjunganController extends Controller
     }
 
     // 2. Proses Simpan Data Ijin
-   public function store(Request $request)
-    {
-        try {
-            // 1. Validasi
-            $request->validate([
-                'tanggal' => 'required|date',
-                'jenis_ijin' => 'required',
-                'alasan' => 'required',
-            ]);
+ public function store(Request $request)
+{
+    try {
+        // 1. Validasi
+        $request->validate([
+            'tanggal' => 'required|date',
+            'jenis_ijin' => 'required',
+            'alasan' => 'required',
+        ]);
 
-            // 2. Cek User & Kode AO (Penting!)
-            $user = auth()->user();
-            
-            if (!$user) {
-                return response()->json(['error' => 'Sesi login habis, silakan login ulang.'], 401);
-            }
-
-            if (empty($user->kode_ao)) {
-                return response()->json(['error' => 'User login tidak memiliki Kode AO. Cek tabel users!'], 422);
-            }
-
-            // 3. Simpan
-            IjinKunjungan::create([
-                'karyawan_id' => $user->id,
-                'kode_ao' => $user->kode_ao,
-                'tanggal' => $request->tanggal,
-                'jenis_ijin' => $request->jenis_ijin,
-                'alasan' => $request->alasan,
-            ]);
-
-            return response()->json(['message' => 'Ijin berhasil dikirim']);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            // Balikan error validasi (422) jika ada field yang kosong
-            return response()->json(['errors' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            // Balikan error sistem (500)
-            return response()->json(['error' => 'Terjadi kesalahan sistem: ' . $e->getMessage()], 500);
+        // 2. Cek User
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Sesi login habis.'], 401);
         }
+
+        // 3. Simpan data ijin ke variabel $ijin
+        $ijin = \App\Models\IjinKunjungan::create([
+            'karyawan_id' => $user->id,
+            'kode_ao' => $user->kode_ao,
+            'tanggal' => $request->tanggal,
+            'jenis_ijin' => $request->jenis_ijin,
+            'alasan' => $request->alasan,
+            'status' => 'pending' // Pastikan ada status default
+        ]);
+
+        // --- 4. TAMBAHKAN LOGIKA NOTIFIKASI DI SINI ---
+        // Ambil semua user Admin
+        $admins = \App\Models\User::all(); 
+
+        $details = [
+            'id_ijin' => $ijin->id,
+            'nama_ao' => $user->nama, // Pastikan kolom 'nama' ada di tabel karyawan/user
+            'pesan'   => "Mengajukan ijin " . $request->jenis_ijin,
+            'status'  => 'pending'
+        ];
+
+        foreach ($admins as $admin) {
+            $admin->notify(new \App\Notifications\IjinKunjunganNotification($details));
+        }
+        // ----------------------------------------------
+
+        return response()->json(['message' => 'Ijin berhasil dikirim']);
+
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
     }
+}
 
         // 1. Menampilkan semua pengajuan ijin ke dashboard Admin
     public function indexAdmin()
     {
-        // Mengambil data ijin beserta relasi karyawannya
-        $dataIjin = IjinKunjungan::with('karyawan')->orderBy('created_at', 'desc')->get();
+        // 1. Ambil user admin yang sedang login
+        $user = auth()->user();
+
+        // 2. Tandai semua notifikasi ijin kunjungan sebagai 'sudah dibaca'
+        if ($user) {
+            $user->unreadNotifications
+                ->where('type', 'App\Notifications\IjinKunjunganNotification')
+                ->markAsRead();
+        }
+
+        // 3. Mengambil data ijin beserta relasi karyawannya untuk ditampilkan di tabel
+        $dataIjin = IjinKunjungan::with('karyawan')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('admin.ijin.index', compact('dataIjin'));
     }
-
     // 2. Memproses perubahan status (Setuju/Tolak)
     public function updateStatus(Request $request, $id)
     {

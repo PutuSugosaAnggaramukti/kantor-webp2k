@@ -137,7 +137,26 @@
                     <i class="fa-solid fa-users text-4xl mb-3"></i>
                     <span class="font-semibold">Data Kunjungan</span>
                 </a>
-                <a href="javascript:void(0)" onclick="transitionToPage('laporan-kunjungan')" class="btn-menu">
+               <a href="javascript:void(0)" onclick="transitionToPage('laporan-kunjungan')" class="btn-menu" style="position: relative;">
+    
+                    @if(isset($notifCount) && $notifCount > 0)
+                        <span style="
+                            position: absolute;
+                            top: 5px;
+                            right: 15px;
+                            background-color: #ef4444; /* Warna merah (Tailwind red-500) */
+                            color: white;
+                            font-size: 11px;
+                            font-weight: bold;
+                            padding: 2px 7px;
+                            border-radius: 9999px;
+                            border: 2px solid white;
+                            z-index: 10;
+                        ">
+                            {{ $notifCount }}
+                        </span>
+                    @endif
+
                     <i class="fa-solid fa-file-lines text-4xl mb-3"></i>
                     <span class="font-semibold">Laporan Kunjungan</span>
                 </a>

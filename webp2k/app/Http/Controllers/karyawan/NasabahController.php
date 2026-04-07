@@ -14,65 +14,72 @@ use Illuminate\Http\Request;
 class NasabahController extends Controller
 {
 
-   public function nasabahContent(Request $request)
-    {
-        $activeTab = $request->query('tab', '1'); 
-        $search = $request->query('search'); 
+  public function nasabahContent(Request $request)
+{
+    $activeTab = $request->query('tab', '1'); 
+    $search = $request->query('search'); 
 
-        $query = \App\Models\Nasabah::orderBy('nasabah', 'asc');
+    // Urutkan berdasarkan abjad nama nasabah
+    $query = \App\Models\Nasabah::orderBy('nasabah', 'asc');
 
-        // 1. Logika Filter Tab
-        if ($activeTab === 'hb') {
-            $query->where('is_hb', 1);
-        } elseif ($activeTab === '5') {
-            $query->where('kol', '5')->where('is_hb', 0);
-        } else {
-            $targetKol = in_array($activeTab, ['1', '2', '3', '4']) ? $activeTab : '1';
-            $query->where('kol', $targetKol)->where('is_hb', 0);
-        }
-
-        // 2. Logika Pencarian
-        if (!empty($search)) {
-            $query->where(function($q) use ($search) {
-                $q->where('nasabah', 'LIKE', "%$search%")
-                ->orWhere('no_angsuran', 'LIKE', "%$search%")
-                ->orWhere('alamat', 'LIKE', "%$search%");
-            });
-        }
-
-        $nasabah_all = $query->paginate(10)->withQueryString();
-
-        // 3. Siapkan Data untuk View
-        $viewData = [
-            'nasabah_all' => $nasabah_all,
-            'activeTab'   => $activeTab,
-            'search'      => $search,
-            'count1'      => \App\Models\Nasabah::where('kol', '1')->where('is_hb', 0)->count(),
-            'count2'      => \App\Models\Nasabah::where('kol', '2')->where('is_hb', 0)->count(),
-            'count3'      => \App\Models\Nasabah::where('kol', '3')->where('is_hb', 0)->count(),
-            'count4'      => \App\Models\Nasabah::where('kol', '4')->where('is_hb', 0)->count(),
-            'count5'      => \App\Models\Nasabah::where('kol', '5')->where('is_hb', 0)->count(),
-            'countHB'     => \App\Models\Nasabah::where('is_hb', 1)->count(),
-        ];
-
-        // Response untuk AJAX (Pagination / Filter Tab / Search)
-        if ($request->ajax()) {
-            return view('admin.partials.nasabah_table', $viewData)->render();
-        }
-
-        // 4. Response untuk Full Page Load (Refresh Halaman)
-        $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
-        $data = $dashboard->getDashboardData();
-        
-        // PERBAIKAN DI SINI: Gabungkan data agar variabel $activeTab dkk tersedia di datakaryawan.blade.php
-        $data = array_merge($data, $viewData); 
-
-        $data['content'] = view('admin.partials.nasabah_table', $viewData)->render();
-        $data['page']    = 'nasabah';
-        $data['title']   = 'Data Nasabah';
-
-        return view('admin.datakaryawan', $data);
+    // 1. Logika Filter Tab
+    if ($activeTab === 'hb') {
+        $query->where('is_hb', 1);
+    } else {
+        // Pastikan data yang muncul bukan data HB
+        $targetKol = in_array($activeTab, ['1', '2', '3', '4', '5']) ? $activeTab : '1';
+        $query->where('kol', $targetKol)->where('is_hb', 0);
     }
+
+    // 2. Logika Pencarian
+    if (!empty($search)) {
+        $query->where(function($q) use ($search) {
+            $q->where('nasabah', 'LIKE', "%$search%")
+              ->orWhere('no_angsuran', 'LIKE', "%$search%")
+              ->orWhere('alamat', 'LIKE', "%$search%");
+        });
+    }
+
+    $nasabah_all = $query->paginate(10)->withQueryString();
+
+    // 3. Optimasi Count (Hitung sekaligus data non-HB)
+    $counts = \App\Models\Nasabah::selectRaw("
+            SUM(CASE WHEN kol = '1' AND is_hb = 0 THEN 1 ELSE 0 END) as c1,
+            SUM(CASE WHEN kol = '2' AND is_hb = 0 THEN 1 ELSE 0 END) as c2,
+            SUM(CASE WHEN kol = '3' AND is_hb = 0 THEN 1 ELSE 0 END) as c3,
+            SUM(CASE WHEN kol = '4' AND is_hb = 0 THEN 1 ELSE 0 END) as c4,
+            SUM(CASE WHEN kol = '5' AND is_hb = 0 THEN 1 ELSE 0 END) as c5,
+            SUM(CASE WHEN is_hb = 1 THEN 1 ELSE 0 END) as chb
+        ")->first();
+
+    $viewData = [
+        'nasabah_all' => $nasabah_all,
+        'activeTab'   => $activeTab,
+        'search'      => $search,
+        'count1'      => $counts->c1 ?? 0,
+        'count2'      => $counts->c2 ?? 0,
+        'count3'      => $counts->c3 ?? 0,
+        'count4'      => $counts->c4 ?? 0,
+        'count5'      => $counts->c5 ?? 0,
+        'countHB'     => $counts->chb ?? 0,
+    ];
+
+    // Response untuk AJAX
+    if ($request->ajax()) {
+        return view('admin.partials.nasabah_table', $viewData)->render();
+    }
+
+    // 4. Response untuk Full Page Load
+    $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+    $data = $dashboard->getDashboardData();
+    
+    $data = array_merge($data, $viewData); 
+    $data['content'] = view('admin.partials.nasabah_table', $viewData)->render();
+    $data['page']    = 'nasabah';
+    $data['title']   = 'Data Nasabah';
+
+    return view('admin.datakaryawan', $data);
+}
 
     public function detail($no_angsuran)
     {
@@ -85,38 +92,68 @@ class NasabahController extends Controller
 
   public function store(Request $request)
     {
-        // 1. Tambahkan nominal dan sisa_pokok ke dalam validasi
+        // 1. Validasi Lengkap (Mencakup semua field baru dari form)
         $request->validate([
             'no_angsuran' => 'required|unique:nasabahs,no_angsuran',
             'nasabah'     => 'required',
             'alamat'      => 'required',
             'kol'         => 'required',
-            'nominal'     => 'nullable|numeric',    // Boleh kosong, tapi jika isi harus angka
-            'sisa_pokok'  => 'nullable|numeric',   // Boleh kosong, tapi jika isi harus angka
+            'nominal'     => 'nullable|numeric',
+            'sisa_pokok'  => 'nullable|numeric',
+            'tgl_pinjam'  => 'nullable|date',
+            'tgl_jt'      => 'nullable|date',
+            'lama'        => 'nullable|numeric',
+        ], [
+            'no_angsuran.unique' => 'Nomor Anggota ini sudah terdaftar di sistem.',
+            'no_angsuran.required' => 'Nomor Anggota wajib diisi.',
+            'nasabah.required' => 'Nama Nasabah wajib diisi.',
+            'kol.required' => 'Klasifikasi nasabah wajib dipilih.',
         ]);
 
         try {
-            Nasabah::create([
-                'no_angsuran'   => $request->no_angsuran,
-                'nasabah'       => $request->nasabah,
-                'alamat'        => $request->alamat,
-                'kol'           => $request->kol,
-                
-                // 2. Ambil nilai dari request, jika kosong baru berikan default 0
-                'nominal'       => $request->nominal ?? 0,
-                'sisa_pokok'    => $request->sisa_pokok ?? 0,
-                
-                'kode_ao'       => '-',  
-                'nama_ao'       => '-',  
-                'kode'          => '-', 
-                'sudah_kunjung' => 0,
-                'bulan'         => now()->format('Y-m'),
+            \App\Models\Nasabah::create([
+                // --- KOLOM 1: Identitas ---
+                'kode'            => $request->kode ?? '-',
+                'no_angsuran'     => $request->no_angsuran,
+                'rekening_kredit' => $request->rekening_kredit ?? '-',
+                'kode_nasabah'    => $request->kode_nasabah ?? '-',
+                'nasabah'         => $request->nasabah,
+                'alamat'          => $request->alamat,
+
+                // --- KOLOM 2: Tenor & Keuangan ---
+                'lama'            => $request->lama ?? 0,
+                'tgl_pinjam'      => $request->tgl_pinjam,
+                'tgl_jt'          => $request->tgl_jt,
+                'nominal'         => $request->nominal ?? 0,
+                'sisa_pokok'      => $request->sisa_pokok ?? 0,
+                'pokok_per_bulan' => $request->pokok_per_bulan ?? 0,
+                'bunga_per_bulan' => $request->bunga_per_bulan ?? 0,
+                'kode_ao'         => $request->kode_ao ?? '-',
+
+                // --- KOLOM 3: Tunggakan & Kualitas ---
+                'tunggakan_pokok' => $request->tunggakan_pokok ?? 0,
+                'hari_pokok'      => $request->hari_pokok ?? 0,
+                'tunggakan_bunga' => $request->tunggakan_bunga ?? 0,
+                'hari_bunga'      => $request->hari_bunga ?? 0,
+                'denda'           => $request->denda ?? 0,
+                'kol'             => $request->kol,
+
+                // --- Default System ---
+                'nama_ao'         => '-', 
+                'sudah_kunjung'   => 0,
+                'is_hb'           => 0,
+                'bulan'           => now()->format('Y-m'),
             ]);
 
-            return response()->json(['success' => 'Nasabah berhasil ditambahkan!']);
+            return response()->json([
+                'success' => 'Nasabah ' . $request->nasabah . ' berhasil ditambahkan ke Klasifikasi KOL ' . $request->kol
+            ]);
+            
         } catch (\Exception $e) {
-            // Menggunakan response json agar konsisten dengan AJAX di frontend
-            return response()->json(['errors' => ['db' => [$e->getMessage()]]], 500);
+            \Log::error("Gagal Simpan Nasabah Manual: " . $e->getMessage());
+            return response()->json([
+                'errors' => ['db' => ['Gagal menyimpan ke database: ' . $e->getMessage()]]
+            ], 500);
         }
     }
 

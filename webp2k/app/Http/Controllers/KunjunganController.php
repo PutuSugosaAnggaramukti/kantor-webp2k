@@ -38,34 +38,43 @@ class KunjunganController extends Controller
         return $this->getMergedKunjunganData();
     }
 
-    private function getMergedKunjunganData()
+   private function getMergedKunjunganData()
     {
         $karyawan = Auth::guard('karyawan')->user();
         if (!$karyawan) return redirect()->back();
 
         $myCode = strtoupper(trim($karyawan->kode_ao));
         
-        // 1. Ambil data
+        // 1. Ambil data jadwal
         $jadwal = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
+        
+        // 2. Ambil data realisasi (Urutkan dari yang terbaru agar yang terambil selalu yang terakhir)
         $realisasi = \DB::table('kunjungans')
             ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         $dataFinal = collect();
-        $realisasiTerpakaiIds = []; // Simpan ID realisasi yang sudah masuk di PROSES A
+        $realisasiTerpakaiIds = []; 
 
         // PROSES A: Loop Jadwal Admin
         foreach ($jadwal as $j) {
             $namaJadwal = strtoupper(trim(preg_replace('/\s+/', ' ', $j->nama_nasabah)));
             
-            // Cari realisasi yang namanya sama
+            // KUNCI PERBAIKAN: Cari realisasi yang namanya sama (ambil yang paling baru)
             $match = $realisasi->first(function ($r) use ($namaJadwal) {
                 $namaReal = strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah)));
                 return $namaReal === $namaJadwal;
             });
 
             if ($match) {
-                $realisasiTerpakaiIds[] = $match->id; // Tandai ID realisasi ini sudah dipakai
+                // Jika ketemu, kita tandai SEMUA realisasi dengan nama nasabah ini sebagai "Terpakai"
+                // Agar tidak muncul lagi di PROSES B sebagai data mandiri
+                $semuaIdSama = $realisasi->filter(function ($r) use ($namaJadwal) {
+                    return strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah))) === $namaJadwal;
+                })->pluck('id')->toArray();
+                
+                $realisasiTerpakaiIds = array_merge($realisasiTerpakaiIds, $semuaIdSama);
             }
 
             $dataFinal->push((object)[
@@ -81,13 +90,12 @@ class KunjunganController extends Controller
                 'bulan' => $j->bulan, 
                 'is_filled' => $match ? true : false,
                 'is_mandiri' => false,
-                'id_kunjungan_real' => $match ? $match->id : null // Tambahan untuk link detail
+                'id_kunjungan_real' => $match ? $match->id : null 
             ]);
         }
 
-        // PROSES B: Loop Data Realisasi (Cek apakah ada yang belum masuk di PROSES A)
+        // PROSES B: Loop Data Realisasi (Hanya yang benar-benar tidak ada di jadwal)
         foreach ($realisasi as $r) {
-            // HANYA masukkan jika ID realisasi ini BELUM digunakan di PROSES A
             if (!in_array($r->id, $realisasiTerpakaiIds)) {
                 $dataFinal->push((object)[
                     'id' => $r->id,
@@ -98,10 +106,14 @@ class KunjunganController extends Controller
                     'is_filled' => true,
                     'is_mandiri' => true
                 ]);
+                
+                // Masukkan ID ini ke daftar terpakai agar jika ada 2 data mandiri dengan nama sama,
+                // dia tidak muncul 2x juga di sini.
+                $realisasiTerpakaiIds[] = $r->id;
             }
         }
 
-        // --- LOGIKA MANUAL PAGINATION ---
+        // --- LOGIKA MANUAL PAGINATION (Tetap Sama) ---
         $currentPage = Paginator::resolveCurrentPage() ?: 1;
         $perPage = 10; 
         $currentItems = $dataFinal->slice(($currentPage - 1) * $perPage, $perPage)->all();
@@ -114,17 +126,19 @@ class KunjunganController extends Controller
             ['path' => Paginator::resolveCurrentPath()]
         );
 
-        if (request()->ajax()) {
-            return view('kunjungan.partials.data_table', compact('data'));
-        }
-
-        return view('kunjungan.datakunjungan', compact('data'));
+        return request()->ajax() 
+            ? view('kunjungan.partials.data_table', compact('data')) 
+            : view('kunjungan.datakunjungan', compact('data'));
     }
 
     public function laporanKunjunganContent()
     {
         $user = Auth::guard('karyawan')->user();
         if (!$user) return response()->json(['error' => 'Unauthorized'], 401);
+
+        $user->unreadNotifications
+         ->where('type', 'App\Notifications\UpdateStatusNotification')
+         ->markAsRead();
 
         $myCode = strtoupper(trim($user->kode_ao));
 
@@ -160,6 +174,10 @@ class KunjunganController extends Controller
 {
     $user = Auth::guard('karyawan')->user();
     if (!$user) return redirect()->back();
+
+    $user->unreadNotifications
+         ->where('type', 'App\Notifications\UpdateStatusNotification')
+         ->markAsRead();
 
     $myCode = strtoupper(trim($user->kode_ao));
 

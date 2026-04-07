@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\DataKunjunganAdm;
 use App\Models\Kunjungan;
 use App\Models\Karyawan;
+use App\Models\User;
 use App\Exports\KunjunganExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Dashboard\DashboardAdminController;
+use App\Notifications\UpdateStatusNotification;
 
 class AdmKunjunganController extends Controller
 {
@@ -114,33 +116,36 @@ public function detail($kode_ao)
     $kode_ao_clean = str_replace('-content', '', $kode_ao);
 
     try {
-        // QUERY DIBALIK: Mulai dari data_kunjungan_adms (Tabel Rencana)
         $data_detail = \DB::table('data_kunjungan_adms')
-            // Hubungkan ke hasil kunjungan (kunjungans) jika sudah ada
             ->leftJoin('kunjungans', function ($join) {
                 $join->on('data_kunjungan_adms.no_angsuran', '=', 'kunjungans.no_nasabah')
                      ->on('data_kunjungan_adms.kode_ao', '=', 'kunjungans.kode_ao');
             })
-            // Hubungkan ke master nasabah untuk alamat jika perlu
             ->leftJoin('nasabahs', 'data_kunjungan_adms.no_angsuran', '=', 'nasabahs.no_angsuran')
             ->where('data_kunjungan_adms.kode_ao', $kode_ao_clean)
             ->select(
-                    'data_kunjungan_adms.*', 
-                    'kunjungans.id as id_kunjungan',
-                    'kunjungans.status as status_kunjungan',
-                    'kunjungans.catatan as catatan_lapangan',
-                    'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
-                    'kunjungans.foto_kunjungan', 
-                    'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
-                    'kunjungans.created_at as tgl_realisasi',
-                    'nasabahs.alamat as alamat_master'
-                )
+                'data_kunjungan_adms.*', 
+                'kunjungans.id as id_kunjungan',
+                'kunjungans.status as status_kunjungan',
+                'kunjungans.catatan as catatan_lapangan',
+                // PERBAIKAN: Gunakan kolom yang benar-benar ada di tabel nasabahs atau kunjungans
+                'nasabahs.tgl_jt as tgl_janji_hasil', 
+                'kunjungans.foto_kunjungan', 
+                'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
+                'kunjungans.created_at as tgl_realisasi',
+                'nasabahs.alamat as alamat_master',
+                'nasabahs.nasabah as nama_nasabah_asli' // Tambahkan ini agar nama selalu benar
+            )
             ->orderBy('data_kunjungan_adms.created_at', 'desc')
             ->get();
 
-        // Logika pengolahan foto (Hanya dilakukan jika id_kunjungan tidak null)
         foreach ($data_detail as $item) {
-            if ($item->id_kunjungan) {
+            // Gunakan nama nasabah dari master jika data di tabel ADM salah (akibat import geser)
+            if ($item->nama_nasabah_asli) {
+                $item->nama_nasabah = $item->nama_nasabah_asli;
+            }
+
+            if ($item->id_kunjungan && $item->foto_kunjungan) {
                 $fotos = json_decode($item->foto_kunjungan, true);
                 $namaFoto = (is_array($fotos) && count($fotos) > 0) ? $fotos[0] : $item->foto_kunjungan;
                 
@@ -155,7 +160,6 @@ public function detail($kode_ao)
                     }
                 }
             } else {
-                // Jika belum dikunjungi, set koordinat kosong
                 $item->koordinat = null;
             }
         }
@@ -301,7 +305,7 @@ public function detail($kode_ao)
         return Excel::download(new KunjunganExport($kode_ao), $fileName);
     }
 
-    public function importExcel(Request $request)
+   public function importExcel(Request $request)
     {
         $request->validate([
             'karyawan_id' => 'required|exists:karyawans,id',
@@ -313,37 +317,49 @@ public function detail($kode_ao)
             $file = $request->file('file_excel');
             $data = Excel::toArray([], $file)[0];
             $karyawan = Karyawan::find($request->karyawan_id);
-            
             $tglInput = $request->tanggal_kunjungan;
 
             DB::beginTransaction();
 
             foreach (array_slice($data, 1) as $row) {
-                $noAngsuran  = $row[0] ?? null; 
-                $namaNasabah = $row[1] ?? null; 
-                $alamat      = $row[2] ?? '-';  
-                
-                $nominalRaw   = preg_replace('/[^0-9]/', '', $row[3] ?? '0');
-                $sisaPokokRaw = preg_replace('/[^0-9]/', '', $row[4] ?? '0');
-                
-                $kol = $row[5] ?? 1;    
+                // Kolom C = Index 2
+                $noAngsuran = isset($row[2]) ? trim($row[2]) : null;
 
-                if (empty($namaNasabah)) continue;
+                if (empty($noAngsuran) || !is_numeric($noAngsuran)) continue;
+
+                // Ambil data master nasabah untuk fallback data yang kosong
+                $nasabahMaster = \App\Models\Nasabah::where('no_angsuran', (string)$noAngsuran)->first();
+
+                $namaNasabah = $row[5] ?? ($nasabahMaster->nasabah ?? '-');
+                $alamat      = $row[6] ?? ($nasabahMaster->alamat ?? '-');
+                
+                // PERBAIKAN: Gunakan Index 36 sesuai hitungan kamu
+                $kolRaw = isset($row[36]) ? trim($row[36]) : 0;
+                
+                // Jika di excel 0, kosong, atau bukan angka, ambil dari database master nasabah
+                if (empty($kolRaw) || $kolRaw == 0 || !is_numeric($kolRaw)) {
+                    $kol = $nasabahMaster->kol ?? 1;
+                } else {
+                    $kol = (int)$kolRaw;
+                }
+
+                $nominal   = (float) preg_replace('/[^0-9]/', '', $row[10] ?? ($nasabahMaster->nominal ?? '0'));
+                $sisaPokok = (float) preg_replace('/[^0-9]/', '', $row[11] ?? ($nasabahMaster->sisa_pokok ?? '0'));
 
                 $isHb = ($kol == 5) ? true : false;
 
                 \App\Models\DataKunjunganAdm::updateOrCreate(
                     [
-                        'karyawan_id'  => $request->karyawan_id,
-                        'no_angsuran'  => $noAngsuran,
-                        'bulan'        => now()->format('Y-m') 
+                        'karyawan_id' => $request->karyawan_id,
+                        'no_angsuran' => (string)$noAngsuran,
+                        'bulan'       => now()->format('Y-m') 
                     ],
                     [
                         'kode_ao'        => $karyawan->kode_ao,
                         'nama_nasabah'   => $namaNasabah,
                         'alamat_nasabah' => $alamat,
-                        'nominal'        => (float) $nominalRaw,   
-                        'sisa_pokok'     => (float) $sisaPokokRaw, 
+                        'nominal'        => $nominal,
+                        'sisa_pokok'     => $sisaPokok,
                         'kol'            => $kol,
                         'is_hb'          => $isHb,
                         'tanggal'        => $tglInput, 
@@ -352,32 +368,50 @@ public function detail($kode_ao)
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Import Berhasil untuk tanggal ' . $tglInput . '!']);
-
+            return response()->json(['success' => true, 'message' => 'Import Berhasil dengan KOL dari kolom 36!']);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
         }
     }
 
-        public function updateStatus(Request $request, $id)
-    {
-        try {
-            \DB::table('kunjungans')->where('id', $id)->update([
-                'status' => $request->status,
-                'updated_at' => now()
-            ]);
+public function updateStatus(Request $request, $id)
+{
+    try {
+        // 1. Update status kunjungan
+        DB::table('kunjungans')->where('id', $id)->update([
+            'status' => $request->status,
+            'updated_at' => now()
+        ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Status berhasil diperbarui!'
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memperbarui status: ' . $e->getMessage()
-            ], 500);
+        // 2. Ambil data kunjungan untuk cari AO
+        $dataKunjungan = DB::table('kunjungans')->where('id', $id)->first();
+
+        if ($dataKunjungan) {
+            // Bersihkan kode_ao dari titik/spasi untuk pencarian cadangan
+            $cleanAo = preg_replace('/[^A-Za-z0-9]/', '', $dataKunjungan->kode_ao);
+
+            // Cari di tabel karyawans
+            $ao = \App\Models\Karyawan::where('kode_ao', $dataKunjungan->kode_ao)
+                ->orWhereRaw("REPLACE(REPLACE(kode_ao, '.', ''), ' ', '') = ?", [$cleanAo])
+                ->first();
+
+            if ($ao) {
+                // KIRIM NOTIFIKASI
+                $ao->notify(new \App\Notifications\UpdateStatusNotification([
+                    'nama_nasabah' => $dataKunjungan->nama_nasabah,
+                    'status' => $request->status,
+                    'id_kunjungan' => $id
+                ]));
+            } else {
+                // Log jika AO tidak ketemu (cek di storage/logs/laravel.log)
+                \Log::warning("AO tidak ditemukan untuk kode: " . $dataKunjungan->kode_ao);
+            }
         }
+
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        return response()->json(['message' => $e->getMessage()], 500);
     }
+}
 }

@@ -92,20 +92,6 @@
                             <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold;">{{ $kpi_target_nasional }}%</div>
                         </div>
                     </div>
-
-                    <div class="stat-card" onclick="openModalAO('kol5')" style="background: white; color: #333; border-left: 8px solid #e74c3c; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 20px;">
-                        <div style="text-align: left;">
-                            <div class="stat-label" style="color: #666;">Nasabah HB Done</div>
-                            <div style="font-size: 0.75rem; color: #999;">Persentase penyelesaian nasabah HB</div>
-                        </div>
-                        <div style="position: relative; width: 70px; height: 70px;">
-                            <svg viewBox="0 0 36 36" style="transform: rotate(-90deg); width: 100%; height: 100%;">
-                                <circle cx="18" cy="18" r="16" fill="none" stroke="#eee" stroke-width="4"></circle>
-                                <circle cx="18" cy="18" r="16" fill="none" stroke="#e74c3c" stroke-width="4" stroke-dasharray="{{ $kpi_kol5_nasional }}, 100" stroke-linecap="round"></circle>
-                            </svg>
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; color: #e74c3c;">{{ $kpi_kol5_nasional }}%</div>
-                        </div>
-                    </div>
                 </div>
 
                 <div style="margin-top: 2rem; background: white; padding: 20px; border-radius: 12px; height: 300px; display:none;">
@@ -144,11 +130,12 @@
                         <i class="fas fa-calendar-plus"></i>
                         <span>Input Jadwal Kunjungan</span>
                     </a>
-                    <a href="javascript:void(0)" onclick="openModalHistoryIjin()" class="menu-item">
+                   <a href="javascript:void(0)" onclick="openModalHistoryIjin()" class="menu-item relative inline-flex items-center">
                         <i class="fa-solid fa-user-clock"></i>
                         <span>Konfirmasi Ijin</span>
+                        
                         @if($pengajuan_ijin_count > 0)
-                            <span class="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded-full border-2 border-white shadow-sm">
+                            <span class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm flex items-center justify-center min-w-[18px] h-[18px]">
                                 {{ $pengajuan_ijin_count }}
                             </span>
                         @endif
@@ -478,6 +465,7 @@
     // Fungsi untuk Modal History Ijin
     function openModalHistoryIjin() {
         document.getElementById('modalHistoryIjin').style.display = 'block';
+        $('.bg-red-600').fadeOut();
     }
 
     function closeModalHistoryIjin() {

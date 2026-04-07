@@ -28,51 +28,83 @@ class NasabahImport implements ToModel, WithMultipleSheets
             4 => new NasabahImport('5', $this->labelBulan), // Sheet 5: Macet
         ];
     }
+ public function model(array $row)
+{
+    // 1. Ambil No Angsuran dari indeks 2 (Kolom No.Ang)
+    // Kita gunakan trim untuk membersihkan spasi
+    $noAngsuran = isset($row[2]) ? trim($row[2]) : null;
 
-   public function model(array $row)
-    {
-        // Indeks 2 adalah kolom 'No.Ang' di file Anda
-        $noAngsuran = isset($row[2]) ? trim($row[2]) : null;
-
-        // Lewati baris jika No.Angsuran bukan angka (header/footer sampah)
-        if (!$noAngsuran || !is_numeric($noAngsuran)) {
-            return null;
-        }
-
-        return Nasabah::updateOrCreate(
-            ['no_angsuran' => (string)$noAngsuran],
-            [
-                'kode'             => trim($row[1] ?? '-'),      // Kolom B
-                'rekening_kredit'  => trim($row[3] ?? '-'),      // Kolom D
-                'kode_nasabah'     => trim($row[4] ?? '-'),      // Kolom E
-                'nasabah'          => trim($row[5] ?? '-'),      // Kolom F
-                'alamat'           => trim($row[6] ?? '-'),      // Kolom G
-                'tgl_pinjam'       => $this->transformDate($row[8] ?? null), // Kolom I
-                'tgl_jt'           => $this->transformDate($row[9] ?? null), // Kolom J
-                
-                'nominal'          => $this->cleanNumber($row[10] ?? 0),    // Kolom K (Plafon)
-                'sisa_pokok'       => $this->cleanNumber($row[11] ?? 0),    // Kolom L (Bakidebet)
-                'pokok_per_bulan'  => $this->cleanNumber($row[12] ?? 0),    // Kolom M
-                'bunga_per_bulan'  => $this->cleanNumber($row[13] ?? 0),    // Kolom N
-                'tunggakan_pokok'  => $this->cleanNumber($row[14] ?? 0),    // Kolom O
-                'hari_pokok'       => is_numeric($row[15] ?? null) ? (int)$row[15] : 0, // Kolom P
-                'tunggakan_bunga'  => $this->cleanNumber($row[16] ?? 0),    // Kolom Q
-                'hari_bunga'       => is_numeric($row[17] ?? null) ? (int)$row[17] : 0, // Kolom R
-                'denda'            => $this->cleanNumber($row[18] ?? 0),    // Kolom S
-                'bakidebet'        => $this->cleanNumber($row[19] ?? 0),    // Kolom T (Total Tunggakan)
-                
-                'kol'              => $this->currentKol,
-                'bulan'            => $this->labelBulan,
-            ]
-        );
+    // 2. VALIDASI KRITIS: 
+    // Lewati baris jika No Angsuran kosong, atau berisi teks "No.Ang", atau bukan angka
+    if (!$noAngsuran || $noAngsuran == 'No.Ang' || !is_numeric($noAngsuran)) {
+        return null;
     }
+
+    return Nasabah::updateOrCreate(
+        ['no_angsuran' => (string)$noAngsuran],
+        [
+            'kode'            => trim($row[1] ?? '-'),      // Kolom Kode (PG.001)
+            'rekening_kredit' => trim($row[3] ?? '-'),      // Kolom Rekening Kredit
+            'kode_nasabah'    => trim($row[4] ?? '-'),      // Kolom Kode Nasabah
+            'nasabah'         => trim($row[5] ?? '-'),      // Kolom Nama (AGUS SUNARYA)
+            'alamat'          => trim($row[6] ?? '-'),      // Kolom Alamat
+            
+            // Tanggal
+            'tgl_pinjam'      => $this->transformDate($row[8] ?? null), // Kolom Tgl.Pinjam
+            'tgl_jt'          => $this->transformDate($row[9] ?? null), // Kolom Tgl.JT
+            
+            // Angka (Gunakan cleanNumber agar tidak jadi triliunan)
+            'nominal'          => $this->cleanNumber($row[10] ?? 0),   // Kolom Nominal
+            'sisa_pokok'       => $this->cleanNumber($row[11] ?? 0),   // Kolom Sisa Pokok
+            'pokok_per_bulan'  => $this->cleanNumber($row[12] ?? 0),   // Kolom Pokok/bln
+            'bunga_per_bulan'  => $this->cleanNumber($row[13] ?? 0),   // Kolom Bunga/bln
+            'tunggakan_pokok'  => $this->cleanNumber($row[14] ?? 0),   // Kolom Tgk.Pokok
+            'hari_pokok'       => is_numeric($row[15] ?? null) ? (int)$row[15] : 0, 
+            'tunggakan_bunga'  => $this->cleanNumber($row[16] ?? 0), 
+            'hari_bunga'       => is_numeric($row[17] ?? null) ? (int)$row[17] : 0,
+            'denda'            => $this->cleanNumber($row[18] ?? 0),
+            'bakidebet'        => $this->cleanNumber($row[19] ?? 0),   // Kolom Tot.Tgk
+            
+            'kol'              => $this->currentKol,
+            'bulan'            => $this->labelBulan,
+        ]
+    );
+}
 
     private function cleanNumber($value) {
         if (empty($value)) return 0;
         if (is_numeric($value)) return (float) $value;
-        // Hapus karakter non-angka kecuali titik desimal dan minus
-        $clean = str_replace(['.', ','], ['', ''], $value);
-        return (float) preg_replace('/[^0-9.-]/', '', $clean);
+
+        // 1. Hapus spasi dan simbol mata uang jika ada
+        $clean = str_replace([' ', 'Rp', 'IDR'], '', $value);
+        
+        // 2. Logika Pembersihan:
+        // Jika formatnya 1.000.000,00 (standar Indo) -> ubah ke 1000000.00
+        // Jika formatnya 1,000,000.00 (standar US) -> ubah ke 1000000.00
+        
+        // Cek jika ada koma DAN titik
+        if (strpos($clean, ',') !== false && strpos($clean, '.') !== false) {
+            if (strrpos($clean, ',') > strrpos($clean, '.')) {
+                // Format Indo: 1.000,00 -> hapus titik, ubah koma jadi titik
+                $clean = str_replace('.', '', $clean);
+                $clean = str_replace(',', '.', $clean);
+            } else {
+                // Format US: 1,000.00 -> hapus koma
+                $clean = str_replace(',', '', $clean);
+            }
+        } else {
+            // Jika hanya ada koma, asumsikan itu adalah pemisah ribuan ATAU desimal
+            // Untuk amannya di Excel Indonesia, biasanya koma adalah desimal.
+            // Tapi jika setelah koma ada 3 digit, itu biasanya ribuan.
+            $parts = explode(',', $clean);
+            if (count($parts) > 1 && strlen(end($parts)) === 3) {
+                $clean = str_replace(',', '', $clean);
+            } else {
+                $clean = str_replace(',', '.', $clean);
+            }
+        }
+
+        return (float) filter_var($clean, FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
     }
 
     private function transformDate($value) {
