@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
 
@@ -130,12 +131,12 @@
                         <i class="fas fa-calendar-plus"></i>
                         <span>Input Jadwal Kunjungan</span>
                     </a>
-                   <a href="javascript:void(0)" onclick="openModalHistoryIjin()" class="menu-item relative inline-flex items-center">
+                    <a href="javascript:void(0)" onclick="openModalHistoryIjin()" class="menu-item relative inline-flex items-center">
                         <i class="fa-solid fa-user-clock"></i>
                         <span>Konfirmasi Ijin</span>
                         
                         @if($pengajuan_ijin_count > 0)
-                            <span class="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm flex items-center justify-center min-w-[18px] h-[18px]">
+                            <span class="badge-notif-ijin absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm flex items-center justify-center min-w-[18px] h-[18px]">
                                 {{ $pengajuan_ijin_count }}
                             </span>
                         @endif
@@ -463,9 +464,28 @@
     }
 
     // Fungsi untuk Modal History Ijin
-    function openModalHistoryIjin() {
+   function openModalHistoryIjin() {
+        // 1. Tampilkan modalnya
         document.getElementById('modalHistoryIjin').style.display = 'block';
-        $('.bg-red-600').fadeOut();
+
+        // 2. HAPUS PAKSA angka merahnya secara visual (Tanpa tunggu server)
+        // Ini yang bikin kamu nggak perlu refresh untuk melihat hasilnya
+        $('.bg-red-600').remove(); 
+
+        // 3. Update status di database (Background Process)
+        $.ajax({
+            url: "{{ route('admin.ijin.markAsRead') }}",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}"
+            },
+            success: function(response) {
+                console.log("Database updated: Notif marked as read.");
+            },
+            error: function(xhr) {
+                console.error("Gagal update database, tapi visual sudah dihapus.");
+            }
+        });
     }
 
     function closeModalHistoryIjin() {

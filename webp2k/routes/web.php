@@ -30,6 +30,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // 1. DASHBOARD
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-detail/{type}', [DashboardAdminController::class, 'getDetail'])->name('admin.dashboard.detail');
+    Route::post('/admin/mark-ijin-as-read', [DashboardAdminController::class, 'markAsRead'])->name('admin.ijin.markAsRead');
 
     // 2. DATA KARYAWAN (Sudah benar)
     Route::get('/data-karyawan', [KaryawanController::class, 'index'])->name('karyawan.index');

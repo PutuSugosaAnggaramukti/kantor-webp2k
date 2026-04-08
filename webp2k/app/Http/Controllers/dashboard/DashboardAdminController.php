@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Karyawan;
 use App\Models\DataKunjunganAdm;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 class DashboardAdminController extends Controller
@@ -20,8 +21,6 @@ class DashboardAdminController extends Controller
     
    public function getDashboardData()
     {
-        // --- 1. DATA DASAR ---
-        $totalKunjungan = \App\Models\DataKunjunganAdm::count(); 
         
        // --- 1. DATA DASAR ---
         $totalKunjungan = \App\Models\DataKunjunganAdm::count(); 
@@ -37,18 +36,31 @@ class DashboardAdminController extends Controller
 
         // Total untuk angka di Card Merah (Gagal Kunjungan)
         $total_gagal_global = $list_gagal_kunjungan_all->count();
+        
+        // Ambil user login
+        $user = Auth::user();
 
         // List pengajuan (tetap ada untuk modal konfirmasi ijin jika diperlukan)
+       // 1. Ambil list untuk isi modal (tetap ambil 50 data terakhir)
         $list_pengajuan = \App\Models\IjinKunjungan::with('karyawan')
             ->orderBy('created_at', 'desc')
             ->take(50) 
             ->get();
+
+        // 3. Logika Pembersihan: Jika sudah tidak ada ijin yang 'pending', 
+        // maka otomatis tandai semua notif sebagai 'sudah dibaca' agar angka merah hilang.
+        $ijinPendingExists = \App\Models\IjinKunjungan::where('status', 'pending')->exists();
+
+        if (!$ijinPendingExists && $user) {
+            $user->unreadNotifications
+                ->where('type', 'App\Notifications\IjinKunjunganNotification')
+                ->markAsRead();
+        }
         
-        $user = auth()->user();
-        
-       $pengajuan_ijin_count = $user->unreadNotifications
-        ->where('type', 'App\Notifications\IjinKunjunganNotification')
-        ->count();
+        // 4. Hitung ulang sisa notifikasi yang belum dibaca untuk ditampilkan di badge
+        $pengajuan_ijin_count = $user ? $user->unreadNotifications
+            ->where('type', 'App\Notifications\IjinKunjunganNotification')
+            ->count() : 0;
 
         $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) {
             $kodeAO = trim($karyawan->kode_ao);
@@ -265,6 +277,31 @@ class DashboardAdminController extends Controller
 
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function markAsRead()
+    {
+        try {
+            $user = Auth::user();
+
+            if ($user) {
+                // Mencari notifikasi yang belum dibaca khusus untuk Ijin Kunjungan
+                $user->unreadNotifications
+                    ->where('type', 'App\Notifications\IjinKunjunganNotification')
+                    ->markAsRead();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notifikasi berhasil ditandai sudah dibaca'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
