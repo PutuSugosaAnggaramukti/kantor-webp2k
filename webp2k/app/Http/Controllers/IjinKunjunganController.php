@@ -67,36 +67,44 @@ class IjinKunjunganController extends Controller
 
         // 1. Menampilkan semua pengajuan ijin ke dashboard Admin
   public function updateStatus(Request $request, $id)
-    {
-        try {
-            $ijin = IjinKunjungan::findOrFail($id);
-            
-            $ijin->update([
-                'status' => $request->status // 'disetujui' atau 'ditolak'
-            ]);
+{
+    try {
+        $ijin = IjinKunjungan::findOrFail($id);
+        
+        // Buat array data yang akan diupdate
+        $updateData = [
+            'status' => $request->status // 'disetujui' atau 'ditolak'
+        ];
 
-            // --- TAMBAHKAN INI: KIRIM NOTIFIKASI KE AO ---
-            $karyawan = \App\Models\Karyawan::find($ijin->karyawan_id);
-            if ($karyawan) {
-                $details = [
-                    'id_ijin' => $ijin->id,
-                    'pesan'   => "Pengajuan ijin " . $ijin->jenis_ijin . " Anda telah " . $request->status,
-                    'status'  => $request->status
-                ];
-                // Mengirim notifikasi ke AO agar muncul badge merah di dashboard AO
-                $karyawan->notify(new \App\Notifications\IjinKunjunganNotification($details));
-            }
-            // ---------------------------------------------
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Status pengajuan ijin berhasil diupdate ke: ' . $request->status
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Gagal update status: ' . $e->getMessage()
-            ], 500);
+        // --- TAMBAHKAN LOGIKA INI ---
+        // Jika ada input ao_pengganti dari request, masukkan ke array update
+        if ($request->has('ao_pengganti') && $request->ao_pengganti != null) {
+            $updateData['ao_pengganti'] = $request->ao_pengganti;
         }
+
+        $ijin->update($updateData);
+        // ----------------------------
+
+        // Kirim notifikasi ke AO (kode kamu yang sudah ada)
+        $karyawan = \App\Models\Karyawan::find($ijin->karyawan_id);
+        if ($karyawan) {
+            $details = [
+                'id_ijin' => $ijin->id,
+                'pesan'   => "Pengajuan ijin " . $ijin->jenis_ijin . " Anda telah " . $request->status,
+                'status'  => $request->status
+            ];
+            $karyawan->notify(new \App\Notifications\IjinKunjunganNotification($details));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status pengajuan ijin berhasil diupdate'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Gagal update status: ' . $e->getMessage()
+        ], 500);
     }
+}
 }

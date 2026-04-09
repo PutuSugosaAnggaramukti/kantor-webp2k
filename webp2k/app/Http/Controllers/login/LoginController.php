@@ -20,11 +20,13 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt(['name' => $credentials['username'], 'password' => $credentials['password']])) {
+        // 1. Cek Login Admin (Guard Web)
+        if (Auth::guard('web')->attempt(['name' => $credentials['username'], 'password' => $credentials['password']])) {
             $request->session()->regenerate();
             return redirect()->intended('/admin/dashboard');
         }
 
+        // 2. Cek Login Karyawan (Guard Karyawan)
         if (Auth::guard('karyawan')->attempt(['username' => $credentials['username'], 'password' => $credentials['password']])) {
             $request->session()->regenerate();
             return redirect()->intended('/user/dashboard');
@@ -44,6 +46,6 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login')->with('success', 'Anda telah berhasil keluar.');
+        return redirect('/')->with('success', 'Anda telah berhasil keluar.');
     }
 }

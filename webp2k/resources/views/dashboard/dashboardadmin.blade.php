@@ -356,7 +356,7 @@
         });
     }
 
-   function showDetail(type) {
+    function showDetail(type) {
         const titleMap = {
             'rencana': 'Detail Rencana Kunjungan',
             'selesai': 'Detail Kunjungan Selesai',
@@ -366,8 +366,10 @@
         };
 
         // --- LOGIKA DINAMIS HEADER ---
-        // Jika tipenya 'gagal', label kolom jadi 'Alasan Ijin', selain itu tetap 'Nama Nasabah'
         let labelKolomKetiga = (type === 'gagal') ? 'Alasan Ijin' : 'Nama Nasabah';
+        
+        // Tambahkan header extra jika tipe-nya 'gagal'
+        let extraHeader = (type === 'gagal') ? '<th style="padding:12px; border:1px solid #ddd;">Keterangan</th>' : '';
 
         document.getElementById('modalTitle').innerText = titleMap[type];
         document.getElementById('modalTableContainer').innerHTML = '<div style="text-align:center; padding:20px;"><div class="spinner"></div><p>Sedang memuat...</p></div>';
@@ -384,6 +386,7 @@
                         <th style="padding:12px; border:1px solid #ddd;">${labelKolomKetiga}</th>
                         <th style="padding:12px; border:1px solid #ddd;">Tanggal</th>
                         <th style="padding:12px; border:1px solid #ddd; text-align:center;">Status</th>
+                        ${extraHeader} 
                     </tr>
                 </thead>
                 <tbody>`;
@@ -400,8 +403,21 @@
                             badgeColor = '#e0f2fe'; 
                             textColor = '#0369a1';
                         } else if(item.status === 'Gagal Kunjungan') {
-                            badgeColor = '#ffedd5'; // Orange muda untuk gagal
+                            badgeColor = '#ffedd5'; 
                             textColor = '#9a3412';
+                        }
+
+                        // --- LOGIKA ISI KOLOM EXTRA ---
+                        let extraCell = '';
+                        if (type === 'gagal') {
+                            // Menampilkan info AO Pengganti jika ada datanya dari backend
+                            let ket = item.info_ao_baru 
+                                ? `<div style="color: #4f46e5; font-weight: bold;">
+                                    <i class="fas fa-exchange-alt"></i> Dioper ke: ${item.info_ao_baru}
+                                </div>` 
+                                : '<span style="color: #999; font-style: italic;">Belum dioper</span>';
+                            
+                            extraCell = `<td style="padding:10px; border:1px solid #eee;">${ket}</td>`;
                         }
 
                         table += `<tr>
@@ -414,10 +430,13 @@
                                     ${item.status}
                                 </span>
                             </td>
+                            ${extraCell}
                         </tr>`;
                     });
                 } else {
-                    table += `<tr><td colspan="5" style="text-align:center; padding:20px;">Tidak ada data ditemukan.</td></tr>`;
+                    // Sesuaikan colspan jika data kosong (6 kolom jika gagal, 5 jika lainnya)
+                    let colSpanCount = (type === 'gagal') ? 6 : 5;
+                    table += `<tr><td colspan="${colSpanCount}" style="text-align:center; padding:20px;">Tidak ada data ditemukan.</td></tr>`;
                 }
 
                 table += `</tbody></table>`;

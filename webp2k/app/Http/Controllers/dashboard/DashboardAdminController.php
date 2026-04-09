@@ -263,14 +263,31 @@ class DashboardAdminController extends Controller
 
             // --- TAMBAHKAN LOGIKA BARU DI SINI ---
             } elseif ($type == 'gagal') {
-                $data = \App\Models\IjinKunjungan::with('karyawan')
-                    ->where('status', 'disetujui')
-                    ->get()->map(function($item) {
+                $data = \DB::table('ijin_kunjungans')
+                    // Join pertama untuk ambil nama AO yang ijin (lama)
+                    ->leftJoin('karyawans as ao_lama', 'ijin_kunjungans.kode_ao', '=', 'ao_lama.kode_ao')
+                    // Join kedua untuk ambil nama AO pengganti (baru) berdasarkan kolom ao_pengganti
+                    ->leftJoin('karyawans as ao_baru', 'ijin_kunjungans.ao_pengganti', '=', 'ao_baru.kode_ao')
+                    ->where('ijin_kunjungans.status', 'disetujui')
+                    ->select(
+                        'ijin_kunjungans.*',
+                        'ao_lama.nama as nama_ao_lama',
+                        'ao_baru.nama as nama_ao_baru'
+                    )
+                    ->get()
+                    ->map(function($item) {
+                        // Jika ao_pengganti ada isinya, gabungkan Kode - Nama
+                        $infoAOBaru = null;
+                        if (!empty($item->ao_pengganti)) {
+                            $infoAOBaru = $item->ao_pengganti . ' - ' . ($item->nama_ao_baru ?? 'Nama tidak ditemukan');
+                        }
+
                         return [
-                            'info_1' => ($item->karyawan->kode_ao ?? $item->kode_ao) . ' - ' . ($item->karyawan->nama ?? 'N/A'),
-                            'info_2' => $item->alasan, // Ini akan masuk ke kolom "Nama Nasabah" di modal
+                            'info_1' => $item->kode_ao . ' - ' . ($item->nama_ao_lama ?? 'N/A'),
+                            'info_2' => $item->alasan,
                             'info_3' => date('d-m-Y', strtotime($item->tanggal)),
-                            'status' => 'Gagal Kunjungan'
+                            'status' => 'Gagal Kunjungan',
+                            'info_ao_baru' => $infoAOBaru // Key ini yang dicari JavaScript-mu
                         ];
                     });
             }
@@ -307,44 +324,42 @@ class DashboardAdminController extends Controller
         }
     }
 
- public function reassignJadwal(Request $request) 
-{
-    try {
-        // 1. Ambil data ijin (Pastikan nama Modelnya IjinKunjungan)
-        $ijin = \App\Models\IjinKunjungan::findOrFail($request->ijin_id);
-        
-        // 2. Ambil kode AO pengganti dari request (sesuaikan dengan nama di JS: ao_baru)
-        $targetAo = $request->ao_baru; 
+   public function reassignJadwal(Request $request) 
+    {
+        try {
+            $ijin = \App\Models\IjinKunjungan::findOrFail($request->ijin_id);
+            $targetAo = $request->ao_baru; 
 
-        // 3. Cari jadwal AO lama di TANGGAL yang sama dengan ijin
-        $jadwal = \App\Models\DataKunjunganAdm::where('kode_ao', $ijin->kode_ao)
-            ->whereDate('tanggal', $ijin->tanggal)
-            ->where('status', 'belum')
-            ->get();
+            // 1. Ambil jadwal milik AO yang ijin
+            $jadwal = \App\Models\DataKunjunganAdm::where('kode_ao', $ijin->kode_ao)->get();
 
-        if ($jadwal->isEmpty()) {
+            if ($jadwal->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "0 jadwal ditemukan untuk AO {$ijin->kode_ao}"
+                ]);
+            }
+
+            // 2. UPDATE KOLOM ao_pengganti agar tulisan "Belum dioper" hilang
+            $ijin->update([
+                'ao_pengganti' => $targetAo
+            ]);
+
+            // 3. Pindahkan jadwal ke AO baru
+            foreach ($jadwal as $item) {
+                $item->update(['kode_ao' => $targetAo]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $jadwal->count() . " jadwal berhasil dioper ke AO $targetAo"
+            ]);
+
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => '0 jadwal ditemukan. Pastikan AO ' . $ijin->kode_ao . ' punya jadwal di tanggal ' . $ijin->tanggal
-            ]);
+                'message' => 'Gagal Update: ' . $e->getMessage()
+            ], 500);
         }
-
-        // 4. Proses Update
-        foreach ($jadwal as $item) {
-            $item->update(['kode_ao' => $targetAo]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => $jadwal->count() . " jadwal berhasil dioper ke AO $targetAo"
-        ]);
-
-    } catch (\Exception $e) {
-        // Menangkap error agar tidak muncul <!DOCTYPE html>
-        return response()->json([
-            'success' => false,
-            'message' => 'Server Error: ' . $e->getMessage()
-        ], 500);
     }
-}
 }
