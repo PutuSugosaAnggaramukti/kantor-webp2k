@@ -69,9 +69,9 @@
                         <i class="fa-solid fa-clock"></i>
                     </div>
 
-                    <div class="stat-card" style="background-color: #e74c3c; color: white;" onclick="showDetail('gagal')">
+                   <div class="stat-card" style="background-color: #e74c3c; color: white;" onclick="showDetail('gagal')">
                         <div class="stat-label">Total Gagal Kunjungan</div>
-                        <div class="stat-value">{{ $total_gagal_global ?? 0 }}</div>
+                        <div id="total-gagal-count" class="stat-value">{{ $total_gagal_global ?? 0 }}</div>
                         <div class="kpi-note">*Berdasarkan ijin AO yang disetujui</div>
                         <i class="fa-solid fa-user-slash"></i>
                     </div>
@@ -220,20 +220,25 @@
                         </td>
                         <td style="padding: 12px; border: 1px solid #eee; font-style: italic; color: #444;">{{ $ijin->alasan }}</td>
                         
-                        <td style="padding: 12px; border: 1px solid #eee; text-align: center;">
+                       <td style="padding: 12px; border: 1px solid #eee; text-align: center;">
                             @if($ijin->status == 'pending')
                                 <div style="display: flex; gap: 5px; justify-content: center;">
-                                    <button onclick="updateIjinStatus({{ $ijin->id }}, 'disetujui')" style="background: #22c55e; color: white; border: 1px solid #000; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 11px;">
+                                    <button onclick="updateIjinStatus({{ $ijin->id }}, 'disetujui')" style="background: #22c55e; color: white; border: 1px solid #000; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold;">
                                         <i class="fas fa-check"></i> ACC
                                     </button>
-                                    <button onclick="updateIjinStatus({{ $ijin->id }}, 'ditolak')" style="background: #ef4444; color: white; border: 1px solid #000; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 11px;">
+                                    <button onclick="updateIjinStatus({{ $ijin->id }}, 'ditolak')" style="background: #ef4444; color: white; border: 1px solid #000; padding: 4px 8px; border-radius: 5px; cursor: pointer; font-size: 11px; font-weight: bold;">
                                         <i class="fas fa-times"></i> Tolak
                                     </button>
                                 </div>
                             @elseif($ijin->status == 'disetujui')
-                                <span style="color: #16a34a; background: #dcfce7; padding: 4px 10px; border-radius: 20px; border: 1px solid #16a34a; font-size: 11px;">
-                                    <i class="fas fa-check-circle"></i> Disetujui
-                                </span>
+                                <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                                    <span style="color: #16a34a; background: #dcfce7; padding: 4px 10px; border-radius: 20px; border: 1px solid #16a34a; font-size: 11px;">
+                                        <i class="fas fa-check-circle"></i> Disetujui
+                                    </span>
+                                    <button onclick="openReassignModal({{ $ijin->id }})" style="background: #4f46e5; color: white; border: none; padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                                        <i class="fas fa-share"></i> Oper Jadwal
+                                    </button>
+                                </div>
                             @else
                                 <span style="color: #dc2626; background: #fee2e2; padding: 4px 10px; border-radius: 20px; border: 1px solid #dc2626; font-size: 11px;">
                                     <i class="fas fa-times-circle"></i> Ditolak
@@ -351,7 +356,7 @@
         });
     }
 
-    function showDetail(type) {
+   function showDetail(type) {
         const titleMap = {
             'rencana': 'Detail Rencana Kunjungan',
             'selesai': 'Detail Kunjungan Selesai',
@@ -359,6 +364,10 @@
             'target': 'Daftar Nasabah HB yang Sudah Ditangani AO',
             'gagal': 'Daftar AO Gagal Kunjungan (Ijin Disetujui)'
         };
+
+        // --- LOGIKA DINAMIS HEADER ---
+        // Jika tipenya 'gagal', label kolom jadi 'Alasan Ijin', selain itu tetap 'Nama Nasabah'
+        let labelKolomKetiga = (type === 'gagal') ? 'Alasan Ijin' : 'Nama Nasabah';
 
         document.getElementById('modalTitle').innerText = titleMap[type];
         document.getElementById('modalTableContainer').innerHTML = '<div style="text-align:center; padding:20px;"><div class="spinner"></div><p>Sedang memuat...</p></div>';
@@ -372,7 +381,7 @@
                     <tr style="background:#f1f5f9; text-align:left;">
                         <th style="padding:12px; border:1px solid #ddd;">No</th>
                         <th style="padding:12px; border:1px solid #ddd;">AO (Kode - Nama)</th>
-                        <th style="padding:12px; border:1px solid #ddd;">Nama Nasabah</th>
+                        <th style="padding:12px; border:1px solid #ddd;">${labelKolomKetiga}</th>
                         <th style="padding:12px; border:1px solid #ddd;">Tanggal</th>
                         <th style="padding:12px; border:1px solid #ddd; text-align:center;">Status</th>
                     </tr>
@@ -390,6 +399,9 @@
                         } else if(item.status === 'Rencana') {
                             badgeColor = '#e0f2fe'; 
                             textColor = '#0369a1';
+                        } else if(item.status === 'Gagal Kunjungan') {
+                            badgeColor = '#ffedd5'; // Orange muda untuk gagal
+                            textColor = '#9a3412';
                         }
 
                         table += `<tr>
@@ -503,7 +515,7 @@
         }
     }
 
-    function updateIjinStatus(id, status) {
+   function updateIjinStatus(id, status) {
     const warna = status === 'disetujui' ? '#10b981' : '#ef4444';
     
     Swal.fire({
@@ -515,24 +527,13 @@
         cancelButtonColor: '#6b7280',
         confirmButtonText: 'Ya, Update!',
         cancelButtonText: 'Batal',
-        // --- TAMBAHKAN BARIS INI ---
-        didOpen: () => {
-            const container = Swal.getContainer();
-            if (container) {
-                container.style.zIndex = "2000"; // Paksa ke depan modal (1100)
-            }
-        }
-        // ---------------------------
+        didOpen: () => { Swal.getContainer().style.zIndex = "2000"; }
     }).then((result) => {
         if (result.isConfirmed) {
-            // Lanjutkan fetch seperti biasa...
             Swal.fire({ 
                 title: 'Memproses...', 
                 allowOutsideClick: false, 
-                didOpen: () => { 
-                    Swal.showLoading();
-                    Swal.getContainer().style.zIndex = "2000"; // Pastikan loading juga di depan
-                } 
+                didOpen: () => { Swal.showLoading(); Swal.getContainer().style.zIndex = "2000"; } 
             });
 
             fetch(`/admin/ijin-kunjungan/update-status/${id}`, {
@@ -547,18 +548,100 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    Swal.fire({
-                        title: 'Berhasil!',
-                        text: data.message,
-                        icon: 'success',
-                        didOpen: () => { Swal.getContainer().style.zIndex = "2000"; }
-                    }).then(() => {
+                    if (status === 'disetujui') {
+                        // JIKA DI-ACC: Tawarkan Oper Jadwal
+                        Swal.fire({
+                            title: 'Ijin Disetujui!',
+                            text: "Ijin berhasil di-ACC. Ingin langsung mengoper jadwal hari ini ke AO lain?",
+                            icon: 'success',
+                            showCancelButton: true,
+                            confirmButtonColor: '#4f46e5',
+                            cancelButtonColor: '#6b7280',
+                            confirmButtonText: 'Ya, Oper Jadwal',
+                            cancelButtonText: 'Nanti Saja',
+                            didOpen: () => { Swal.getContainer().style.zIndex = "2000"; }
+                        }).then((choice) => {
+                            if (choice.isConfirmed) {
+                                openReassignModal(id); // Buka modal pilih AO
+                            } else {
+                                location.reload();
+                            }
+                        });
+                    } else {
+                        // JIKA DITOLAK: Langsung reload
                         location.reload();
-                    });
+                    }
                 }
             });
         }
     });
+}
+
+function openReassignModal(idIjin) {
+    Swal.fire({
+        title: 'Pilih AO Pengganti',
+        html: `
+            <select id="swal-select-ao" class="swal2-input" style="width: 85%; font-size: 14px;">
+                <option value="">-- Pilih AO Pengganti --</option>
+                @foreach($detailPerformaAO as $ao)
+                    <option value="{{ $ao->kode_ao }}">{{ $ao->kode_ao }} - {{ $ao->nama }}</option>
+                @endforeach
+            </select>
+        `,
+        confirmButtonText: 'Proses Oper',
+        confirmButtonColor: '#10b981',
+        showCancelButton: true,
+        didOpen: () => { Swal.getContainer().style.zIndex = "2000"; },
+        preConfirm: () => {
+            const aoBaru = document.getElementById('swal-select-ao').value;
+            if (!aoBaru) { Swal.showValidationMessage('Silakan pilih AO pengganti!'); }
+            return aoBaru;
+        }
+    }).then((res) => {
+        if (res.isConfirmed) {
+            Swal.fire({ title: 'Memindahkan Jadwal...', didOpen: () => { Swal.showLoading(); Swal.getContainer().style.zIndex = "2000"; } });
+            
+            fetch("{{ route('admin.ijin.reassign') }}", {
+                method: "POST",
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ ijin_id: idIjin, ao_baru: res.value })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', didOpen: () => { Swal.getContainer().style.zIndex = "2000"; } })
+                    .then(() => { location.reload(); });
+                }
+            });
+        }
+    });
+}
+
+function executeReassign(idIjin, aoBaru) {
+    // Tampilkan loading lagi
+    Swal.fire({ title: 'Memindahkan Jadwal...', didOpen: () => { Swal.showLoading(); Swal.getContainer().style.zIndex = "2000"; } });
+
+    fetch(`{{ route('admin.ijin.reassign') }}`, {
+        method: "POST",
+        headers: {
+            'X-CSRF-TOKEN': "{{ csrf_token() }}",
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ ijin_id: idIjin, ao_baru: aoBaru })
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            Swal.fire({ title: 'Berhasil!', text: 'Jadwal telah dioper.', icon: 'success', didOpen: () => { Swal.getContainer().style.zIndex = "2000"; } })
+            .then(() => { location.reload(); });
+        }
+    });
+
 }
     </script>
 

@@ -21,7 +21,7 @@ use App\Http\Controllers\IjinKunjunganController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/login', [LoginController::class, 'index'])->name('login');
+Route::get('/', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate'])->name('login.post');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -31,6 +31,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-detail/{type}', [DashboardAdminController::class, 'getDetail'])->name('admin.dashboard.detail');
     Route::post('/admin/mark-ijin-as-read', [DashboardAdminController::class, 'markAsRead'])->name('admin.ijin.markAsRead');
+    Route::post('/ijin-kunjungan/reassign', [DashboardAdminController::class, 'reassignJadwal'])->name('admin.ijin.reassign');
 
     // 2. DATA KARYAWAN (Sudah benar)
     Route::get('/data-karyawan', [KaryawanController::class, 'index'])->name('karyawan.index');

@@ -375,43 +375,51 @@ public function detail($kode_ao)
         }
     }
 
-public function updateStatus(Request $request, $id)
-{
-    try {
-        // 1. Update status kunjungan
-        DB::table('kunjungans')->where('id', $id)->update([
-            'status' => $request->status,
-            'updated_at' => now()
-        ]);
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            // 1. Update status kunjungan
+            DB::table('kunjungans')->where('id', $id)->update([
+                'status' => $request->status,
+                'updated_at' => now()
+            ]);
 
-        // 2. Ambil data kunjungan untuk cari AO
-        $dataKunjungan = DB::table('kunjungans')->where('id', $id)->first();
+            // 2. Ambil data kunjungan untuk cari AO
+            $dataKunjungan = DB::table('kunjungans')->where('id', $id)->first();
 
-        if ($dataKunjungan) {
-            // Bersihkan kode_ao dari titik/spasi untuk pencarian cadangan
-            $cleanAo = preg_replace('/[^A-Za-z0-9]/', '', $dataKunjungan->kode_ao);
+            if ($dataKunjungan) {
+                // Bersihkan kode_ao dari titik/spasi untuk pencarian cadangan
+                $cleanAo = preg_replace('/[^A-Za-z0-9]/', '', $dataKunjungan->kode_ao);
 
-            // Cari di tabel karyawans
-            $ao = \App\Models\Karyawan::where('kode_ao', $dataKunjungan->kode_ao)
-                ->orWhereRaw("REPLACE(REPLACE(kode_ao, '.', ''), ' ', '') = ?", [$cleanAo])
-                ->first();
+                // Cari di tabel karyawans
+                $ao = \App\Models\Karyawan::where('kode_ao', $dataKunjungan->kode_ao)
+                    ->orWhereRaw("REPLACE(REPLACE(kode_ao, '.', ''), ' ', '') = ?", [$cleanAo])
+                    ->first();
 
-            if ($ao) {
-                // KIRIM NOTIFIKASI
-                $ao->notify(new \App\Notifications\UpdateStatusNotification([
-                    'nama_nasabah' => $dataKunjungan->nama_nasabah,
-                    'status' => $request->status,
-                    'id_kunjungan' => $id
-                ]));
-            } else {
-                // Log jika AO tidak ketemu (cek di storage/logs/laravel.log)
-                \Log::warning("AO tidak ditemukan untuk kode: " . $dataKunjungan->kode_ao);
+                if ($ao) {
+                    // KIRIM NOTIFIKASI
+                    $ao->notify(new \App\Notifications\UpdateStatusNotification([
+                        'nama_nasabah' => $dataKunjungan->nama_nasabah,
+                        'status' => $request->status,
+                        'id_kunjungan' => $id
+                    ]));
+                } else {
+                    // Log jika AO tidak ketemu (cek di storage/logs/laravel.log)
+                    \Log::warning("AO tidak ditemukan untuk kode: " . $dataKunjungan->kode_ao);
+                }
             }
-        }
 
-        return response()->json(['success' => true]);
-    } catch (\Exception $e) {
-        return response()->json(['message' => $e->getMessage()], 500);
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
-}
+
+    public function operJadwal(Request $request, $id) {
+        $jadwal = DataKunjunganAdm::findOrFail($id);
+        $jadwal->kode_ao = $request->kode_ao_baru; // Misal dioper ke C-005
+        $jadwal->save();
+
+        return back()->with('success', 'Jadwal berhasil dioper ke AO lain.');
+    }
 }

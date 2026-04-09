@@ -5,6 +5,8 @@ namespace App\Http\Controllers\dashboard;
 use App\Http\Controllers\Controller;
 use App\Models\Karyawan;
 use App\Models\DataKunjunganAdm;
+use App\Models\IjinKunjungan;
+use App\Models\Kunjungan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -28,9 +30,8 @@ class DashboardAdminController extends Controller
         // --- UPDATED: LOGIKA GAGAL KUNJUNGAN (IJIN DISETUJUI) ---
 
         // Ambil semua ijin yang statusnya 'disetujui' (Gagal Kunjungan)
-        // Kita join dengan karyawan untuk mendapatkan Nama AO-nya
         $list_gagal_kunjungan_all = \App\Models\IjinKunjungan::with('karyawan')
-            ->where('status', 'disetujui')
+            ->whereIn('status', ['disetujui', 'DISETUJUI']) 
             ->orderBy('tanggal', 'desc')
             ->get();
 
@@ -156,7 +157,8 @@ class DashboardAdminController extends Controller
             'kunjungansGrouped' => $kunjungsGrouped,
             // Tambahkan dua variabel baru ini:
             'pengajuan_ijin_count' => $pengajuan_ijin_count,
-            'list_pengajuan' => $list_pengajuan
+            'list_pengajuan' => $list_pengajuan,
+            'total_gagal_global' => $total_gagal_global,
         ];
     }
 
@@ -304,4 +306,45 @@ class DashboardAdminController extends Controller
             ], 500);
         }
     }
+
+ public function reassignJadwal(Request $request) 
+{
+    try {
+        // 1. Ambil data ijin (Pastikan nama Modelnya IjinKunjungan)
+        $ijin = \App\Models\IjinKunjungan::findOrFail($request->ijin_id);
+        
+        // 2. Ambil kode AO pengganti dari request (sesuaikan dengan nama di JS: ao_baru)
+        $targetAo = $request->ao_baru; 
+
+        // 3. Cari jadwal AO lama di TANGGAL yang sama dengan ijin
+        $jadwal = \App\Models\DataKunjunganAdm::where('kode_ao', $ijin->kode_ao)
+            ->whereDate('tanggal', $ijin->tanggal)
+            ->where('status', 'belum')
+            ->get();
+
+        if ($jadwal->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => '0 jadwal ditemukan. Pastikan AO ' . $ijin->kode_ao . ' punya jadwal di tanggal ' . $ijin->tanggal
+            ]);
+        }
+
+        // 4. Proses Update
+        foreach ($jadwal as $item) {
+            $item->update(['kode_ao' => $targetAo]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $jadwal->count() . " jadwal berhasil dioper ke AO $targetAo"
+        ]);
+
+    } catch (\Exception $e) {
+        // Menangkap error agar tidak muncul <!DOCTYPE html>
+        return response()->json([
+            'success' => false,
+            'message' => 'Server Error: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }
