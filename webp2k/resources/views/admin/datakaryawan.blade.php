@@ -98,7 +98,6 @@
                 <div class="user-profile-container" style="position: relative;">
                     <div class="user-profile" onclick="toggleDropdown()" style="cursor: pointer; display: flex; align-items: center;">
                         <span>Admin</span>
-                        <img src="https://i.pravatar.cc/150?u=admin" alt="User">
                         <i class="fa-solid fa-chevron-down" style="margin-left: 8px; font-size: 12px; color: #666;"></i>
                     </div>
 
