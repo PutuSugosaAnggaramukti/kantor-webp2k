@@ -426,6 +426,71 @@ $(document).on('click', '.pagination a', function(e) {
         });
     }
 });
+
+function openManualModal() {
+    const modal = document.getElementById('modalManual');
+    if (modal) {
+        modal.style.display = 'flex';
+        // Jalankan deteksi GPS untuk modal manual
+        updateGPSLocation('manual-koordinat', 'manual-location-status');
+    } else {
+        Swal.fire('Error', 'Modal mandiri tidak ditemukan di DOM.', 'error');
+    }
+}
+
+document.getElementById('formKunjunganMandiri').addEventListener('submit', function(e) {
+    e.preventDefault(); // Mencegah browser pindah halaman
+
+    // 1. Tampilkan Loading (Penting karena proses validasi GPS foto cukup berat)
+    Swal.fire({
+        title: 'Sedang Menyimpan...',
+        text: 'Memvalidasi data dan lokasi GPS foto.',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // 2. Ambil data dari form
+    const formData = new FormData(this);
+
+    // 3. Kirim via Fetch API (AJAX)
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 4. Jika Berhasil
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: data.success,
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                closeModal(); // Tutup modal
+                location.reload(); // Refresh halaman untuk melihat data baru
+            });
+        } else {
+            // 5. Jika Gagal (Error Validasi EXIF, dsb)
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Simpan',
+                text: data.error || 'Terjadi kesalahan sistem.'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+    });
+});
 </script>
 
 
