@@ -13,43 +13,45 @@ use App\Exports\PelaporanDetailExport;
 
 class PelaporanController extends Controller
 {
-  public function index(Request $request) 
+    public function index(Request $request) 
     {
-        // Ambil keyword dari input search
         $keyword = $request->search;
 
-        // 1. Data Daftar AO (Tabel Atas)
-        // Filter dihapus agar tabel ini tidak ikut berubah saat mengetik di search
-        $pelaporan_all = Karyawan::whereHas('kunjungan')
-            ->with(['kunjungan' => function($query) {
-                $query->orderBy('tanggal', 'desc');
+        // 1. DAFTAR AO (Tabel Atas)
+        // Hanya tampilkan AO yang SUDAH melapor di tabel 'kunjungans'
+        $pelaporan_all = Karyawan::whereHas('realisasiKunjungan')
+            ->with(['realisasiKunjungan' => function($query) {
+                $query->orderBy('created_at', 'desc');
             }])
             ->get();
 
         $pelaporan_all = $pelaporan_all->map(function ($karyawan) {
-            $karyawan->kunjungan_terbaru = $karyawan->kunjungan->first();
+            // Ambil data laporan asli terbaru
+            $karyawan->kunjungan_terbaru = $karyawan->realisasiKunjungan->first();
             return $karyawan;
         });
 
-        // 2. Data Daftar Nasabah (Tabel Bawah)
-        // Tetap menggunakan filter agar data menyusut sesuai pencarian
-        $nasabah_terkunjungi = Nasabah::whereHas('kunjungan') 
-            ->when($keyword, function ($query) use ($keyword) {
-                $query->where(function($q) use ($keyword) {
-                    $q->where('nasabah', 'like', "%{$keyword}%")
-                    ->orWhere('no_angsuran', 'like', "%{$keyword}%");
-                });
-            })
-            ->with(['kunjungan.karyawan']) // Eager load karyawan agar tidak N+1
-            ->orderBy('nasabah', 'asc')
-            ->get();
+        // 2. DAFTAR NASABAH (Tabel Bawah)
+        // Nasabah hanya muncul jika ada datanya di tabel 'kunjungans'
+        // Gunakan relasi baru 'laporanSelesai' (lihat poin 2 di bawah)
+       $nasabah_terkunjungi = Nasabah::whereHas('laporanSelesai', function($q) {
+            // Kita paksa query ini hanya melihat tabel kunjungans
+            $q->whereNotNull('no_nasabah');
+        })
+        ->when($keyword, function ($query) use ($keyword) {
+            $query->where(function($q) use ($keyword) {
+                $q->where('nasabah', 'like', "%{$keyword}%")
+                ->orWhere('no_angsuran', 'like', "%{$keyword}%");
+            });
+        })
+        ->with(['laporanSelesai.karyawan']) 
+        ->orderBy('nasabah', 'asc')
+        ->get(); // Baris 46
 
-        // Jika Request AJAX (saat user mengetik di search)
         if ($request->ajax()) {
             return view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
         }
 
-        // Load data dashboard seperti biasa untuk tampilan awal
         $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
@@ -60,7 +62,7 @@ class PelaporanController extends Controller
         return view('admin.datakaryawan', $data);
     }
 
-    public function detailAo($id_ao)
+    public function detailAo(Request $request, $id_ao)
     {
         $histori_ao = DataKunjunganAdm::where('karyawan_id', $id_ao)
             ->orWhere('kode_ao', $id_ao)
@@ -71,7 +73,16 @@ class PelaporanController extends Controller
             ->orWhere('kode_ao', $id_ao)
             ->first();
 
-        return view('admin.partials.pelaporan_detail', compact('histori_ao', 'ao'));
+        // 1. Jika diklik melalui menu (lewat fungsi loadAdminPage / AJAX)
+        if ($request->ajax()) {
+            return view('admin.partials.pelaporan_detail', compact('histori_ao', 'ao'));
+        }
+
+        // 2. Jika di-refresh secara manual (Bukan AJAX)
+        // Kita kembalikan layout utama 'datakaryawan' dan isi kontennya dengan detail
+        return view('admin.datakaryawan', [
+            'content' => view('admin.partials.pelaporan_detail', compact('histori_ao', 'ao'))->render()
+        ]);
     }
 
     public function exportExcel(Request $request)

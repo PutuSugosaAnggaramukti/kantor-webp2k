@@ -1,4 +1,4 @@
-{{-- JUDUL DAN BREADCRUMB: Dikeluarkan agar tidak hilang saat AJAX --}}
+{{-- JUDUL DAN BREADCRUMB --}}
 <div class="page-title" style="margin-bottom: 25px;">
     <h2 style="font-size: 24px; font-weight: 800; color: #000; margin-bottom: 5px;">Pelaporan</h2>
     <p style="font-size: 14px; font-weight: 600;">
@@ -8,7 +8,7 @@
     </p>
 </div>
 
-{{-- TOMBOL EXPORT DAN SEARCH: Dikeluarkan agar selalu ikut ter-render --}}
+{{-- TOMBOL EXPORT DAN SEARCH --}}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <button onclick="openModalExportPelaporan()" style="background-color: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;">
         <i class="fa-solid fa-file-excel"></i> Export Excel
@@ -24,7 +24,6 @@
 <div id="isi-tabel-pelaporan">
 @endif
 
-    {{-- BAGIAN INI YANG AKAN DI-UPDATE OLEH AJAX --}}
     {{-- TABEL 1: DAFTAR AO --}}
     <div style="margin-bottom: 15px;">
         <h3 style="font-size: 18px; font-weight: 700; color: #333;">Daftar AO Aktif Berkunjung</h3>
@@ -34,7 +33,7 @@
             <thead>
                 <tr style="border-bottom: 2px solid #000; text-align: center; background-color: #fcfcfc;">
                     <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
-                    <th style="padding: 15px; border-right: 2px solid #000; width: 180px;">Tanggal Kunjungan</th>
+                    <th style="padding: 15px; border-right: 2px solid #000; width: 180px;">Tanggal Kunjungan Terakhir</th>
                     <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">Kode AO</th>
                     <th style="padding: 15px;">Nama AO</th>
                 </tr>
@@ -44,7 +43,8 @@
                 <tr style="border-bottom: 2px solid #000;">
                     <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
                     <td style="padding: 12px; border-right: 2px solid #000;">
-                        {{ $item->kunjungan_terbaru ? \Carbon\Carbon::parse($item->kunjungan_terbaru->tanggal)->format('d-m-Y') : '-' }}
+                        {{-- Menggunakan created_at dari hasil realisasi/laporan --}}
+                        {{ $item->kunjungan_terbaru ? \Carbon\Carbon::parse($item->kunjungan_terbaru->created_at)->format('d-m-Y') : '-' }}
                     </td>
                     <td style="padding: 12px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
                     <td style="padding: 12px; text-align: left; padding-left: 20px;">
@@ -55,7 +55,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="4" style="padding: 30px; text-align: center; color: #888;">Tidak ada data.</td></tr>
+                <tr><td colspan="4" style="padding: 30px; text-align: center; color: #888;">Tidak ada AO yang melakukan kunjungan.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -87,27 +87,32 @@
                         {{ $nasabah->nasabah }}
                     </td>
                     <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 10px;">
-                        @if($nasabah->kunjungan->isNotEmpty())
-                            @foreach($nasabah->kunjungan as $kunj)
+                        @if($nasabah->laporanSelesai->isNotEmpty())
+                            @foreach($nasabah->laporanSelesai as $kunj)
                                 <div style="margin-bottom: 4px;">
                                     <i class="fa-solid fa-user-check" style="color: #28a745; font-size: 12px;"></i> 
                                     ({{ $kunj->kode_ao }}) {{ $kunj->karyawan->nama ?? 'Tanpa Nama' }}
                                 </div>
                             @endforeach
-                        @else - @endif
+                        @else 
+                            <span style="color: #ccc; font-weight: 400;">Belum dikunjungi</span> 
+                        @endif
                     </td>
+
                     <td style="padding: 12px; text-align: left; padding-left: 10px;">
-                        @if($nasabah->kunjungan->isNotEmpty())
-                            @foreach($nasabah->kunjungan as $kunj)
+                        @if($nasabah->laporanSelesai->isNotEmpty())
+                            @foreach($nasabah->laporanSelesai as $kunj)
                                 <div style="margin-bottom: 4px; color: #666;">
-                                    {{ \Carbon\Carbon::parse($kunj->tanggal)->format('d-m-Y') }}
+                                    {{ \Carbon\Carbon::parse($kunj->created_at)->format('d-m-Y') }}
                                 </div>
                             @endforeach
-                        @else - @endif
+                        @else 
+                            - 
+                        @endif
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="5" style="padding: 30px; text-align: center; color: #888;">Belum ada data.</td></tr>
+                <tr><td colspan="5" style="padding: 30px; text-align: center; color: #888;">Belum ada data nasabah yang berhasil dikunjungi.</td></tr>
                 @endforelse
             </tbody>
         </table>

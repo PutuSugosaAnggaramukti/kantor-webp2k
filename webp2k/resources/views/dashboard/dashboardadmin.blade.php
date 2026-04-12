@@ -627,13 +627,17 @@ function openReassignModal(idIjin) {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({ ijin_id: idIjin, ao_baru: res.value })
+                body: JSON.stringify({ 
+                    id_ijin: idIjin, 
+                    kode_ao_baru: res.value 
+                })
             })
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) {
-                    Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', didOpen: () => { Swal.getContainer().style.zIndex = "2000"; } })
-                    .then(() => { location.reload(); });
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Berhasil!', 'Jadwal telah dipindahkan.', 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
                 }
             });
         }

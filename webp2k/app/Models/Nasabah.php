@@ -15,6 +15,8 @@ class Nasabah extends Model
 
     protected $fillable = [
         'kode',
+        'kode_ao_nasabah',
+        'kode_agunan',
         'no_angsuran',
         'rekening_kredit',
         'kode_nasabah',
@@ -36,6 +38,13 @@ class Nasabah extends Model
         'bulan'
     ];
 
+   public function laporanSelesai()
+    {
+        // 'no_nasabah' adalah kolom di tabel kunjungans
+        // 'no_angsuran' adalah kolom primary key di tabel nasabahs
+        return $this->hasMany(\App\Models\Kunjungan::class, 'no_nasabah', 'no_angsuran');
+    }
+
     // Relasi ke Karyawan
     public function karyawan()
     {
@@ -43,15 +52,10 @@ class Nasabah extends Model
     }
 
     // Relasi ke tabel kunjungan (DataKunjunganAdm)
-    public function kunjungan()
+   public function kunjungan()
     {
-        /**
-         * Penjelasan parameter:
-         * 1. DataKunjunganAdm::class -> Model tujuan
-         * 2. 'no_angsuran' -> Foreign Key di tabel kunjungan
-         * 3. 'no_angsuran' -> Local Key di tabel nasabah
-         */
-        return $this->hasMany(DataKunjunganAdm::class, 'no_angsuran', 'no_angsuran');
+        // DI SINI MASALAHNYA: Pastikan foreign key-nya 'no_angsuran', BUKAN 'no_nasabah'
+        return $this->hasMany(\App\Models\DataKunjunganAdm::class, 'no_angsuran', 'no_angsuran');
     }
 
     /**

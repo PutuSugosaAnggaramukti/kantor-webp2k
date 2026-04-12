@@ -20,9 +20,15 @@ class AdmKunjunganController extends Controller
     {
         $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
         $karyawans = \App\Models\Karyawan::where('status', 'aktif')->get();
-        // $nasabah_cek = \App\Models\Nasabah::where('no_angsuran', '26000001')->first();
-
-        // dd($nasabah_cek);
+        
+      $daftar_ao_jadwal = \DB::table('data_kunjungan_adms')
+        ->join('karyawans', 'data_kunjungan_adms.karyawan_id', '=', 'karyawans.id')
+        ->select('karyawans.nama', 'data_kunjungan_adms.kode_ao', \DB::raw('count(*) as total_jadwal'))
+        // Gunakan LIKE untuk menghindari masalah spasi atau karakter aneh
+        ->where('data_kunjungan_adms.bulan', 'LIKE', date('Y-m') . '%')
+        ->groupBy('karyawans.nama', 'data_kunjungan_adms.kode_ao')
+        ->orderBy('karyawans.nama', 'asc')
+        ->get();
 
         $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
             ->where('bulan', now()->format('Y-m')) 
@@ -46,7 +52,7 @@ class AdmKunjunganController extends Controller
         $data['page'] = 'adm-kunjungan';
         $data['title'] = 'Input Jadwal Kunjungan';
         // Kirim juga ke konten utama
-        $data['content'] = view('admin.partials.input_kunjungan', compact('kunjungans', 'kunjungansGrouped', 'nasabah_all', 'karyawans'))->render();
+        $data['content'] = view('admin.partials.input_kunjungan', compact('kunjungans', 'kunjungansGrouped', 'nasabah_all', 'karyawans','daftar_ao_jadwal'))->render();
 
         return view('admin.datakaryawan', $data);
     }
@@ -116,7 +122,8 @@ public function detail($kode_ao)
     $kode_ao_clean = str_replace('-content', '', $kode_ao);
 
     try {
-        $data_detail = \DB::table('data_kunjungan_adms')
+        // 1. Ambil data dari ADM (Jadwal)
+        $data_adm = \DB::table('data_kunjungan_adms')
             ->leftJoin('kunjungans', function ($join) {
                 $join->on('data_kunjungan_adms.no_angsuran', '=', 'kunjungans.no_nasabah')
                      ->on('data_kunjungan_adms.kode_ao', '=', 'kunjungans.kode_ao');
@@ -124,43 +131,70 @@ public function detail($kode_ao)
             ->leftJoin('nasabahs', 'data_kunjungan_adms.no_angsuran', '=', 'nasabahs.no_angsuran')
             ->where('data_kunjungan_adms.kode_ao', $kode_ao_clean)
             ->select(
-                'data_kunjungan_adms.*', 
+                'data_kunjungan_adms.no_angsuran',
+                'data_kunjungan_adms.nama_nasabah',
+                'data_kunjungan_adms.alamat_nasabah',
+                'data_kunjungan_adms.created_at',
                 'kunjungans.id as id_kunjungan',
                 'kunjungans.status as status_kunjungan',
                 'kunjungans.catatan as catatan_lapangan',
-                // PERBAIKAN: Gunakan kolom yang benar-benar ada di tabel nasabahs atau kunjungans
-                'nasabahs.tgl_jt as tgl_janji_hasil', 
-                'kunjungans.foto_kunjungan', 
                 'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
+                'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
+                'kunjungans.foto_kunjungan', 
                 'kunjungans.created_at as tgl_realisasi',
-                'nasabahs.alamat as alamat_master',
-                'nasabahs.nasabah as nama_nasabah_asli' // Tambahkan ini agar nama selalu benar
-            )
-            ->orderBy('data_kunjungan_adms.created_at', 'desc')
+                'nasabahs.nasabah as nama_nasabah_asli',
+                'nasabahs.alamat as alamat_master'
+            );
+
+        // 2. Ambil data dari Kunjungan Mandiri
+        $data_mandiri = \DB::table('kunjungans')
+            ->leftJoin('data_kunjungan_adms', function ($join) {
+                $join->on('kunjungans.no_nasabah', '=', 'data_kunjungan_adms.no_angsuran')
+                     ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao');
+            })
+            ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
+            ->where('kunjungans.kode_ao', $kode_ao_clean)
+            ->whereNull('data_kunjungan_adms.no_angsuran')
+            ->select(
+                'kunjungans.no_nasabah as no_angsuran',
+                // PERBAIKAN: Ambil langsung dari tabel kunjungans (input manual AO)
+                'kunjungans.nama_nasabah as nama_nasabah',
+                'kunjungans.alamat_nasabah as alamat_nasabah',
+                'kunjungans.created_at',
+                'kunjungans.id as id_kunjungan',
+                'kunjungans.status as status_kunjungan',
+                'kunjungans.catatan as catatan_lapangan',
+                'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
+                'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
+                'kunjungans.foto_kunjungan', 
+                'kunjungans.created_at as tgl_realisasi',
+                'nasabahs.nasabah as nama_nasabah_asli',
+                'nasabahs.alamat as alamat_master'
+            );
+
+        $data_detail = $data_adm->union($data_mandiri)
+            ->orderByRaw('CASE WHEN status_kunjungan IS NULL THEN 1 ELSE 0 END ASC')
             ->get();
 
         foreach ($data_detail as $item) {
-            // Gunakan nama nasabah dari master jika data di tabel ADM salah (akibat import geser)
-            if ($item->nama_nasabah_asli) {
-                $item->nama_nasabah = $item->nama_nasabah_asli;
-            }
+            // Logika Fallback: Gunakan data Master (nasabahs) jika ada, 
+            // jika tidak ada (null), gunakan data input manual (nama_nasabah/alamat_nasabah)
+            $item->nama_nasabah = $item->nama_nasabah_asli ?? ($item->nama_nasabah ?? 'Nama Tidak Ada');
+            $item->alamat_nasabah = $item->alamat_master ?? ($item->alamat_nasabah ?? 'Alamat Tidak Ada');
 
+            // Proses EXIF tetap sama
             if ($item->id_kunjungan && $item->foto_kunjungan) {
                 $fotos = json_decode($item->foto_kunjungan, true);
                 $namaFoto = (is_array($fotos) && count($fotos) > 0) ? $fotos[0] : $item->foto_kunjungan;
-                
                 $path = public_path('uploads/kunjungan/' . $namaFoto);
-                
                 if ($namaFoto && file_exists($path)) {
                     $exif = @exif_read_data($path);
-                    if ($exif && isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
+                    if ($exif && isset($exif['GPSLatitude'])) {
                         $lat = $this->convertFractionToDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
                         $log = $this->convertFractionToDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
                         $item->koordinat = $lat . ',' . $log;
                     }
                 }
-            } else {
-                $item->koordinat = null;
             }
         }
 
@@ -170,7 +204,8 @@ public function detail($kode_ao)
             return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
         }
 
-        return view('admin.kunjungan_detail_full', compact('data_detail', 'kode_ao'));
+        $karyawans = \DB::table('karyawans')->get(); 
+        return view('admin.datakaryawan', compact('data_detail', 'kode_ao', 'karyawans'));
 
     } catch (\Exception $e) {
         \Log::error("Error Detail Kunjungan: " . $e->getMessage());
@@ -422,4 +457,45 @@ public function detail($kode_ao)
 
         return back()->with('success', 'Jadwal berhasil dioper ke AO lain.');
     }
+
+    public function resetJadwal()
+    {
+        try {
+            // Menggunakan truncate untuk mengosongkan tabel dan mereset ID auto_increment
+            \DB::table('data_kunjungan_adms')->truncate();
+
+            return response()->json([
+                'message' => 'Jadwal berhasil dikosongkan. Silakan buat jadwal baru.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+  public function deleteSelected(Request $request)
+{
+    $kode_ao_list = $request->ids;
+
+    if (!empty($kode_ao_list)) {
+        // 1. Hapus data RENCANA JADWAL
+        \DB::table('data_kunjungan_adms')
+            ->whereIn('kode_ao', $kode_ao_list)
+            ->where('bulan', 'LIKE', date('Y-m') . '%')
+            ->delete();
+
+        // 2. Hapus data REALISASI/HISTORY KUNJUNGAN (Sesuai image_689a45.png)
+        // Ini yang membuat angka "Sudah Dikunjungi" di Rekap menjadi 0
+        \DB::table('kunjungans')
+            ->whereIn('kode_ao', $kode_ao_list)
+            ->whereMonth('created_at', date('m'))
+            ->whereYear('created_at', date('Y'))
+            ->delete();
+
+        return response()->json([
+            'success' => 'Jadwal dan History kunjungan AO berhasil dihapus. Rekap sudah sinkron.'
+        ]);
+    }
+    
+    return response()->json(['error' => 'Gagal menghapus data, tidak ada AO terpilih.'], 400);
+}
 }

@@ -9,13 +9,14 @@ class Kunjungan extends Model
 {
     use HasFactory;
 
-    protected $table = 'data_kunjungan_adms';
+    protected $table = 'kunjungans';
 
     protected $fillable = [
         'kode_ao',
         'tanggal',
         'no_nasabah',
         'nama_nasabah',
+        'alamat_nasabah',
         'keterangan_nasabah',
         'ada_di_lokasi',
         'catatan',
@@ -23,11 +24,13 @@ class Kunjungan extends Model
         'bukti_transfer', // TAMBAHKAN INI agar bisa disimpan
         'koordinat',
         'tgl_janji_bayar',
+        'nominal_janji_bayar',
     ];
 
     public function karyawan()
     {
-        return $this->belongsTo(Karyawan::class, 'karyawan_id', 'id');
+        // Pastikan ini merujuk ke Karyawan, dan kolom foreign key-nya 'kode_ao'
+        return $this->belongsTo(Karyawan::class, 'kode_ao', 'kode_ao');
     }
 
     public function detailKunjungan()

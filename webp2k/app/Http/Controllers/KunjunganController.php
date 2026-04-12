@@ -338,6 +338,7 @@ public function store(Request $request)
             'kode_ao'             => $karyawan->kode_ao,
             'no_nasabah'          => $request->no_nasabah, 
             'nama_nasabah'        => $request->nama_nasabah,
+            'alamat_nasabah'      => $request->alamat_nasabah,
             'kol'                 => $nasabahMaster ? $nasabahMaster->kol : ($request->kol ?: 1),
             'ada_di_lokasi'       => $request->ada_di_lokasi,
             'catatan'             => $request->catatan, 

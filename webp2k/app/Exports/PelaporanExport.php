@@ -16,17 +16,37 @@ class PelaporanExport implements FromView, ShouldAutoSize
         $this->tglAkhir = $tglAkhir;
     }
 
-    public function view(): View 
+  public function view(): View 
     {
-        // Kita langsung query ke tabel kunjungan agar datanya "Flat"
-        $data_kunjungan = \App\Models\DataKunjunganAdm::with('karyawan')
+        $data_kunjungan = \App\Models\DataKunjunganAdm::with(['karyawan', 'nasabah'])
             ->whereBetween('tanggal', [$this->tglAwal, $this->tglAkhir])
-            ->orderBy('tanggal', 'desc')
-            ->orderBy('kode_ao', 'asc')
             ->get();
 
+        // Mengurutkan dengan beberapa kriteria (Multi-level Sorting)
+        $sorted_data = $data_kunjungan->sort(function($a, $b) {
+            // 1. Ambil status catatan untuk masing-masing
+            $catatanA = \DB::table('kunjungans')
+                ->where('no_nasabah', $a->no_angsuran)
+                ->where('kode_ao', $a->kode_ao)
+                ->whereNotNull('catatan')->where('catatan', '!=', '')->exists();
+
+            $catatanB = \DB::table('kunjungans')
+                ->where('no_nasabah', $b->no_angsuran)
+                ->where('kode_ao', $b->kode_ao)
+                ->whereNotNull('catatan')->where('catatan', '!=', '')->exists();
+
+            // KRITERIA 1: Urutkan berdasarkan ada/tidaknya catatan (Descending)
+            if ($catatanA != $catatanB) {
+                return $catatanB <=> $catatanA;
+            }
+
+            // KRITERIA 2: Jika sama-sama ada catatan (atau sama-sama kosong), 
+            // urutkan berdasarkan Nama Nasabah (Ascending) agar data seperti SUWARNO berkumpul
+            return strcmp($a->nama_nasabah, $b->nama_nasabah);
+        });
+
         return view('admin.exports.pelaporan_excel', [
-            'data_ao' => $data_kunjungan,
+            'data_ao' => $sorted_data,
             'tglAwal' => $this->tglAwal,
             'tglAkhir' => $this->tglAkhir
         ]);

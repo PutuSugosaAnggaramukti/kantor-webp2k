@@ -28,48 +28,63 @@ class NasabahImport implements ToModel, WithMultipleSheets
             4 => new NasabahImport('5', $this->labelBulan), // Sheet 5: Macet
         ];
     }
- public function model(array $row)
-{
-    // 1. Ambil No Angsuran dari indeks 2 (Kolom No.Ang)
-    // Kita gunakan trim untuk membersihkan spasi
-    $noAngsuran = isset($row[2]) ? trim($row[2]) : null;
 
-    // 2. VALIDASI KRITIS: 
-    // Lewati baris jika No Angsuran kosong, atau berisi teks "No.Ang", atau bukan angka
-    if (!$noAngsuran || $noAngsuran == 'No.Ang' || !is_numeric($noAngsuran)) {
-        return null;
+    public function model(array $row)
+    {
+        // 1. Ambil No Angsuran dari indeks 2 (Kolom C)
+        $noAngsuran = isset($row[2]) ? trim($row[2]) : null;
+
+        // VALIDASI: Lewati jika bukan baris data nasabah
+        if (!$noAngsuran || $noAngsuran == 'No.Ang' || !is_numeric($noAngsuran)) {
+            return null;
+        }
+
+        /**
+         * PENAMBAHAN KOLOM AGUNAN:
+         * Berdasarkan screenshot, Kode Agunan ada di kolom Z.
+         * Kolom Z dalam indeks array (mulai dari 0) adalah 25.
+         */
+        $kodeAgunanAsli = isset($row[25]) ? trim($row[25]) : '-';
+
+        /**
+         * KODE AO NASABAH:
+         * Kolom AJ (Indeks 35).
+         */
+        $aoNasabahAsli = isset($row[35]) ? trim($row[35]) : '-';
+
+        return Nasabah::updateOrCreate(
+            ['no_angsuran' => (string)$noAngsuran],
+            [
+                'kode'            => trim($row[1] ?? '-'),
+                'rekening_kredit' => trim($row[3] ?? '-'),
+                'kode_nasabah'    => trim($row[4] ?? '-'),
+                'nasabah'         => trim($row[5] ?? '-'),
+                'alamat'          => trim($row[6] ?? '-'),
+                
+                // Kolom Baru: Kode Agunan (dari Kolom Z)
+                'kode_agunan'     => $kodeAgunanAsli, 
+
+                'kode_ao_nasabah' => $aoNasabahAsli, 
+
+                'tgl_pinjam'      => $this->transformDate($row[8] ?? null), 
+                'tgl_jt'          => $this->transformDate($row[9] ?? null), 
+                
+                'nominal'          => $this->cleanNumber($row[10] ?? 0),   
+                'sisa_pokok'       => $this->cleanNumber($row[11] ?? 0),   
+                'pokok_per_bulan'  => $this->cleanNumber($row[12] ?? 0),   
+                'bunga_per_bulan'  => $this->cleanNumber($row[13] ?? 0),   
+                'tunggakan_pokok'  => $this->cleanNumber($row[14] ?? 0),   
+                'hari_pokok'       => is_numeric($row[15] ?? null) ? (int)$row[15] : 0, 
+                'tunggakan_bunga'  => $this->cleanNumber($row[16] ?? 0), 
+                'hari_bunga'       => is_numeric($row[17] ?? null) ? (int)$row[17] : 0,
+                'denda'            => $this->cleanNumber($row[18] ?? 0),
+                'bakidebet'        => $this->cleanNumber($row[19] ?? 0),   
+                
+                'kol'              => $this->currentKol,
+                'bulan'            => $this->labelBulan,
+            ]
+        );
     }
-
-    return Nasabah::updateOrCreate(
-        ['no_angsuran' => (string)$noAngsuran],
-        [
-            'kode'            => trim($row[1] ?? '-'),      // Kolom Kode (PG.001)
-            'rekening_kredit' => trim($row[3] ?? '-'),      // Kolom Rekening Kredit
-            'kode_nasabah'    => trim($row[4] ?? '-'),      // Kolom Kode Nasabah
-            'nasabah'         => trim($row[5] ?? '-'),      // Kolom Nama (AGUS SUNARYA)
-            'alamat'          => trim($row[6] ?? '-'),      // Kolom Alamat
-            
-            // Tanggal
-            'tgl_pinjam'      => $this->transformDate($row[8] ?? null), // Kolom Tgl.Pinjam
-            'tgl_jt'          => $this->transformDate($row[9] ?? null), // Kolom Tgl.JT
-            
-            // Angka (Gunakan cleanNumber agar tidak jadi triliunan)
-            'nominal'          => $this->cleanNumber($row[10] ?? 0),   // Kolom Nominal
-            'sisa_pokok'       => $this->cleanNumber($row[11] ?? 0),   // Kolom Sisa Pokok
-            'pokok_per_bulan'  => $this->cleanNumber($row[12] ?? 0),   // Kolom Pokok/bln
-            'bunga_per_bulan'  => $this->cleanNumber($row[13] ?? 0),   // Kolom Bunga/bln
-            'tunggakan_pokok'  => $this->cleanNumber($row[14] ?? 0),   // Kolom Tgk.Pokok
-            'hari_pokok'       => is_numeric($row[15] ?? null) ? (int)$row[15] : 0, 
-            'tunggakan_bunga'  => $this->cleanNumber($row[16] ?? 0), 
-            'hari_bunga'       => is_numeric($row[17] ?? null) ? (int)$row[17] : 0,
-            'denda'            => $this->cleanNumber($row[18] ?? 0),
-            'bakidebet'        => $this->cleanNumber($row[19] ?? 0),   // Kolom Tot.Tgk
-            
-            'kol'              => $this->currentKol,
-            'bulan'            => $this->labelBulan,
-        ]
-    );
-}
 
     private function cleanNumber($value) {
         if (empty($value)) return 0;

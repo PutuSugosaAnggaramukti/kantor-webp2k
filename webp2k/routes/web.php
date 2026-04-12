@@ -42,7 +42,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/karyawan/{id}', [KaryawanController::class, 'show']);
     Route::get('/get-karyawan-list', [KaryawanController::class, 'getList'])->name('admin.karyawan.list');
 
-    // 3. ADM KUNJUNGAN (Dibenahi rutenya agar tidak 404 saat refresh)
+    // 3. ADM KUNJUNGAN
     Route::get('/data-kunjungan', [AdmKunjunganController::class, 'dataKunjunganContent'])->name('admin.kunjungan.index'); // Rute bersih
     Route::get('/data-kunjungan-content', [AdmKunjunganController::class, 'dataKunjunganContent']); 
     Route::get('/adm-kunjungan', [AdmKunjunganController::class, 'index'])->name('admin.adm-kunjungan.index');
@@ -54,6 +54,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/kunjungan-detail/{kode_ao}-content', [AdmKunjunganController::class, 'detail']);
     Route::get('/kunjungan-detail/{kode_ao}', [AdmKunjunganController::class, 'detail'])->where('kode_ao', '.*');
     Route::patch('/kunjungan/update-status/{id}', [AdmKunjunganController::class, 'updateStatus'])->name('admin.update-status-kunjungan');
+    Route::post('/datakunjungan/reset', [AdmKunjunganController::class, 'resetJadwal'])->name('admin.datakunjungan.reset');
+    Route::post('/datakunjungan/delete-selected', [AdmKunjunganController::class, 'deleteSelected'])->name('admin.datakunjungan.delete-selected');
 
     // 4. DATA NASABAH (Dibenahi rutenya)
     Route::get('/nasabah', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.index'); // Rute bersih

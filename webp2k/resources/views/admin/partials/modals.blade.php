@@ -601,3 +601,16 @@
         </form>
     </div>
 </div>
+
+<div id="modalPilihHapus" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+    <div style="background:#fff; width:500px; margin:50px auto; padding:20px; border-radius:10px;">
+        <h3>Pilih Jadwal yang Akan Dibatalkan</h3>
+        <hr>
+        <div id="listJadwalHapus" style="max-height: 400px; overflow-y: auto; margin-bottom: 20px;">
+            </div>
+        <div style="display:flex; justify-content: flex-end; gap: 10px;">
+            <button onclick="closeModalPilihHapus()" style="background:#6c757d; color:#fff; border:none; padding:8px 15px; border-radius:5px;">Batal</button>
+            <button onclick="prosesHapusPilihan()" style="background:#dc3545; color:#fff; border:none; padding:8px 15px; border-radius:5px;">Hapus yang Dipilih</button>
+        </div>
+    </div>
+</div>

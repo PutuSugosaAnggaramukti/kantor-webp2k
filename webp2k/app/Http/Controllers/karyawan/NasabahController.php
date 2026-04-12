@@ -90,9 +90,9 @@ class NasabahController extends Controller
         return view('admin.partials.pengunjung_nasabah', compact('histori_kunjungan'));
     }
 
-  public function store(Request $request)
+    public function store(Request $request)
     {
-        // 1. Validasi Lengkap (Mencakup semua field baru dari form)
+        // 1. Validasi Lengkap
         $request->validate([
             'no_angsuran' => 'required|unique:nasabahs,no_angsuran',
             'nasabah'     => 'required',
@@ -128,7 +128,9 @@ class NasabahController extends Controller
                 'sisa_pokok'      => $request->sisa_pokok ?? 0,
                 'pokok_per_bulan' => $request->pokok_per_bulan ?? 0,
                 'bunga_per_bulan' => $request->bunga_per_bulan ?? 0,
-                'kode_ao'         => $request->kode_ao ?? '-',
+                
+                // DISESUAIKAN: Menggunakan nama kolom baru hasil migrasi (AO-020 dkk)
+                'kode_ao_nasabah' => $request->kode_ao ?? '-', 
 
                 // --- KOLOM 3: Tunggakan & Kualitas ---
                 'tunggakan_pokok' => $request->tunggakan_pokok ?? 0,

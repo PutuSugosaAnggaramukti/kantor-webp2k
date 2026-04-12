@@ -774,6 +774,10 @@ nav div.hidden.sm\:flex-1.sm\:flex.sm\:items-center.sm\:justify-between div:firs
     border: 1px solid #ddd !important;
 }
 
+.swal2-container {
+    z-index: 99999 !important;
+}
+
 /* ANIMASI MODAL */
 @keyframes fadeInOverlay {
     from { opacity: 0; }

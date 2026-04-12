@@ -58,6 +58,14 @@
     <button type="button" class="btn-import-excel" onclick="openModalImport()">
          <i class="fa-solid fa-file-excel"></i> Import dari Excel
     </button>
+
+    <button onclick="resetJadwal()" style="background-color: #dc3545; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <i class="fa-solid fa-rotate"></i> Reset Jadwal (Hapus Semua)
+    </button>
+
+    <button onclick="openModalPilihHapus()" style="background-color: #ffc107; color: #000; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <i class="fa-solid fa-list-check"></i> Pilih Jadwal yang Dihapus
+    </button>
 </div>
 
 @if($kunjungansGrouped->isEmpty())
@@ -259,4 +267,143 @@
             });
         };
     })();
+
+   function resetJadwal() {
+        Swal.fire({
+            title: 'Buat Jadwal Baru?',
+            text: "Semua daftar jadwal kunjungan saat ini akan dihapus untuk memulai jadwal baru!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus Semua!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: "{{ route('admin.datakunjungan.reset') }}",
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        Swal.fire('Berhasil!', response.success, 'success');
+                        // Ganti 'adm-kunjungan-content' sesuai dengan rute konten yang kamu gunakan
+                        loadAdminPage('adm-kunjungan-content'); 
+                    },
+                    error: function(xhr) {
+                        Swal.fire('Gagal!', 'Terjadi kesalahan: ' + xhr.responseText, 'error');
+                    }
+                });
+            }
+        })
+    }
+
+  function openModalPilihHapus() {
+        // Ambil data AO unik yang sudah kita siapkan di Controller
+        const dataAO = @json($daftar_ao_jadwal ?? []); 
+        let listContainer = document.getElementById('listJadwalHapus');
+        
+        listContainer.innerHTML = ''; 
+
+        if (dataAO.length === 0) {
+            Swal.fire('Info', 'Tidak ada data AO yang memiliki jadwal bulan ini.', 'info');
+            return;
+        }
+
+        dataAO.forEach((item) => {
+            let rowHtml = `
+                <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px;">
+                    <input type="checkbox" class="chk-hapus-ao" value="${item.kode_ao}" style="width: 18px; height: 18px; cursor: pointer;">
+                    <div style="flex-grow: 1;">
+                        <div style="font-weight: bold; color: #333; font-size: 14px;">${item.nama}</div>
+                        <div style="font-size: 12px; color: #666;">
+                            <span style="background: #e9ecef; padding: 2px 6px; border-radius: 4px;">Kode: ${item.kode_ao}</span>
+                            <span style="margin-left: 10px; font-weight: 600; color: #dc3545;">(${item.total_jadwal} Nasabah)</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            listContainer.innerHTML += rowHtml;
+        });
+
+        document.getElementById('modalPilihHapus').style.display = 'block';
+    }
+
+function closeModalPilihHapus() {
+    document.getElementById('modalPilihHapus').style.display = 'none';
+}
+
+function prosesHapusPilihan() {
+    let selectedAO = [];
+    
+    // Mengambil Kode AO dari checkbox yang dicentang
+    document.querySelectorAll('.chk-hapus-ao:checked').forEach(chk => {
+        selectedAO.push(chk.value);
+    });
+
+    // Validasi jika tidak ada yang dipilih
+    if (selectedAO.length === 0) {
+        Swal.fire({
+            title: 'Peringatan',
+            text: 'Pilih minimal satu AO yang ingin dihapus!',
+            icon: 'warning',
+            target: 'body' // Memastikan muncul di depan modal
+        });
+        return;
+    }
+
+    // Konfirmasi penghapusan
+    Swal.fire({
+        title: 'Konfirmasi Hapus',
+        text: `Anda akan menghapus SELURUH jadwal untuk ${selectedAO.length} AO yang dipilih. Data pada Pelaporan dan Rekap juga akan berubah. Lanjutkan?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Hapus Semua!',
+        cancelButtonText: 'Batal',
+        target: 'body' // Memastikan muncul di depan modal
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Tampilkan loading agar user tahu proses sedang berjalan
+            Swal.showLoading();
+
+            $.ajax({
+                url: "{{ route('admin.datakunjungan.delete-selected') }}",
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    ids: selectedAO // Mengirim daftar kode AO ke Controller
+                },
+                success: function(response) {
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: response.success,
+                        icon: 'success',
+                        target: 'body'
+                    });
+                    
+                    closeModalPilihHapus();
+                    
+                    // Refresh konten halaman
+                    if (typeof loadAdminPage === 'function') {
+                        loadAdminPage('adm-kunjungan-content'); 
+                    } else {
+                        location.reload();
+                    }
+                },
+                error: function(xhr) {
+                    console.error(xhr.responseText);
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'Terjadi kesalahan saat menghapus data di server.',
+                        icon: 'error',
+                        target: 'body'
+                    });
+                }
+            });
+        }
+    });
+}
 </script>

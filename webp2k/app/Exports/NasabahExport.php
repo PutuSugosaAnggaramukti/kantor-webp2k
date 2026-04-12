@@ -24,39 +24,45 @@ class NasabahExport implements FromCollection, WithHeadings, ShouldAutoSize
             ->leftJoin('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
             ->whereBetween('nasabahs.created_at', [$this->tglAwal . ' 00:00:00', $this->tglAkhir . ' 23:59:59'])
             ->select(
-                'nasabahs.no_angsuran', 
+                'nasabahs.kode',              // A: Kode (PG.xxx)
+                'nasabahs.no_angsuran',       // B: No. Angsuran
+                'nasabahs.rekening_kredit',   // C: Rekening Kredit
+                'nasabahs.bulan',             // D: Bulan (Sesuai screenshot Anda)
+                
+                // --- KOLOM AO MASTER (Data "89" tadi) ---
+                DB::raw('IFNULL(nasabahs.kode_ao_nasabah, "-") as ao_master'), 
+                
+                // --- KOLOM AO P2K (Kunjungan) ---
+                DB::raw('IFNULL(data_kunjungan_adms.kode_ao, "-") as petugas_ao_p2k'),
+                
+                DB::raw('IFNULL(karyawans.nama, "-") as nama_petugas'), 
                 'nasabahs.nasabah', 
                 'nasabahs.alamat', 
                 'nasabahs.kol', 
-                // Kolom Nama Petugas
-                DB::raw('IFNULL(karyawans.nama, "-") as nama_petugas'), 
-                // Kolom Kode AO
-                DB::raw('IFNULL(data_kunjungan_adms.kode_ao, "-") as petugas_ao'),
-                'nasabahs.bulan'
+                'nasabahs.sisa_pokok',
+                'nasabahs.pokok_per_bulan',
+                'nasabahs.bunga_per_bulan'
             )
             ->orderBy('nasabahs.nasabah', 'asc')
-            ->groupBy(
-                'nasabahs.no_angsuran', 
-                'nasabahs.nasabah', 
-                'nasabahs.alamat', 
-                'nasabahs.kol', 
-                'karyawans.nama', 
-                'data_kunjungan_adms.kode_ao', 
-                'nasabahs.bulan'
-            )
-            ->get();
+            ->get(); // Hapus groupBy agar lebih aman dan semua data muncul
     }
 
     public function headings(): array
     {
         return [
+            'Kode',
             'No. Angsuran',
+            'Rekening Kredit',
+            'Bulan',
+            'Kode AO Master', // Kolom untuk angka 89
+            'Kode AO P2K',    // Kolom untuk C-007 dst
+            'Nama Petugas (AO)', 
             'Nama Nasabah',
             'Alamat',
             'KOL',
-            'Nama Petugas (AO)', // Kolom baru
-            'Kode AO',           // Kolom baru
-            'Bulan'
+            'Sisa Pokok',
+            'Pokok/bln',
+            'Bunga/bln'
         ];
     }
 }

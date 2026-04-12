@@ -21,146 +21,158 @@ class DashboardAdminController extends Controller
         
     }
     
-   public function getDashboardData()
-    {
-        
-       // --- 1. DATA DASAR ---
-        $totalKunjungan = \App\Models\DataKunjunganAdm::count(); 
+  public function getDashboardData()
+{
+    // --- 1. DATA DASAR ---
+    $totalKunjungan = \App\Models\DataKunjunganAdm::count(); 
 
-        // --- UPDATED: LOGIKA GAGAL KUNJUNGAN (IJIN DISETUJUI) ---
+    // --- LOGIKA GAGAL KUNJUNGAN (IJIN DISETUJUI) ---
+    $list_gagal_kunjungan_all = \App\Models\IjinKunjungan::with('karyawan')
+        ->whereIn('status', ['disetujui', 'DISETUJUI']) 
+        ->orderBy('tanggal', 'desc')
+        ->get();
 
-        // Ambil semua ijin yang statusnya 'disetujui' (Gagal Kunjungan)
-        $list_gagal_kunjungan_all = \App\Models\IjinKunjungan::with('karyawan')
-            ->whereIn('status', ['disetujui', 'DISETUJUI']) 
-            ->orderBy('tanggal', 'desc')
-            ->get();
+    $total_gagal_global = $list_gagal_kunjungan_all->count();
+    $user = Auth::user();
 
-        // Total untuk angka di Card Merah (Gagal Kunjungan)
-        $total_gagal_global = $list_gagal_kunjungan_all->count();
-        
-        // Ambil user login
-        $user = Auth::user();
+    $list_pengajuan = \App\Models\IjinKunjungan::with('karyawan')
+        ->orderBy('created_at', 'desc')
+        ->take(50) 
+        ->get();
 
-        // List pengajuan (tetap ada untuk modal konfirmasi ijin jika diperlukan)
-       // 1. Ambil list untuk isi modal (tetap ambil 50 data terakhir)
-        $list_pengajuan = \App\Models\IjinKunjungan::with('karyawan')
-            ->orderBy('created_at', 'desc')
-            ->take(50) 
-            ->get();
+    $ijinPendingExists = \App\Models\IjinKunjungan::where('status', 'pending')->exists();
 
-        // 3. Logika Pembersihan: Jika sudah tidak ada ijin yang 'pending', 
-        // maka otomatis tandai semua notif sebagai 'sudah dibaca' agar angka merah hilang.
-        $ijinPendingExists = \App\Models\IjinKunjungan::where('status', 'pending')->exists();
-
-        if (!$ijinPendingExists && $user) {
-            $user->unreadNotifications
-                ->where('type', 'App\Notifications\IjinKunjunganNotification')
-                ->markAsRead();
-        }
-        
-        // 4. Hitung ulang sisa notifikasi yang belum dibaca untuk ditampilkan di badge
-        $pengajuan_ijin_count = $user ? $user->unreadNotifications
+    if (!$ijinPendingExists && $user) {
+        $user->unreadNotifications
             ->where('type', 'App\Notifications\IjinKunjunganNotification')
-            ->count() : 0;
+            ->markAsRead();
+    }
+    
+    $pengajuan_ijin_count = $user ? $user->unreadNotifications
+        ->where('type', 'App\Notifications\IjinKunjunganNotification')
+        ->count() : 0;
 
-        $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) {
-            $kodeAO = trim($karyawan->kode_ao);
+    // --- LOGIKA PERFORMA AO (INDIVIDU) ---
+   $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) {
+        $kodeAO = trim($karyawan->kode_ao);
+        
+        // 1. Ambil SEMUA kunjungan fisik
+        $semuaKunjungan = \DB::table('kunjungans')
+            ->where('kode_ao', $kodeAO)
+            ->get();
+
+        // 2. LOGIKA ANTI-DUPLIKAT (Realisasi)
+        // Di tabel 'kunjungans', no_nasabah biasanya tersedia.
+        $kunjunganUnik = \DB::table('kunjungans')
+            ->where('kode_ao', $kodeAO)
+            ->distinct()
+            ->pluck('no_nasabah') 
+            ->toArray();
+
+        $karyawan->kunjungan_selesai = count($kunjunganUnik);
+        $karyawan->total_kunjungan_fisik = $semuaKunjungan->count();
+
+        // 3. HITUNG TARGET (Jadwal Unik)
+        // Ganti 'no_nasabah' dengan 'no_angsuran' atau 'nama_nasabah' agar tidak error
+        $rencanaAO = \DB::table('data_kunjungan_adms')
+            ->where('kode_ao', $kodeAO)
+            ->distinct()
+            ->count('no_angsuran'); // Gunakan kolom yang pasti ada di tabel jadwal Anda
+
+        // 4. PERSENTASE TARGET
+        if ($rencanaAO > 0) {
+            $persenRaw = ($karyawan->kunjungan_selesai / $rencanaAO) * 100;
             
-            $kunjunganUser = \DB::table('kunjungans')
-                ->where('kode_ao', $kodeAO)
-                ->get();
-
-            $karyawan->kunjungan_selesai = $kunjunganUser->count();
-            $daftarNamaNasabahSelesai = $kunjunganUser->pluck('nama_nasabah')->toArray();
-
-            $rencanaAO = \DB::table('data_kunjungan_adms')->where('kode_ao', $kodeAO)->count();
-            $karyawan->persen_target = $rencanaAO > 0 
-                ? round(($karyawan->kunjungan_selesai / $rencanaAO) * 100) 
-                : 0;
-
-            $rencanaKOL5AO = \DB::table('data_kunjungan_adms')
-                ->where('kode_ao', $kodeAO)
-                ->where('kol', 5)
-                ->pluck('nama_nasabah')->toArray();
-
-            $mandiriKOL5AO = \DB::table('kunjungans')
-                ->where('kode_ao', $kodeAO)
-                ->where('kol', 5)
-                ->whereNotIn('nama_nasabah', $rencanaKOL5AO)
-                ->pluck('nama_nasabah')->toArray();
-
-            $gabunganWajibKOL5 = array_unique(array_merge($rencanaKOL5AO, $mandiriKOL5AO));
-            $totalWajibKOL5AO = count($gabunganWajibKOL5);
-            
-            $selesaiKOL5AO = 0;
-            foreach ($gabunganWajibKOL5 as $nama) {
-                if (in_array($nama, $daftarNamaNasabahSelesai)) {
-                    $selesaiKOL5AO++;
-                }
-            }
-
-            $karyawan->persen_kol5 = $totalWajibKOL5AO > 0 
-                ? round(($selesaiKOL5AO / $totalWajibKOL5AO) * 100) 
-                : 0;
-
-            $hasKol5 = \DB::table('nasabahs')
-                ->whereIn('nasabah', $daftarNamaNasabahSelesai) 
-                ->where('kol', '5')
-                ->exists();
-
-            $karyawan->capai_target = ($karyawan->kunjungan_selesai >= 10 && $hasKol5);
-            
-            return $karyawan;
-        });
-
-        // --- 2. LOGIKA AGREGAT NASIONAL ---
-        $totalSelesai = $performaAO->sum('kunjungan_selesai');
-        $totalBelum = max(0, $totalKunjungan - $totalSelesai);
-        $aoSelesaiTarget = $performaAO->where('capai_target', true)->count();
-
-        $kpi_target_nasional = $totalKunjungan > 0 ? round(($totalSelesai / $totalKunjungan) * 100) : 0;
-
-        $target_kol5_nama = \DB::table('data_kunjungan_adms')->where('kol', 5)->pluck('nama_nasabah')->toArray();
-        $mandiri_kol5_nama = \DB::table('kunjungans')->where('kol', 5)->whereNotIn('nama_nasabah', $target_kol5_nama)->pluck('nama_nasabah')->toArray();
-        $gabungan_kol5_nasional = array_unique(array_merge($target_kol5_nama, $mandiri_kol5_nama));
-        $total_wajib_kol5 = count($gabungan_kol5_nasional);
-
-        $nama_sudah_visit = \DB::table('kunjungans')->pluck('nama_nasabah')->toArray();
-        $kol5_done_count = 0;
-        foreach ($gabungan_kol5_nasional as $nama) {
-            if (in_array($nama, $nama_sudah_visit)) $kol5_done_count++;
+            // Mencegah angka 400% di UI: Batasi tampilan maksimal 100%
+            // Jika Anda ingin tetap melihat '400%', hapus min(..., 100)
+            $karyawan->persen_target = round(min($persenRaw, 100)); 
+        } else {
+            // Jika jadwal kosong tapi dia kunjungan mandiri, anggap tuntas 100%
+            $karyawan->persen_target = ($karyawan->kunjungan_selesai > 0) ? 100 : 0;
         }
 
-        $kpi_kol5_nasional = $total_wajib_kol5 > 0 ? round(($kol5_done_count / $total_wajib_kol5) * 100) : 0;
+        // --- LOGIKA KOL 5 (Tetap menggunakan nama_nasabah sebagai kunci) ---
+        $rencanaKOL5AO = \DB::table('data_kunjungan_adms')
+            ->where('kode_ao', $kodeAO)
+            ->where('kol', 5)
+            ->distinct()
+            ->pluck('nama_nasabah')->toArray();
 
-        $labels = $performaAO->pluck('nama'); 
-        $counts = $performaAO->pluck('kunjungan_selesai'); 
+        $mandiriKOL5AO = \DB::table('kunjungans')
+            ->where('kode_ao', $kodeAO)
+            ->where('kol', 5)
+            ->whereNotIn('nama_nasabah', $rencanaKOL5AO)
+            ->distinct()
+            ->pluck('nama_nasabah')->toArray();
 
-        // --- 3. LOGIKA UNTUK ACCORDION NASABAH ---
-        $kunjungsGrouped = \App\Models\Nasabah::with('karyawan')
-            ->orderByRaw("kol = 5 DESC")
-            ->get()
-            ->groupBy('kode_ao');
+        $gabunganWajibKOL5 = array_unique(array_merge($rencanaKOL5AO, $mandiriKOL5AO));
+        $totalWajibKOL5AO = count($gabunganWajibKOL5);
+        
+        $daftarNamaNasabahSelesai = array_unique($semuaKunjungan->pluck('nama_nasabah')->toArray());
+        
+        $selesaiKOL5AO = 0;
+        foreach ($gabunganWajibKOL5 as $nama) {
+            if (in_array($nama, $daftarNamaNasabahSelesai)) {
+                $selesaiKOL5AO++;
+            }
+        }
 
-        // Return array untuk compact-an
-        return [
-            'totalKunjungan' => $totalKunjungan,
-            'totalSelesai' => $totalSelesai,
-            'totalBelum' => $totalBelum,
-            'aoSelesaiTarget' => $aoSelesaiTarget,
-            'labels' => $labels,
-            'counts' => $counts,
-            'kpi_target_nasional' => $kpi_target_nasional,
-            'kpi_kol5_nasional' => $kpi_kol5_nasional,
-            'total_wajib_kol5' => $total_wajib_kol5,
-            'detailPerformaAO' => $performaAO,
-            'kunjungansGrouped' => $kunjungsGrouped,
-            // Tambahkan dua variabel baru ini:
-            'pengajuan_ijin_count' => $pengajuan_ijin_count,
-            'list_pengajuan' => $list_pengajuan,
-            'total_gagal_global' => $total_gagal_global,
-        ];
+        $karyawan->persen_kol5 = $totalWajibKOL5AO > 0 
+            ? round(($selesaiKOL5AO / $totalWajibKOL5AO) * 100) 
+            : 0;
+
+        // Syarat Capai Target: 10 nasabah unik dan KOL 5 tuntas
+        $karyawan->capai_target = ($karyawan->kunjungan_selesai >= 10 && $karyawan->persen_kol5 >= 100);
+        
+        return $karyawan;
+    });
+
+    // --- 2. LOGIKA AGREGAT NASIONAL ---
+    $totalSelesai = $performaAO->sum('kunjungan_selesai');
+    $totalBelum = max(0, $totalKunjungan - $totalSelesai);
+    $aoSelesaiTarget = $performaAO->where('capai_target', true)->count();
+
+    // Persentase Nasional (Dibatas 100% agar dashboard utama tidak aneh)
+    $kpi_target_nasional = $totalKunjungan > 0 ? min(round(($totalSelesai / $totalKunjungan) * 100), 100) : 0;
+
+    $target_kol5_nama = \DB::table('data_kunjungan_adms')->where('kol', 5)->pluck('nama_nasabah')->toArray();
+    $mandiri_kol5_nama = \DB::table('kunjungans')->where('kol', 5)->whereNotIn('nama_nasabah', $target_kol5_nama)->pluck('nama_nasabah')->toArray();
+    $gabungan_kol5_nasional = array_unique(array_merge($target_kol5_nama, $mandiri_kol5_nama));
+    $total_wajib_kol5 = count($gabungan_kol5_nasional);
+
+    $nama_sudah_visit = \DB::table('kunjungans')->pluck('nama_nasabah')->toArray();
+    $kol5_done_count = 0;
+    foreach ($gabungan_kol5_nasional as $nama) {
+        if (in_array($nama, $nama_sudah_visit)) $kol5_done_count++;
     }
+
+    $kpi_kol5_nasional = $total_wajib_kol5 > 0 ? round(($kol5_done_count / $total_wajib_kol5) * 100) : 0;
+
+    $labels = $performaAO->pluck('nama'); 
+    $counts = $performaAO->pluck('kunjungan_selesai'); 
+
+    $kunjungsGrouped = \App\Models\Nasabah::with('karyawan')
+        ->orderByRaw("kol = 5 DESC")
+        ->get()
+        ->groupBy('kode_ao');
+
+    return [
+        'totalKunjungan' => $totalKunjungan,
+        'totalSelesai' => $totalSelesai,
+        'totalBelum' => $totalBelum,
+        'aoSelesaiTarget' => $aoSelesaiTarget,
+        'labels' => $labels,
+        'counts' => $counts,
+        'kpi_target_nasional' => $kpi_target_nasional,
+        'kpi_kol5_nasional' => $kpi_kol5_nasional,
+        'total_wajib_kol5' => $total_wajib_kol5,
+        'detailPerformaAO' => $performaAO,
+        'kunjungansGrouped' => $kunjungsGrouped,
+        'pengajuan_ijin_count' => $pengajuan_ijin_count,
+        'list_pengajuan' => $list_pengajuan,
+        'total_gagal_global' => $total_gagal_global,
+    ];
+}
 
    public function getDetail($type)
     {
