@@ -45,10 +45,9 @@ class KunjunganController extends Controller
 
         $myCode = strtoupper(trim($karyawan->kode_ao));
         
-        // 1. Ambil data jadwal
+        $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)->get();
         $jadwal = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
-        
-        // 2. Ambil data realisasi (Urutkan dari yang terbaru agar yang terambil selalu yang terakhir)
+
         $realisasi = \DB::table('kunjungans')
             ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
             ->orderBy('created_at', 'desc')
@@ -61,15 +60,12 @@ class KunjunganController extends Controller
         foreach ($jadwal as $j) {
             $namaJadwal = strtoupper(trim(preg_replace('/\s+/', ' ', $j->nama_nasabah)));
             
-            // KUNCI PERBAIKAN: Cari realisasi yang namanya sama (ambil yang paling baru)
             $match = $realisasi->first(function ($r) use ($namaJadwal) {
                 $namaReal = strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah)));
                 return $namaReal === $namaJadwal;
             });
 
             if ($match) {
-                // Jika ketemu, kita tandai SEMUA realisasi dengan nama nasabah ini sebagai "Terpakai"
-                // Agar tidak muncul lagi di PROSES B sebagai data mandiri
                 $semuaIdSama = $realisasi->filter(function ($r) use ($namaJadwal) {
                     return strtoupper(trim(preg_replace('/\s+/', ' ', $r->nama_nasabah))) === $namaJadwal;
                 })->pluck('id')->toArray();
@@ -86,6 +82,7 @@ class KunjunganController extends Controller
                 'alamat_nasabah' => $j->alamat_nasabah,
                 'nominal' => $j->nominal,
                 'sisa_pokok' => $j->sisa_pokok,
+                'tanggal' => $j->tanggal, // TAMBAHKAN INI AGAR TIDAK ERROR
                 'kol' => $j->kol ?? '-',
                 'bulan' => $j->bulan, 
                 'is_filled' => $match ? true : false,
@@ -94,41 +91,40 @@ class KunjunganController extends Controller
             ]);
         }
 
-        // PROSES B: Loop Data Realisasi (Hanya yang benar-benar tidak ada di jadwal)
+        // PROSES B: Loop Data Realisasi (Mandiri)
         foreach ($realisasi as $r) {
             if (!in_array($r->id, $realisasiTerpakaiIds)) {
                 $dataFinal->push((object)[
                     'id' => $r->id,
                     'kode_ao' => $r->kode_ao,
                     'nama_nasabah' => $r->nama_nasabah,
+                    'tanggal' => $r->created_at, // Gunakan tgl input sebagai tgl kunjungan
                     'kol' => $r->kol ?? '-',
                     'bulan' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->translatedFormat('F Y') : date('F Y'), 
                     'is_filled' => true,
                     'is_mandiri' => true
                 ]);
                 
-                // Masukkan ID ini ke daftar terpakai agar jika ada 2 data mandiri dengan nama sama,
-                // dia tidak muncul 2x juga di sini.
                 $realisasiTerpakaiIds[] = $r->id;
             }
         }
 
-        // --- LOGIKA MANUAL PAGINATION (Tetap Sama) ---
-        $currentPage = Paginator::resolveCurrentPage() ?: 1;
+        // --- LOGIKA PAGINATION ---
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
         $perPage = 10; 
         $currentItems = $dataFinal->slice(($currentPage - 1) * $perPage, $perPage)->all();
 
-        $data = new LengthAwarePaginator(
+        $data = new \Illuminate\Pagination\LengthAwarePaginator(
             $currentItems,
             $dataFinal->count(),
             $perPage,
             $currentPage,
-            ['path' => Paginator::resolveCurrentPath()]
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
         );
 
         return request()->ajax() 
             ? view('kunjungan.partials.data_table', compact('data')) 
-            : view('kunjungan.datakunjungan', compact('data'));
+            : view('kunjungan.datakunjungan', compact('data','daftar_nasabah'));
     }
 
     public function laporanKunjunganContent()
@@ -364,6 +360,69 @@ public function store(Request $request)
         return response()->json(['error' => 'Terjadi kesalahan database: ' . $e->getMessage()], 500);
     }
 }
+
+    public function storeAo(Request $request)
+    {
+        // 1. Validasi Input dari Form Modal
+        $request->validate([
+            'nama_nasabah'   => 'required|string|max:255',
+            'alamat_nasabah' => 'required',
+            'kol'            => 'required',
+            'bulan'          => 'required',
+            'no_angsuran'    => 'required',
+            'tanggal'        => 'required|date',
+        ]);
+
+        // 2. Ambil data AO yang sedang login via Guard Karyawan
+        // Ini menggantikan auth()->user() agar tidak mencari ke tabel admin/users
+        $karyawan = \Illuminate\Support\Facades\Auth::guard('karyawan')->user();
+
+        if (!$karyawan) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Profil AO tidak ditemukan! Silakan login ulang.'
+            ], 404);
+        }
+
+        $karyawanId = $karyawan->id;
+
+        // 3. Cek Duplikat: Mencegah AO membuat jadwal untuk nasabah yang sama di bulan yang sama
+        $cekDuplikat = \App\Models\DataKunjunganAdm::where('karyawan_id', $karyawanId)
+                        ->where('no_angsuran', $request->no_angsuran)
+                        ->where('bulan', $request->bulan)
+                        ->exists();
+
+        if ($cekDuplikat) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda sudah membuat jadwal untuk nasabah ini di bulan ini!'
+            ], 422); 
+        }
+
+        // 4. Ambil data nominal & sisa pokok dari Master Nasabah
+        $nasabahMaster = \App\Models\Nasabah::where('no_angsuran', $request->no_angsuran)->first();
+        $isHb = ($request->kol == 5) ? true : false;
+
+        // 5. Simpan ke database
+        \App\Models\DataKunjunganAdm::create([
+            'karyawan_id'    => $karyawanId,
+            'nama_nasabah'   => $request->nama_nasabah,
+            'alamat_nasabah' => $request->alamat_nasabah,
+            'kol'            => $request->kol,
+            'is_hb'          => $isHb, 
+            'bulan'          => $request->bulan,
+            'no_angsuran'    => $request->no_angsuran,
+            'tanggal'        => $request->tanggal,
+            'kode_ao'        => $karyawan->kode_ao, // Otomatis C-011 dsb
+            'nominal'        => $nasabahMaster->nominal ?? 0,
+            'sisa_pokok'     => $nasabahMaster->sisa_pokok ?? 0,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jadwal kunjungan berhasil Anda tambahkan!'
+        ]);
+    }
         
     private function getGps($exifCoord, $hemi) 
     {

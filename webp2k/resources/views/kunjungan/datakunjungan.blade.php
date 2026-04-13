@@ -491,6 +491,77 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
         Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
     });
 });
+
+function simpanJadwalMandiri() {
+    // Ambil data dari form
+    let formData = {
+        _token: "{{ csrf_token() }}",
+        no_angsuran: $('#no_angsuran').val(),
+        nama_nasabah: $('#nama_nasabah').val(),
+        alamat_nasabah: $('#alamat_nasabah').val(),
+        kol: $('#kol_nasabah').val(),
+        bulan: $('#bulan_input').val(),
+        tanggal: $('#tanggal_kunjungan').val()
+    };
+
+    // Validasi sederhana sebelum kirim
+    if (!formData.no_angsuran || !formData.tanggal) {
+        Swal.fire('Peringatan', 'Mohon pilih nasabah dan tanggal kunjungan!', 'warning');
+        return;
+    }
+
+    $.ajax({
+        url: "{{ route('ao.kunjungan.store') }}", // Arahkan ke KunjunganController
+        type: "POST",
+        data: formData,
+        beforeSend: function() {
+            Swal.showLoading();
+        },
+        success: function(response) {
+            if (response.success) {
+                Swal.fire('Berhasil!', response.message, 'success').then(() => {
+                    // Refresh halaman atau reset form
+                    location.reload(); 
+                });
+            }
+        },
+        error: function(xhr) {
+            let errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Terjadi kesalahan server';
+            Swal.fire('Gagal!', errorMsg, 'error');
+        }
+    });
+}
+
+function openModalAO() {
+    document.getElementById('modalTambahJadwalAO').style.display = 'block';
+}
+
+function closeModalAO() {
+    document.getElementById('modalTambahJadwalAO').style.display = 'none';
+    $('#formTambahJadwalAO')[0].reset();
+    $('#txt_alamat, #txt_kol').text('-');
+}
+
+$('#select_nasabah').on('change', function() {
+    let selected = $(this).find(':selected');
+    let no_angsuran = $(this).val();
+    let nama = selected.data('nama');
+    let alamat = selected.data('alamat');
+    let kol = selected.data('kol');
+    let kode = selected.data('kode'); // Tambahan baru
+    let rekening = selected.data('rekening'); // Tambahan baru
+
+    // Update Tampilan Info (Sesuai permintaan kamu: Kode, Rekening, Alamat)
+    $('#txt_kode').text(kode || '-');
+    $('#txt_rekening').text(rekening || '-');
+    $('#txt_alamat').text(alamat || '-');
+
+    // Update Hidden Input untuk dikirim via AJAX
+    $('#no_angsuran').val(no_angsuran);
+    $('#nama_nasabah').val(nama);
+    $('#alamat_nasabah').val(alamat);
+    $('#kol_nasabah').val(kol);
+});
 </script>
 
 

@@ -98,6 +98,7 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::get('/dokumen-content', [DokumenController::class, 'dokumenContent'])->name('dokumen.content');
     Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
     Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
+    Route::post('user/kunjungan/tambah-jadwal', [KunjunganController::class, 'storeAo'])->name('ao.kunjungan.store');
     Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');
     Route::post('/pengaturan/update-akun', [PengaturanController::class, 'updateAkun'])->name('settings.akun');
     Route::post('/pengaturan/update-sandi', [PengaturanController::class, 'updateSandi'])->name('settings.sandi');

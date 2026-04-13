@@ -184,76 +184,60 @@
     </div>
 </div>
 
-<div id="modalManual" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(3px); overflow-y: auto;">
-    <div style="background:white; margin:20px auto; padding:25px; width:90%; max-width:450px; border-radius:15px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); font-family: 'Poppins', sans-serif; position: relative;">
+
+<div id="modalTambahJadwalAO" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+    <div style="background:#fff; width:450px; margin:50px auto; padding:25px; border-radius:12px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+        <h3 style="margin-top:0; color:#333;">Tambah Jadwal Kunjungan</h3>
+        <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         
-        <h3 style="text-align:center; margin-bottom:20px; font-weight:bold;">Form Kunjungan</h3>
-        
-        <form action="{{ route('kunjungan.store') }}" method="POST" enctype="multipart/form-data">
-            @csrf
-            
-            <div style="max-height: 60vh; overflow-y: auto; padding-right: 5px; margin-bottom: 15px;">
-                
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Nama Nasabah</label>
-                    <input type="text" name="nama_nasabah" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;" required placeholder="Masukkan nama nasabah">
+        <form id="formTambahJadwalAO">
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label style="display:block; font-weight:bold; margin-bottom:5px; font-size:13px;">Kode AO</label>
+                    <input type="text" class="form-control" value="{{ Auth::guard('karyawan')->user()->kode_ao }}" readonly style="background:#eee; cursor:not-allowed; width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
                 </div>
-
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Nomor Anggota</label>
-                    <input type="text" name="no_nasabah" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;" placeholder="Masukkan nomor">
+                <div style="flex: 2;">
+                    <label style="display:block; font-weight:bold; margin-bottom:5px; font-size:13px;">Nama AO</label>
+                    <input type="text" class="form-control" value="{{ Auth::guard('karyawan')->user()->nama }}" readonly style="background:#eee; cursor:not-allowed; width:100%; padding:8px; border:1px solid #ccc; border-radius:4px;">
                 </div>
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">Cari Nasabah</label>
+                <select id="select_nasabah" class="form-control" style="width:100%; padding:8px;">
+                    <option value="">-- Pilih Nasabah --</option>
+                    @foreach($daftar_nasabah as $n)
+                        <option value="{{ $n->no_angsuran }}" 
+                                data-nama="{{ $n->nasabah }}" 
+                                data-kode="{{ $n->kode }}" 
+                                data-rekening="{{ $n->rekening_kredit }}"
+                                data-alamat="{{ $n->alamat }}" 
+                                data-kol="{{ $n->kol }}">
+                            {{ $n->no_angsuran }} - {{ $n->nasabah }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
 
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">KOL (Jika tidak tahu bisa dikosongi saja)</label>
-                    <select name="kol" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; background:white;">
-                        <option value="">-- Pilih KOL (Jika tahu) --</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                    </select>
-                    <small style="color: #888; font-size: 11px;">Biarkan kosong jika tidak yakin.</small>
-                </div>
+            <div style="background:#f8f9fa; padding:12px; border-radius:8px; margin-bottom:15px; font-size:13px; border-left:4px solid #007bff;">
+                <p style="margin:0 0 5px 0;"><strong>Kode:</strong> <span id="txt_kode">-</span></p>
+                <p style="margin:0 0 5px 0;"><strong>Rekening Kredit:</strong> <span id="txt_rekening">-</span></p>
+                <p style="margin:0;"><strong>Alamat:</strong> <span id="txt_alamat">-</span></p>
+            </div>
 
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Apakah nasabah ada di lokasi?</label>
-                    <select name="ada_di_lokasi" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; background:white;" required>
-                        <option value="Ada">Ada</option>
-                        <option value="Tidak Ada">Tidak Ada</option>
-                    </select>
-                </div>
+            <div style="margin-bottom:20px;">
+                <label style="display:block; font-weight:bold; margin-bottom:5px;">Tanggal Kunjungan</label>
+                <input type="date" id="tanggal_kunjungan" class="form-control" style="width:100%; padding:8px;" value="{{ date('Y-m-d') }}">
+            </div>
 
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Hasil Kunjungan</label>
-                    <textarea name="catatan" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;" rows="3" required placeholder="Tulis hasil kunjungan..."></textarea>
-                </div>
+            <input type="hidden" id="no_angsuran">
+            <input type="hidden" id="nama_nasabah">
+            <input type="hidden" id="alamat_nasabah">
+            <input type="hidden" id="kol_nasabah">
+            <input type="hidden" id="bulan_input" value="{{ date('Y-m') }}">
 
-                <div style="margin-bottom:15px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Tanggal Kesanggupan Bayar</label>
-                    <input type="date" name="tgl_janji_bayar" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
-                </div>
-
-                <div style="margin-bottom:20px;">
-                    <label style="display:block; margin-bottom:5px; font-weight:600; color:#333;">Foto Kunjungan</label>
-                    <div style="border:1px solid #ddd; padding:10px; border-radius:10px;">
-                        <input type="file" name="foto_kunjungan" accept="image/*" capture="camera" required style="width:100%;">
-                    </div>
-                    <div style="font-size: 12px; color: #28a745; margin-top: 8px; font-weight: bold;">
-                        <i class="fa-solid fa-circle-check"></i> Lokasi Terkunci
-                    </div>
-                </div>
-
-            </div> <input type="hidden" name="koordinat" id="manual_koordinat">
-
-            <div style="display: flex; gap: 15px; background: white; padding-top: 10px;">
-                <button type="button" onclick="closeManualModal()" style="flex: 1; background:#e91e63; color:white; padding:12px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">
-                    Cancel
-                </button>
-                <button type="submit" style="flex: 1; background:#5c59d1; color:white; padding:12px; border:none; border-radius:12px; font-weight:bold; cursor:pointer;">
-                    Save
-                </button>
+            <div style="display:flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="closeModalAO()" style="background:#6c757d; color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">Batal</button>
+                <button type="button" onclick="simpanJadwalMandiri()" style="background:#28a745; color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; font-weight:bold;">Simpan Jadwal</button>
             </div>
         </form>
     </div>

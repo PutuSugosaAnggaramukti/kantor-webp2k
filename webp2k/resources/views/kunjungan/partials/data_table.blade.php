@@ -58,10 +58,10 @@
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     
-    <button onclick="openManualModal()" 
+    <button onclick="openModalAO()" 
             style="background-color: #4e4bc1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 6px rgba(78, 75, 193, 0.2); transition: 0.3s;">
         <i class="fa-solid fa-plus-circle"></i> 
-        <span>Tambah Kunjungan Mandiri</span>
+        <span>Tambah Jadwal Kunjungan</span>
     </button>
 
     <div style="position: relative; width: 250px;">
@@ -88,12 +88,12 @@
 
 <div class="table-responsive" style="width: 100%; overflow-x: auto;">
     <table id="tableKunjungan" style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #333;">
-        <thead>
+       <thead>
             <tr style="background-color: #f5f5f5; text-align: center;">
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 60px;">No</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 120px;">Kode</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700;">Nasabah</th>
-                <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 100px;">KOL</th>
+                <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 180px;">Tgl Kunjungan</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Bulan</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Option</th>
             </tr>
@@ -101,13 +101,12 @@
         <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
             <tr class="{{ $item->is_filled ? 'row-completed' : 'row-pending' }}" style="border-bottom: 2px solid #000; text-align: center;">
-                {{-- Penyesuaian nomor urut agar berlanjut antar halaman --}}
                 <td style="padding: 15px; border-right: 2px solid #000;">
                     {{ ($data->currentPage() - 1) * $data->perPage() + $index + 1 }}
                 </td>
                 
-                {{-- ... sisa kolom lainnya tetap sama ... --}}
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
+                
                 <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
                     {{ $item->nama_nasabah }}
                     @if($item->is_filled)
@@ -120,9 +119,12 @@
                         </span>
                     @endif
                 </td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kol }}</td>
+
+                <td style="padding: 15px; border-right: 2px solid #000; color: #007bff;">
+                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') : '-' }}
+                </td>
+                
                 <td style="padding: 15px; border-right: 2px solid #000;">
-                    {{-- Logika Carbon Anda --}}
                     @php
                         $valBulan = $item->bulan ?? '-';
                         if (preg_match('/^[0-9]{4}-[0-9]{2}/', $valBulan)) {
@@ -132,20 +134,19 @@
                         }
                     @endphp
                 </td>
+
                 <td style="border: 1px solid #333; padding: 15px;">
-                    {{-- Tombol-tombol option --}}
                     <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
                         @if($item->is_filled)
                             <div style="background-color: #28a745; color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-check" style="font-size: 18px;"></i>
                             </div>
                         @else
-                           <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')" 
+                        <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')" 
                                     style="background-color: #A3A8AC; color: #333; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
                             </button>
                         @endif
-                        {{-- Tombol Detail --}}
                         <button onclick="openDetailModal(...)" style="background: none; border: none; cursor: pointer;">
                             <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
                         </button>
@@ -153,7 +154,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="6" style="padding: 20px;">Data tidak ditemukan</td></tr>
+            <tr><td colspan="7" style="padding: 20px;">Data tidak ditemukan</td></tr> {{-- Colspan jadi 7 --}}
             @endforelse
         </tbody>
     </table>
