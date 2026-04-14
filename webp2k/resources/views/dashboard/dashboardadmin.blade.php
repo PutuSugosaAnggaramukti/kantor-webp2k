@@ -31,8 +31,11 @@
             </span>
         
             <div id="adminDropdown" style="display: none; position: absolute; top: 50px; right: 20px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100;">
-                <a href="javascript:void(0)" onclick="confirmLogout()" style="text-decoration: none; color: #ef4444; font-weight: bold;">
-                    Logout
+                <a href="javascript:void(0)" onclick="confirmLogout()" style="display: flex; align-items: center; padding: 12px 15px; text-decoration: none; color: #ef4444; font-weight: bold;">
+                    <i class="fa-solid fa-right-from-bracket" style="margin-right: 10px;"></i>Logout
+                </a>
+                <a href="javascript:void(0)" onclick="transitionToAdminPage('pengaturan')" style="display: flex; align-items: center; padding: 12px 15px; text-decoration: none; color: #333; font-weight: 600; font-size: 14px; border-bottom: 1px solid #f5f5f5; transition: background 0.2s;">
+                    <i class="fa-solid fa-user-gear" style="margin-right: 10px; color: #3b82f6;"></i> Pengaturan Akun
                 </a>
             </div>
         </div>
@@ -140,6 +143,10 @@
                                 {{ $pengajuan_ijin_count }}
                             </span>
                         @endif
+                    </a>
+                    <a href="javascript:void(0)" onclick="transitionToAdminPage('pengaturan')" class="menu-item">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Pengaturan</span>
                     </a>
                 </div>
             </div>
@@ -276,7 +283,8 @@
             'nasabah': 'Memuat Data Nasabah...',
             'pelaporan': 'Memuat Laporan...',
             'dokumen': 'Memuat Dokumen...',
-            'adm-kunjungan': 'Memuat Input Jadwal...'
+            'adm-kunjungan': 'Memuat Input Jadwal...',
+            'pengaturan': 'Memuat Pengaturan...'
         };
 
         // Peta Route (Sesuaikan dengan name route di web.php Anda)
@@ -286,7 +294,8 @@
             'nasabah': "{{ route('admin.nasabah.index') }}",
             'pelaporan': "{{ route('pelaporan.index') }}",
             'dokumen': "{{ route('admin.dokumen.index') }}",
-            'adm-kunjungan': "{{ route('admin.adm-kunjungan.index') }}"
+            'adm-kunjungan': "{{ route('admin.adm-kunjungan.index') }}",
+            'pengaturan': "{{ route('admin.pengaturan') }}"
         };
 
         if (loadingText) {

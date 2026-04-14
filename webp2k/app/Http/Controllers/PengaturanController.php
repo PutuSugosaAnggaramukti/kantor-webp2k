@@ -18,6 +18,7 @@ class PengaturanController extends Controller
 
     public function updateAkun(Request $request)
     {
+       /** @var \App\Models\Karyawan $user */
         $user = Auth::guard('karyawan')->user();
 
         // Validasi hanya kolom yang ada di model Karyawan
@@ -35,6 +36,7 @@ class PengaturanController extends Controller
 
     public function updateSandi(Request $request)
     {
+        /** @var \App\Models\Karyawan $user */
         $user = Auth::guard('karyawan')->user();
 
         $request->validate([
@@ -55,6 +57,7 @@ class PengaturanController extends Controller
 
    public function uploadAvatar(Request $request)
     {
+        /** @var \App\Models\Karyawan $user */
         $user = Auth::guard('karyawan')->user();
 
         $request->validate([

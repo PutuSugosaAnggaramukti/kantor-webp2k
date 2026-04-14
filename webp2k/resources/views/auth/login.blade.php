@@ -7,6 +7,7 @@
 
     <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS -->
     <link rel="stylesheet" href="{{ asset('css/login.css') }}">
@@ -72,7 +73,7 @@
         </div>
 @endif
 
-        <form action="{{ route('login.post') }}" method="POST">
+       <form action="{{ route('login.post') }}" method="POST">
             @csrf
             <div class="form-group">
                 <label>Username</label>
@@ -81,7 +82,12 @@
             
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" name="password" placeholder="Masukkan password" required>
+                <div style="position: relative; width: 100%;">
+                    <input type="password" name="password" id="password" placeholder="Masukkan password" required 
+                        style="width: 100%; padding-right: 45px; box-sizing: border-box;">
+                    <i class="fa-solid fa-eye" id="togglePassword" 
+                    style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #666;"></i>
+                </div>
             </div>
 
             <button type="submit" class="btn-login">Login</button>
@@ -132,6 +138,20 @@ function previewLogin(e) {
     }
 </script>
 
+<script>
+    const togglePassword = document.querySelector('#togglePassword');
+    const password = document.querySelector('#password');
+
+    togglePassword.addEventListener('click', function (e) {
+        // Toggle tipe input
+        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+        password.setAttribute('type', type);
+        
+        // Toggle ikon
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+    });
+</script>
 
 
 </body>

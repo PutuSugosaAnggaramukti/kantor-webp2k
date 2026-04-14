@@ -14,6 +14,7 @@ use App\Http\Controllers\karyawan\AdmDokumenController;
 use App\Http\Controllers\karyawan\NasabahController;
 use App\Http\Controllers\karyawan\PelaporanController;
 use App\Http\Controllers\IjinKunjunganController;
+use App\Http\Controllers\karyawan\PengaturanAdmController;
 
 /*
 |--------------------------------------------------------------------------
@@ -85,6 +86,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // 7. IJIN KUNJUNGAN (Fitur Persetujuan Admin)
     Route::get('/ijin-kunjungan', [IjinKunjunganController::class, 'indexAdmin'])->name('admin.ijin.index');
     Route::post('/ijin-kunjungan/update-status/{id}', [IjinKunjunganController::class, 'updateStatus'])->name('admin.ijin.updateStatus');
+
+    // 8. PENGATURAN 
+    Route::get('/pengaturan', [PengaturanAdmController::class, 'index'])->name('admin.pengaturan.full');
+    Route::get('/pengaturan-content', [PengaturanAdmController::class, 'index'])->name('admin.pengaturan');
+    Route::post('/pengaturan/update-sandi', [PengaturanAdmController::class, 'updateSandi'])->name('admin.settings.sandi');
 });
 
 
