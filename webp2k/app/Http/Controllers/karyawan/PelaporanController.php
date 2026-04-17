@@ -52,7 +52,7 @@ class PelaporanController extends Controller
             return view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
         }
 
-        $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+        $dashboard = new \App\Http\Controllers\dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
         $data['content'] = view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();

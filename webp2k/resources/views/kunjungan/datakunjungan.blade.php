@@ -542,6 +542,22 @@ function closeModalAO() {
     $('#txt_alamat, #txt_kol').text('-');
 }
 
+function openModalUbahJadwal() {
+    const modal = document.getElementById('modalEditJadwalGlobal');
+    if (modal) {
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModalUbahJadwal() {
+    const modal = document.getElementById('modalEditJadwalGlobal');
+    if (modal) {
+        modal.classList.remove('show');
+        document.body.style.overflow = 'auto';
+    }
+}
+
 $('#select_nasabah').on('change', function() {
     let selected = $(this).find(':selected');
     let no_angsuran = $(this).val();

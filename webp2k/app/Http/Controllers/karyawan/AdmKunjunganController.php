@@ -11,7 +11,7 @@ use App\Exports\KunjunganExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\Dashboard\DashboardAdminController;
+use App\Http\Controllers\dashboard\DashboardAdminController;
 use App\Notifications\UpdateStatusNotification;
 
 class AdmKunjunganController extends Controller

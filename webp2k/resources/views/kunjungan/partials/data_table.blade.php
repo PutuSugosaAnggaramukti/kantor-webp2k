@@ -56,22 +56,27 @@
     </div>
 </div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<div class="header-actions">
     
-    <button onclick="openModalAO()" 
-            style="background-color: #4e4bc1; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; box-shadow: 0 4px 6px rgba(78, 75, 193, 0.2); transition: 0.3s;">
+    <button onclick="openModalAO()" class="btn-action-custom" style="background-color: #4e4bc1; color: white;">
         <i class="fa-solid fa-plus-circle"></i> 
         <span>Tambah Jadwal Kunjungan</span>
     </button>
 
-    <div style="position: relative; width: 250px;">
+    <button onclick="openModalUbahJadwal()" class="btn-action-custom" style="background-color: #ffc107; color: #212529;">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Ubah Jadwal Kunjungan</span>
+    </button>
+
+    <div class="search-wrapper">
         <input type="text" 
-           id="searchNasabah"
-           onkeyup="let f=this.value.toUpperCase(); let rows=document.querySelectorAll('#tableKunjungan tbody tr'); rows.forEach(r => { let t=r.innerText.toUpperCase(); r.style.display=t.includes(f)?'':'none'; })"
-           placeholder="Cari nasabah.." 
-           style="width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; background-color: #f9f9f9; height: 38px;">
-        <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 12px; top: 11px; color: #ccc;"></i>
+               id="searchNasabah"
+               onkeyup="..."
+               placeholder="Cari nasabah.." 
+               style="width: 100%; padding: 8px 35px 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; background-color: #f9f9f9; height: 40px;">
+        <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 12px; top: 12px; color: #ccc;"></i>
     </div>
+
 </div>
 
 @if(session('success'))

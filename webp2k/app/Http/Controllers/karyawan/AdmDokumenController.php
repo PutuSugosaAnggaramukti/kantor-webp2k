@@ -32,7 +32,7 @@ class AdmDokumenController extends Controller
         return view('admin.partials.dokumen', compact('dokumen_all'))->render();
     }
 
-    $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+    $dashboard = new \App\Http\Controllers\dashboard\DashboardAdminController();
     
     try {
         $data = $dashboard->getDashboardData();

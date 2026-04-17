@@ -242,3 +242,33 @@
         </form>
     </div>
 </div>
+
+<div id="modalEditJadwalGlobal" class="modal-custom-global">
+    <div class="modal-custom-dialog">
+        <div class="modal-custom-header">
+            <h5>Ubah Jadwal Kunjungan</h5>
+            <button type="button" class="close-btn" onclick="closeModalUbahJadwal()">&times;</button>
+        </div>
+        <form action="{{ route('kunjungan.updateJadwalGlobal') }}" method="POST">
+            @csrf
+            <div class="modal-custom-body">
+                <label>Pilih Nasabah</label>
+                <select name="id" class="form-control" required>
+                    <option value="">-- Pilih jadwal nasabah yang ingin diubah --</option>
+                    @foreach($data as $item)
+                        @if(!$item->is_filled)
+                            <option value="{{ $item->id }}">{{ $item->nama_nasabah }} ({{ date('d-m-Y', strtotime($item->tanggal)) }})</option>
+                        @endif
+                    @endforeach
+                </select>
+
+                <label>Tanggal Baru</label>
+                <input type="date" name="tanggal" class="form-control" required>
+            </div>
+            <div class="modal-custom-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModalUbahJadwal()" style="border-radius: 20px; padding: 8px 20px;">Batal</button>
+                <button type="submit" class="btn btn-warning" style="border-radius: 20px; font-weight: bold; padding: 8px 20px; background-color: #ffc107; border: none;">Update Jadwal</button>
+            </div>
+        </form>
+    </div>
+</div>

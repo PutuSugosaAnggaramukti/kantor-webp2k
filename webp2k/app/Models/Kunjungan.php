@@ -21,7 +21,7 @@ class Kunjungan extends Model
         'ada_di_lokasi',
         'catatan',
         'foto_kunjungan',
-        'bukti_transfer', // TAMBAHKAN INI agar bisa disimpan
+        'bukti_transfer',
         'koordinat',
         'tgl_janji_bayar',
         'nominal_janji_bayar',

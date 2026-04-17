@@ -850,7 +850,124 @@ nav div.flex.items-center.justify-between div:first-child {
     color: white !important;
 }
 
+.modal-custom-global {
+    display: none !important; /* Sembunyi total saat awal */
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Munculkan modal dengan Flex saat class .show aktif */
+.modal-custom-global.show {
+    display: flex !important;
+}
+
+/* Kotak Modal */
+.modal-custom-dialog {
+    width: 100%;
+    max-width: 500px;
+    background-color: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    animation: zoomIn 0.3s ease; /* Animasi sedikit biar halus */
+}
+
+/* Header Modal */
+.modal-custom-header {
+    background-color: #ffc107;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-custom-header h5 {
+    margin: 0;
+    font-weight: bold;
+    color: #212529;
+}
+
+.modal-custom-header .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #212529;
+}
+
+/* Body & Form */
+.modal-custom-body {
+    padding: 25px;
+}
+
+.modal-custom-body label {
+    font-weight: bold;
+    color: #4e4bc1;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.modal-custom-body .form-control {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+/* Footer & Button */
+.modal-custom-footer {
+    padding: 15px 25px 25px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.header-actions {
+    display: flex;
+    justify-content: flex-start; /* Mengatur tombol mepet ke kiri */
+    align-items: center;
+    gap: 12px; /* Jarak antar tombol (silakan sesuaikan) */
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+/* Memastikan Search Bar mepet ke kanan */
+.search-wrapper {
+    margin-left: auto; 
+    position: relative;
+    width: 250px;
+}
+
+/* Standarisasi ukuran tombol agar seragam tinggi nya */
+.btn-action-custom {
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 /* Animasi */
+@keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }

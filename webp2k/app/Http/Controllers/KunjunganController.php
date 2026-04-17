@@ -166,46 +166,46 @@ class KunjunganController extends Controller
         return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
     }
 
-   public function indexpelaporan()
-{
-    $user = Auth::guard('karyawan')->user();
-    if (!$user) return redirect()->back();
+    public function indexpelaporan()
+    {
+        $user = Auth::guard('karyawan')->user();
+        if (!$user) return redirect()->back();
 
-    $user->unreadNotifications
-         ->where('type', 'App\Notifications\UpdateStatusNotification')
-         ->markAsRead();
+        $user->unreadNotifications
+            ->where('type', 'App\Notifications\UpdateStatusNotification')
+            ->markAsRead();
 
-    $myCode = strtoupper(trim($user->kode_ao));
+        $myCode = strtoupper(trim($user->kode_ao));
 
-    $laporan = \DB::table('kunjungans')
-        ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
-        ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
-        ->select(
-            'kunjungans.id as id_kunjungan', 
-            'kunjungans.kode_ao', 
-            'kunjungans.nama_nasabah', 
-            'kunjungans.created_at',
-            'kunjungans.kol',
-            'kunjungans.status', // 1. Pastikan kolom ini diselect
-            'nasabahs.kol as kol_master'
-        )
-        ->distinct() 
-        ->orderBy('kunjungans.created_at', 'desc')
-        ->get()
-        ->map(function($item) {
-            return (object)[
-                'id_kunjungan' => $item->id_kunjungan,
-                'kode_ao'      => $item->kode_ao,
-                'nama_nasabah' => $item->nama_nasabah,
-                'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
-                'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
-                // 2. WAJIB TAMBAHKAN INI agar status terbawa ke View
-                'status'       => $item->status, 
-            ];
-        });
+        $laporan = \DB::table('kunjungans')
+            ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
+            ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
+            ->select(
+                'kunjungans.id as id_kunjungan', 
+                'kunjungans.kode_ao', 
+                'kunjungans.nama_nasabah', 
+                'kunjungans.created_at',
+                'kunjungans.kol',
+                'kunjungans.status', // 1. Pastikan kolom ini diselect
+                'nasabahs.kol as kol_master'
+            )
+            ->distinct() 
+            ->orderBy('kunjungans.created_at', 'desc')
+            ->get()
+            ->map(function($item) {
+                return (object)[
+                    'id_kunjungan' => $item->id_kunjungan,
+                    'kode_ao'      => $item->kode_ao,
+                    'nama_nasabah' => $item->nama_nasabah,
+                    'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
+                    'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
+                    // 2. WAJIB TAMBAHKAN INI agar status terbawa ke View
+                    'status'       => $item->status, 
+                ];
+            });
 
-    return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
-}
+        return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
+    }
 
     public function detailPelaporan(Request $request)
     {
@@ -231,6 +231,26 @@ class KunjunganController extends Controller
 
         } catch (\Exception $e) {
             return "<div class='alert alert-danger'>Terjadi kesalahan: " . $e->getMessage() . "</div>";
+        }
+    }
+
+    public function updateJadwalGlobal(Request $request)
+    {
+        $request->validate([
+            // Validasi ke tabel data_kunjungan_adms
+            'id' => 'required|exists:data_kunjungan_adms,id', 
+            'tanggal' => 'required|date',
+        ]);
+
+        try {
+            $jadwal = DataKunjunganAdm::findOrFail($request->id);
+            
+            $jadwal->tanggal = $request->tanggal;
+            $jadwal->save();
+
+            return redirect()->back()->with('success', 'Jadwal ' . $jadwal->nama_nasabah . ' berhasil diperbarui.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal update: ' . $e->getMessage());
         }
     }
 
