@@ -61,7 +61,7 @@
                     <img src="{{ asset('assets/logo.png') }}" alt="Logo">
                     <span>SIPANTAU<br>P2K</span>
                 </div>
-               <div class="user-profile" style="position: relative; cursor: pointer;" onclick="toggleDropdown()">
+               <div class="user-profile" style="position: relative; cursor: pointer;">
                     <span style="font-weight: 700;">{{ Auth::guard('karyawan')->user()->nama }}</span>
                     <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::guard('karyawan')->user()->nama) }}&background=4e4bc1&color=fff" alt="User">
                     <i class="fa-solid fa-chevron-down" style="font-size: 12px; margin-left: 5px; color: #666;"></i>
@@ -578,6 +578,53 @@ $('#select_nasabah').on('change', function() {
     $('#alamat_nasabah').val(alamat);
     $('#kol_nasabah').val(kol);
 });
+
+$(document).ready(function() {
+        
+
+        $(document).on('click', '#toggleCurrentPasswordAO', function() {
+            const inputField = $('#current_password');
+            const currentType = inputField.attr('type');
+
+            const newType = (currentType === 'password') ? 'text' : 'password';
+            inputField.attr('type', newType);
+            
+      
+            $(this).toggleClass('fa-eye fa-eye-slash');
+        });
+
+
+        $(document).on('click', '#toggleNewPasswordAO', function() {
+            const inputField = $('#new_password');
+            const currentType = inputField.attr('type');
+            
+            const newType = (currentType === 'password') ? 'text' : 'password';
+            inputField.attr('type', newType);
+            
+            $(this).toggleClass('fa-eye fa-eye-slash');
+        });
+    });
+
+function updateSandiAO() {
+    const current_password = $('#current_password').val();
+    const new_password = $('#new_password').val();
+
+    if (!current_password || !new_password) {
+        Swal.fire('Peringatan', 'Harap isi semua kolom password!', 'warning');
+        return;
+    }
+
+    handleAjaxSettings("{{ route('settings.sandi') }}", {
+        current_password: current_password,
+        new_password: new_password
+    }, 'Kata sandi berhasil diperbarui!')
+    .then(res => {
+        if (res && res.success) {
+            $('#current_password').val('');
+            $('#new_password').val('');
+        }
+    });
+}
 </script>
 
 

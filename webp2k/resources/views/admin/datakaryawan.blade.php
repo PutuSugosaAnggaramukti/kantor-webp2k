@@ -62,7 +62,7 @@
             </a>
 
             {{-- 5. PELAPORAN --}}
-        <a href="javascript:void(0)" 
+            <a href="javascript:void(0)" 
                 onclick="loadAdminPage('pelaporan', this)" 
                 class="nav-item {{ Request::is('admin/pelaporan*') ? 'active' : '' }}" 
                 id="menu-pelaporan">
@@ -71,7 +71,7 @@
             </a>
 
             {{-- 6. DOKUMEN --}}
-        <a href="javascript:void(0)" 
+            <a href="javascript:void(0)" 
                 onclick="loadAdminPage('dokumen', this)" 
                 class="nav-item {{ Request::is('admin/dokumen*') ? 'active' : '' }}" 
                 id="menu-dokumen">
@@ -85,6 +85,14 @@
                 class="nav-item {{ Request::is('admin/adm-kunjungan*') ? 'active' : '' }}" 
                 id="menu-adm-kunjungan">
                 <i class="fa-solid fa-calendar-plus"></i> Input Jadwal Kunjungan
+            </a>
+
+            {{-- 8. PENGATURAN ADMIN --}}
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('pengaturan', this)" 
+                class="nav-item {{ request()->is('admin/pengaturan*') ? 'active' : '' }}" 
+                id="menu-pengaturan">
+                <i class="fa-solid fa-gear"></i> Pengaturan
             </a>
         </div>
 
@@ -108,6 +116,9 @@
                                 <i class="fa-solid fa-right-from-bracket" style="margin-right: 10px;"></i> Logout
                             </a>
                         </form>
+                        <a href="javascript:void(0)" onclick="transitionToAdminPage('pengaturan')" style="display: flex; align-items: center; padding: 12px 15px; text-decoration: none; color: #333; font-weight: 600; font-size: 14px; border-bottom: 1px solid #f5f5f5; transition: background 0.2s;">
+                            <i class="fa-solid fa-user-gear" style="margin-right: 10px; color: #3b82f6;"></i> Pengaturan Akun
+                        </a>
                     </div>
                 </div>
             </div>
@@ -163,7 +174,10 @@ window.loadAdminPage = function(pageName, element) {
             menuToActive = document.getElementById('menu-dokumen');
         } else if (pageName.includes('karyawan')) {
             menuToActive = document.getElementById('menu-data-karyawan');
-        } else {
+        } else if (pageName.includes('pengaturan')) { 
+            menuToActive = document.getElementById('menu-pengaturan');
+        } 
+        else {
             menuToActive = document.getElementById(`menu-${pageName}`);
         }
     }
@@ -225,7 +239,12 @@ document.addEventListener("DOMContentLoaded", function() {
         setActiveMenuOnly('menu-pelaporan');
     } else if (currentPath.includes('dokumen')) {
         setActiveMenuOnly('menu-dokumen');
-    } 
+    } else if (currentPath.includes('pengaturan')) {
+        setActiveMenuOnly('menu-pengaturan');
+        if (typeof window.loadAdminPage === 'function') {
+            window.loadAdminPage('pengaturan', document.getElementById('menu-pengaturan'));
+        }
+    }
     else if (currentPath.includes('data-karyawan') || currentPath === '/admin') {
         setActiveMenuOnly('menu-data-karyawan');
     }
@@ -1048,6 +1067,97 @@ function closeModalImport() {
     }
 }
 
+$(document).ready(function() {
+        // Gunakan Event Delegation agar klik selalu terbaca meski halaman dimuat via AJAX
+        $(document).off('click', '#toggleCurrentPassword').on('click', '#toggleCurrentPassword', function() {
+            const input = $('#current_password');
+            const type = input.attr('type') === 'password' ? 'text' : 'password';
+            input.attr('type', type);
+            
+            // Toggle Class Ikon
+            $(this).toggleClass('fa-eye fa-eye-slash');
+        });
+
+        $(document).off('click', '#toggleNewPassword').on('click', '#toggleNewPassword', function() {
+            const input = $('#new_password');
+            const type = input.attr('type') === 'password' ? 'text' : 'password';
+            input.attr('type', type);
+            
+            // Toggle Class Ikon
+            $(this).toggleClass('fa-eye fa-eye-slash');
+        });
+    });
+
+function initPasswordToggle(toggleId, inputId) {
+        const toggleIcon = document.getElementById(toggleId);
+        const passwordInput = document.getElementById(inputId);
+
+        if (toggleIcon && passwordInput) {
+            toggleIcon.addEventListener('click', function() {
+                // Toggle tipe input
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                
+                // Toggle ikon mata
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+            });
+        }
+    }
+
+    initPasswordToggle('toggleCurrentPassword', 'current_password');
+    initPasswordToggle('toggleNewPassword', 'new_password');
+
+function updateSandiAdmin() {
+        const current_password = $('#current_password').val();
+        const new_password = $('#new_password').val();
+
+        if (!current_password || !new_password) {
+            Swal.fire('Peringatan', 'Harap isi semua kolom password!', 'warning');
+            return;
+        }
+
+        handleAjaxSettings("{{ route('admin.settings.sandi') }}", {
+            current_password: current_password,
+            new_password: new_password
+        }, 'Kata sandi berhasil diperbarui!')
+        .then(res => {
+            if (res && res.success) {
+                $('#current_password').val('');
+                $('#new_password').val('');
+                $('#current_password').attr('type', 'password');
+                $('#new_password').attr('type', 'password');
+                $('#toggleCurrentPassword, #toggleNewPassword').removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+ }
+
+function handleAjaxSettings(url, data, successMessage) {
+    return $.ajax({
+        url: url,
+        method: "POST",
+        data: {
+            ...data,
+            _token: "{{ csrf_token() }}"
+        },
+        success: function(response) {
+            // SweetAlert muncul di sini
+            if (response.success) {
+                Swal.fire('Berhasil', response.message || successMessage, 'success');
+            } else {
+                Swal.fire('Gagal', response.message || 'Terjadi kesalahan', 'error');
+            }
+            // PENTING: Kembalikan response agar bisa dibaca oleh .then()
+            return response;
+        },
+        error: function(xhr) {
+            let errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Terjadi kesalahan server.';
+            Swal.fire('Error', errorMsg, 'error');
+        }
+    });
+}
+
+
 window.showVisitDetail = function(data) {
     console.log("Data yang diterima:", data); // Cek ini di console browser
 
@@ -1126,7 +1236,6 @@ window.onclick = function(event) {
         closeVisitDetail();
     }
 }
-
 
 
 </script>

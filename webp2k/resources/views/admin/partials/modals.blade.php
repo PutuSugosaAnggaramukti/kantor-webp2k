@@ -77,7 +77,7 @@
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Status*</label>
                 <select name="status" id="edit_status" required style="width: 100%; padding: 10px; border: 1px solid #000; border-radius: 5px; background-color: #fff;">
                     <option value="Aktif">Aktif</option>
-                    <option value="Non-Aktif">Non-Aktif</option>
+                    <option value="Non Aktif">Non-Aktif</option>
                 </select>
             </div>
 

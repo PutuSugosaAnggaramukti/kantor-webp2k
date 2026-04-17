@@ -70,7 +70,7 @@ class NasabahController extends Controller
     }
 
     // 4. Response untuk Full Page Load
-    $dashboard = new \App\Http\Controllers\Dashboard\DashboardAdminController();
+    $dashboard = new \App\Http\Controllers\dashboard\DashboardAdminController();
     $data = $dashboard->getDashboardData();
     
     $data = array_merge($data, $viewData); 
