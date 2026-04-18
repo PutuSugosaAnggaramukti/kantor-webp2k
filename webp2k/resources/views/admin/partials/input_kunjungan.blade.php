@@ -299,36 +299,44 @@
         })
     }
 
-  function openModalPilihHapus() {
-        // Ambil data AO unik yang sudah kita siapkan di Controller
-        const dataAO = @json($daftar_ao_jadwal ?? []); 
-        let listContainer = document.getElementById('listJadwalHapus');
-        
-        listContainer.innerHTML = ''; 
+function renderListHapus(dataAO) {
+    let listContainer = document.getElementById('listJadwalHapus');
+    listContainer.innerHTML = '';
 
-        if (dataAO.length === 0) {
-            Swal.fire('Info', 'Tidak ada data AO yang memiliki jadwal bulan ini.', 'info');
-            return;
-        }
+    if (dataAO.length === 0) {
+        document.getElementById('modalPilihHapus').style.display = 'none';
+        Swal.fire('Info', 'Tidak ada data AO yang memiliki jadwal bulan ini.', 'info');
+        return;
+    }
 
-        dataAO.forEach((item) => {
-            let rowHtml = `
-                <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px;">
-                    <input type="checkbox" class="chk-hapus-ao" value="${item.kode_ao}" style="width: 18px; height: 18px; cursor: pointer;">
-                    <div style="flex-grow: 1;">
-                        <div style="font-weight: bold; color: #333; font-size: 14px;">${item.nama}</div>
-                        <div style="font-size: 12px; color: #666;">
-                            <span style="background: #e9ecef; padding: 2px 6px; border-radius: 4px;">Kode: ${item.kode_ao}</span>
-                            <span style="margin-left: 10px; font-weight: 600; color: #dc3545;">(${item.total_jadwal} Nasabah)</span>
-                        </div>
+    dataAO.forEach((item) => {
+        let rowHtml = `
+            <div style="padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px;">
+                <input type="checkbox" class="chk-hapus-ao" value="${item.kode_ao}" style="width: 18px; height: 18px; cursor: pointer;">
+                <div style="flex-grow: 1;">
+                    <div style="font-weight: bold; color: #333; font-size: 14px;">${item.nama}</div>
+                    <div style="font-size: 12px; color: #666;">
+                        <span style="background: #e9ecef; padding: 2px 6px; border-radius: 4px;">Kode: ${item.kode_ao}</span>
+                        <span style="margin-left: 10px; font-weight: 600; color: #dc3545;">(${item.total_jadwal} Nasabah)</span>
                     </div>
                 </div>
-            `;
-            listContainer.innerHTML += rowHtml;
-        });
+            </div>
+        `;
+        listContainer.innerHTML += rowHtml;
+    });
+}
 
-        document.getElementById('modalPilihHapus').style.display = 'block';
-    }
+function openModalPilihHapus() {
+    let listContainer = document.getElementById('listJadwalHapus');
+    listContainer.innerHTML = '<div style="padding: 20px; text-align: center;">Mengambil data terbaru...</div>';
+
+    fetch("{{ route('kunjungan.getDaftarAOHapus') }}")
+        .then(response => response.json())
+        .then(dataAO => {
+            renderListHapus(dataAO);
+            document.getElementById('modalPilihHapus').style.display = 'block';
+        });
+}
 
 function closeModalPilihHapus() {
     document.getElementById('modalPilihHapus').style.display = 'none';

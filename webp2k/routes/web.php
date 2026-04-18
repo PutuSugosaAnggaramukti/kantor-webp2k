@@ -57,6 +57,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::patch('/kunjungan/update-status/{id}', [AdmKunjunganController::class, 'updateStatus'])->name('admin.update-status-kunjungan');
     Route::post('/datakunjungan/reset', [AdmKunjunganController::class, 'resetJadwal'])->name('admin.datakunjungan.reset');
     Route::post('/datakunjungan/delete-selected', [AdmKunjunganController::class, 'deleteSelected'])->name('admin.datakunjungan.delete-selected');
+    Route::get('/kunjungan/get-daftar-ao-hapus',[AdmKunjunganController::class, 'getDaftarAoHapus'])->name('kunjungan.getDaftarAOHapus');
 
     // 4. DATA NASABAH (Dibenahi rutenya)
     Route::get('/nasabah', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.index'); // Rute bersih

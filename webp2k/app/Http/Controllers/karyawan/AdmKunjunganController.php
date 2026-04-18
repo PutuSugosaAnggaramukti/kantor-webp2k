@@ -472,30 +472,43 @@ public function detail($kode_ao)
         }
     }
 
-  public function deleteSelected(Request $request)
-{
-    $kode_ao_list = $request->ids;
+    public function deleteSelected(Request $request)
+    {
+        $kode_ao_list = $request->ids;
 
-    if (!empty($kode_ao_list)) {
-        // 1. Hapus data RENCANA JADWAL
-        \DB::table('data_kunjungan_adms')
-            ->whereIn('kode_ao', $kode_ao_list)
-            ->where('bulan', 'LIKE', date('Y-m') . '%')
-            ->delete();
+        if (!empty($kode_ao_list)) {
+            \DB::table('data_kunjungan_adms')
+                ->whereIn('kode_ao', $kode_ao_list)
+                ->where('bulan', 'LIKE', date('Y-m') . '%')
+                ->delete();
 
-        // 2. Hapus data REALISASI/HISTORY KUNJUNGAN (Sesuai image_689a45.png)
-        // Ini yang membuat angka "Sudah Dikunjungi" di Rekap menjadi 0
-        \DB::table('kunjungans')
-            ->whereIn('kode_ao', $kode_ao_list)
-            ->whereMonth('created_at', date('m'))
-            ->whereYear('created_at', date('Y'))
-            ->delete();
+            \DB::table('kunjungans')
+                ->whereIn('kode_ao', $kode_ao_list)
+                ->whereMonth('created_at', date('m'))
+                ->whereYear('created_at', date('Y'))
+                ->delete();
 
-        return response()->json([
-            'success' => 'Jadwal dan History kunjungan AO berhasil dihapus. Rekap sudah sinkron.'
-        ]);
+            return response()->json([
+                'success' => 'Jadwal dan History kunjungan AO berhasil dihapus. Rekap sudah sinkron.'
+            ]);
+        }
+        
+        return response()->json(['error' => 'Gagal menghapus data, tidak ada AO terpilih.'], 400);
     }
-    
-    return response()->json(['error' => 'Gagal menghapus data, tidak ada AO terpilih.'], 400);
-}
+
+    public function getDaftarAOHapus()
+    {
+        $data = \DB::table('data_kunjungan_adms')
+            ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
+            ->select(
+                'data_kunjungan_adms.kode_ao', 
+                'karyawans.nama', 
+                \DB::raw('count(*) as total_jadwal')
+            )
+            ->where('data_kunjungan_adms.bulan', 'LIKE', date('Y-m') . '%')
+            ->groupBy('data_kunjungan_adms.kode_ao', 'karyawans.nama')
+            ->get();
+
+        return response()->json($data);
+    }
 }
