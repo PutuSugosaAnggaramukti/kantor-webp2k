@@ -1,13 +1,30 @@
 @php
-    /**
-     * 1. DEFINISI FUNGSI HELPER
-     */
     if (!function_exists('getGpsDecimal')) {
         function getGpsDecimal($exifCoord, $hemi) {
-            $degrees = count($exifCoord) > 0 ? (is_float($exifCoord[0]) ? $exifCoord[0] : eval("return {$exifCoord[0]};")) : 0;
-            $minutes = count($exifCoord) > 1 ? (is_float($exifCoord[1]) ? $exifCoord[1] : eval("return {$exifCoord[1]};")) : 0;
-            $seconds = count($exifCoord) > 2 ? (is_float($exifCoord[2]) ? $exifCoord[2] : eval("return {$exifCoord[2]};")) : 0;
+            if (!is_array($exifCoord)) return 0;
+
+            $convert = function($value) {
+                if (is_float($value) || is_int($value)) return $value;
+                
+                // Cek jika formatnya adalah string pecahan (ex: "110/1" atau "0/0")
+                if (strpos($value, '/') !== false) {
+                    $parts = explode('/', $value);
+                    $pembilang = (float) $parts[0];
+                    $pembagi = (float) $parts[1];
+                    
+                    // JURUS ANTI ERROR: Jika pembagi adalah 0, kembalikan 0
+                    return ($pembagi > 0) ? ($pembilang / $pembagi) : 0;
+                }
+                return is_numeric($value) ? (float)$value : 0;
+            };
+
+            $degrees = count($exifCoord) > 0 ? $convert($exifCoord[0]) : 0;
+            $minutes = count($exifCoord) > 1 ? $convert($exifCoord[1]) : 0;
+            $seconds = count($exifCoord) > 2 ? $convert($exifCoord[2]) : 0;
+
             $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
+            
+            // Rumus koordinat desimal standar
             return $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
         }
     }
