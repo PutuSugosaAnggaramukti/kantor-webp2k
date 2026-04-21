@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/datakunjungan/reset', [AdmKunjunganController::class, 'resetJadwal'])->name('admin.datakunjungan.reset');
     Route::post('/datakunjungan/delete-selected', [AdmKunjunganController::class, 'deleteSelected'])->name('admin.datakunjungan.delete-selected');
     Route::get('/kunjungan/get-daftar-ao-hapus',[AdmKunjunganController::class, 'getDaftarAoHapus'])->name('kunjungan.getDaftarAOHapus');
+    Route::delete('/admin/hapus-jadwal/{id}', [AdmKunjunganController::class, 'hapusJadwalSingle'])->name('admin.hapusJadwalSingle');
 
     // 4. DATA NASABAH (Dibenahi rutenya)
     Route::get('/nasabah', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.index'); // Rute bersih
@@ -100,6 +101,7 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
     Route::get('/data-kunjungan', [KunjunganController::class, 'index'])->name('data-kunjungan');
     Route::get('/data-kunjungan-content', [KunjunganController::class, 'dataKunjunganContent'])->name('data.kunjungan');
+    Route::get('/user/hapus-jadwal/{no_angsuran}', [KunjunganController::class, 'destroyJadwal'])->name('hapus.jadwal');
     Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'indexpelaporan'])->name('user.laporan.content');
     Route::get('/detail-pelaporan', [KunjunganController::class, 'detailPelaporan']);
     Route::get('/dokumen-content', [DokumenController::class, 'dokumenContent'])->name('dokumen.content');

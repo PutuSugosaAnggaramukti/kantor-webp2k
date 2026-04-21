@@ -109,6 +109,7 @@
                             <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Nominal</th> 
                             <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Sisa Pokok</th> 
                             <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">KOL</th>
+                            <th style="padding: 15px; width: 80px;">Aksi</th>
                         </tr>
                     </thead>
 
@@ -161,6 +162,16 @@
                                 <span style="padding: 4px 10px; border-radius: 6px; background-color: {{ $isPrioritas ? '#d32f2f' : '#eee' }}; color: {{ $isPrioritas ? '#ffffff' : '#333333' }};">
                                     {{ $item->kol }}
                                 </span>
+                            </td>
+
+                            <td style="padding: 12px;">
+                                <button type="button" 
+                                        onclick="hapusJadwalNasabah({{ $item->id }}, '{{ $item->nama_nasabah }}')"
+                                        style="background: #ff4d4d; color: white; border: 2px solid #000; padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: 0.2s;"
+                                        onmouseover="this.style.backgroundColor='#cc0000'" 
+                                        onmouseout="this.style.backgroundColor='#ff4d4d'">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
                             </td>
                         </tr>
                         @endforeach
@@ -340,6 +351,54 @@ function openModalPilihHapus() {
 
 function closeModalPilihHapus() {
     document.getElementById('modalPilihHapus').style.display = 'none';
+}
+
+function hapusJadwalNasabah(id, nama) {
+    Swal.fire({
+        title: 'Hapus Jadwal?',
+        text: "Anda akan menghapus nasabah " + nama + " dari daftar kunjungan.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Generate URL menggunakan route name yang sudah Mas buat
+            let urlAction = "{{ route('admin.hapusJadwalSingle', ':id') }}";
+            urlAction = urlAction.replace(':id', id);
+
+            fetch(urlAction, {
+                method: 'POST', // Kita kirim sebagai POST
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    _method: 'DELETE' // Tapi kita suruh Laravel membacanya sebagai DELETE
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Gagal menghapus (Error ' + response.status + ')');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire('Terhapus!', data.message, 'success').then(() => {
+                        location.reload(); // Refresh halaman agar data hilang
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire('Gagal!', error.message, 'error');
+            });
+        }
+    });
 }
 
 function prosesHapusPilihan() {

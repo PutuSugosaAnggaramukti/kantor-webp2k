@@ -18,14 +18,20 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
         $this->kode_ao = $kode_ao;
     }
 
-    public function collection()
+   public function collection()
     {
         $query = DB::table('kunjungans')
-            // Join ke nasabahs untuk ambil No Angsuran & Karyawans untuk Nama AO
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->leftJoin('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
-            ->select('kunjungans.*', 'karyawans.nama as nama_ao')
-            ->orderBy('kunjungans.created_at', 'asc'); // Urutan dari yang terlama ke terbaru
+            // Join ke data_kunjungan_adms untuk mengambil kolom tanggal
+            ->leftJoin('data_kunjungan_adms', 'kunjungans.no_nasabah', '=', 'data_kunjungan_adms.no_angsuran')
+            ->select(
+                'kunjungans.*', 
+                'karyawans.nama as nama_ao', 
+                'nasabahs.kode as kode_nasabah',
+                'data_kunjungan_adms.tanggal as tgl_rencana' // Ambil kolom tanggal dari DB
+            )
+            ->orderBy('kunjungans.created_at', 'asc');
 
         if (!empty($this->kode_ao)) {
             $query->where('kunjungans.kode_ao', 'LIKE', '%' . $this->kode_ao . '%');
@@ -42,6 +48,7 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
             'Kode',
             'No.Ang',
             'Nama',
+            'Tanggal Kunjungan',
             'Kode AO',
             'AO',
             'Ket',
@@ -49,18 +56,18 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
         ];
     }
 
-    public function map($row): array
+   public function map($row): array
     {
         static $no = 1;
 
-        // Logika Status Berdasarkan Input Lapangan
+        // Logika Status JB (Tetap sesuai kode Mas)
         $statusJB = '-';
         if ($row->ada_di_lokasi == 'tidak') {
             $statusJB = 'TDK BERTEMU';
         } else {
             if ($row->nominal_janji_bayar > 0) {
-                $tgl = $row->tgl_janji_bayar ? \Carbon\Carbon::parse($row->tgl_janji_bayar)->format('d/m/y') : '';
-                $statusJB = 'JANJI BAYAR (' . $tgl . ')';
+                $tglJB = $row->tgl_janji_bayar ? \Carbon\Carbon::parse($row->tgl_janji_bayar)->format('d/m/y') : '';
+                $statusJB = 'JANJI BAYAR (' . $tglJB . ')';
             } else {
                 $statusJB = 'BROKEN PROMISE';
             }
@@ -68,38 +75,47 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
 
         return [
             $no++,
-            $row->kode_ao, // Kolom Kode
-            $row->no_nasabah, // Kolom No.Ang
-            strtoupper($row->nama_nasabah), // Kolom Nama
-            $row->kode_ao, // Kolom Kode AO
-            strtoupper($row->nama_ao ?? '-'), // Kolom AO (Nama Petugas)
-            $row->catatan ?? '-', // Kolom Ket
-            $statusJB // Kolom Status / JB
+            $row->kode_nasabah ?? '-', 
+            $row->no_nasabah, 
+            strtoupper($row->nama_nasabah),
+            // Menampilkan tanggal dari tabel data_kunjungan_adms
+            $row->tgl_rencana ? \Carbon\Carbon::parse($row->tgl_rencana)->format('d/m/y') : '-', 
+            $row->kode_ao,
+            strtoupper($row->nama_ao ?? '-'),
+            $row->catatan ?? '-',
+            $statusJB
         ];
     }
 
-    public function styles(Worksheet $sheet)
+   public function styles(Worksheet $sheet)
     {
-        // Atur Lebar Kolom Secara Otomatis atau Manual
-        $sheet->getColumnDimension('A')->setWidth(5);
-        $sheet->getColumnDimension('C')->setWidth(15); // No Angsuran
-        $sheet->getColumnDimension('D')->setWidth(25); // Nama Nasabah
-        $sheet->getColumnDimension('F')->setWidth(20); // Nama AO
-        $sheet->getColumnDimension('G')->setWidth(30); // Catatan (Ket)
-        $sheet->getColumnDimension('H')->setWidth(25); // Status
+        // Atur Lebar Kolom (Sudah benar semua)
+        $sheet->getColumnDimension('A')->setWidth(5);   // No
+        $sheet->getColumnDimension('B')->setWidth(12);  // Kode Nasabah
+        $sheet->getColumnDimension('C')->setWidth(18);  // No Angsuran
+        $sheet->getColumnDimension('D')->setWidth(25);  // Nama Nasabah
+        $sheet->getColumnDimension('E')->setWidth(15);  // Tanggal
+        $sheet->getColumnDimension('F')->setWidth(10);  // Kode AO
+        $sheet->getColumnDimension('G')->setWidth(20);  // Nama AO
+        $sheet->getColumnDimension('H')->setWidth(30);  // Catatan
+        $sheet->getColumnDimension('I')->setWidth(25);  // Status
+
+        // Ambil baris terakhir yang ada datanya secara dinamis
+        $highestRow = $sheet->getHighestRow();
+        $range = 'A1:I' . $highestRow;
 
         return [
-            // Baris Header: Bold, Center, Border
+            // Baris Header (Baris 1)
             1 => [
                 'font' => ['bold' => true],
                 'alignment' => ['horizontal' => 'center'],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'D9D9D9'] // Abu-abu muda agar profesional
+                    'startColor' => ['rgb' => 'D9D9D9']
                 ]
             ],
-            // Semua isi tabel: Wrap text agar catatan panjang tidak terpotong
-            'A1:H1000' => [
+            // Semua isi tabel berdasarkan jumlah data yang ada
+            $range => [
                 'alignment' => ['vertical' => 'center', 'wrapText' => true],
                 'borders' => [
                     'allBorders' => [

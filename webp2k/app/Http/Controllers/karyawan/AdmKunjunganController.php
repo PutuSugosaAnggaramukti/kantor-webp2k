@@ -325,6 +325,31 @@ public function detail($kode_ao)
         ]);
     }
 
+   public function hapusJadwalSingle($id)
+    {
+        try {
+            // Gunakan DB agar lebih cepat atau Model jika ada
+            $deleted = \DB::table('data_kunjungan_adms')->where('id', $id)->delete();
+
+            if ($deleted) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Jadwal berhasil dihapus.'
+                ]);
+            } else {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data tidak ditemukan.'
+                ], 404);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Server Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function rekapKunjungan()
     {
         $rekap = Karyawan::withCount(['kunjungan as jumlah_kunjungan'])->get();

@@ -284,102 +284,102 @@ class KunjunganController extends Controller
         }
     }
 
-public function store(Request $request)
-{
-    $karyawan = Auth::guard('karyawan')->user();
+    public function store(Request $request)
+    {
+        $karyawan = Auth::guard('karyawan')->user();
 
-    // 1. Bersihkan input No Nasabah
-    $noNasabahInput = trim($request->no_nasabah);
+        // 1. Bersihkan input No Nasabah
+        $noNasabahInput = trim($request->no_nasabah);
 
-    // 2. Cari Data Nasabah (Master atau Jadwal Admin)
-    $nasabahMaster = \DB::table('nasabahs')
-        ->where('no_angsuran', $noNasabahInput)
-        ->first() ?: \DB::table('data_kunjungan_adms')
-        ->where('no_angsuran', $noNasabahInput)
-        ->first();
+        // 2. Cari Data Nasabah (Master atau Jadwal Admin)
+        $nasabahMaster = \DB::table('nasabahs')
+            ->where('no_angsuran', $noNasabahInput)
+            ->first() ?: \DB::table('data_kunjungan_adms')
+            ->where('no_angsuran', $noNasabahInput)
+            ->first();
 
-    // 3. Proses Foto & Validasi EXIF (Wajib)
-    $daftar_nama_foto = []; 
-    if ($request->hasFile('foto_kunjungan')) {
-        $files = $request->file('foto_kunjungan');
-        $filesArray = is_array($files) ? $files : [$files];
+        // 3. Proses Foto & Validasi EXIF (Wajib)
+        $daftar_nama_foto = []; 
+        if ($request->hasFile('foto_kunjungan')) {
+            $files = $request->file('foto_kunjungan');
+            $filesArray = is_array($files) ? $files : [$files];
 
-        foreach ($filesArray as $file) {
-            $extension = strtolower($file->getClientOriginalExtension());
-            
-            if (!in_array($extension, ['jpg', 'jpeg'])) {
-                return response()->json([
-                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" bukan JPG/JPEG. Sistem hanya menerima format JPG untuk validasi GPS.'
-                ], 422);
+            foreach ($filesArray as $file) {
+                $extension = strtolower($file->getClientOriginalExtension());
+                
+                if (!in_array($extension, ['jpg', 'jpeg'])) {
+                    return response()->json([
+                        'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" bukan JPG/JPEG. Sistem hanya menerima format JPG untuk validasi GPS.'
+                    ], 422);
+                }
+
+                $exif = @exif_read_data($file->getRealPath());
+                if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) {
+                    return response()->json([
+                        'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data GPS.'
+                    ], 422);
+                }
+
+                if (!isset($exif['DateTimeOriginal'])) {
+                    return response()->json([
+                        'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data waktu asli.'
+                    ], 422);
+                }
+
+                $nama_unik = time() . '_' . uniqid() . '.' . $extension;
+                $file->move(public_path('uploads/kunjungan'), $nama_unik);
+                $daftar_nama_foto[] = $nama_unik;
             }
-
-            $exif = @exif_read_data($file->getRealPath());
-            if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) {
-                return response()->json([
-                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data GPS.'
-                ], 422);
-            }
-
-            if (!isset($exif['DateTimeOriginal'])) {
-                return response()->json([
-                    'error' => 'Gagal! Foto "' . $file->getClientOriginalName() . '" tidak memiliki data waktu asli.'
-                ], 422);
-            }
-
-            $nama_unik = time() . '_' . uniqid() . '.' . $extension;
-            $file->move(public_path('uploads/kunjungan'), $nama_unik);
-            $daftar_nama_foto[] = $nama_unik;
+        } else {
+            return response()->json(['error' => 'Wajib melampirkan foto kunjungan!'], 422);
         }
-    } else {
-        return response()->json(['error' => 'Wajib melampirkan foto kunjungan!'], 422);
-    }
 
-    // --- BARU: PROSES BUKTI TRANSFER (Opsional) ---
-    $nama_bukti_transfer = null;
-    if ($request->hasFile('bukti_transfer')) {
-        $fileTf = $request->file('bukti_transfer');
-        $extTf = strtolower($fileTf->getClientOriginalExtension());
-        
-        // Untuk bukti transfer, kita izinkan PNG (biasanya hasil screenshot m-banking)
-        if (in_array($extTf, ['jpg', 'jpeg', 'png'])) {
-            $nama_bukti_transfer = 'TF_' . time() . '_' . uniqid() . '.' . $extTf;
-            $fileTf->move(public_path('uploads/kunjungan'), $nama_bukti_transfer);
+        // --- BARU: PROSES BUKTI TRANSFER (Opsional) ---
+        $nama_bukti_transfer = null;
+        if ($request->hasFile('bukti_transfer')) {
+            $fileTf = $request->file('bukti_transfer');
+            $extTf = strtolower($fileTf->getClientOriginalExtension());
+            
+            // Untuk bukti transfer, kita izinkan PNG (biasanya hasil screenshot m-banking)
+            if (in_array($extTf, ['jpg', 'jpeg', 'png'])) {
+                $nama_bukti_transfer = 'TF_' . time() . '_' . uniqid() . '.' . $extTf;
+                $fileTf->move(public_path('uploads/kunjungan'), $nama_bukti_transfer);
+            }
+        }
+        // ----------------------------------------------
+
+        try {
+            // 4. Simpan ke Database
+            \DB::table('kunjungans')->insert([
+                'kode_ao'             => $karyawan->kode_ao,
+                'no_nasabah'          => $request->no_nasabah, 
+                'nama_nasabah'        => $request->nama_nasabah,
+                'alamat_nasabah'      => $request->alamat_nasabah,
+                'kol'                 => $nasabahMaster ? $nasabahMaster->kol : ($request->kol ?: 1),
+                'ada_di_lokasi'       => $request->ada_di_lokasi,
+                'catatan'             => $request->catatan, 
+                'tgl_janji_bayar'     => $request->tgl_janji_bayar,
+                'nominal_janji_bayar' => $request->filled('nominal_janji_bayar') 
+                                        ? str_replace(['.', ','], '', $request->nominal_janji_bayar) 
+                                        : 0,
+                'foto_kunjungan'      => json_encode($daftar_nama_foto), 
+                
+                // --- MASUKKAN KE DB ---
+                'bukti_transfer'      => $nama_bukti_transfer, 
+                // ----------------------
+
+                'koordinat'           => $request->koordinat, 
+                'created_at'          => now(),
+            ]);
+
+            return response()->json([
+                'success' => 'Laporan berhasil disimpan! ' . count($daftar_nama_foto) . ' foto tervalidasi GPS.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Terjadi kesalahan database: ' . $e->getMessage()], 500);
         }
     }
-    // ----------------------------------------------
-
-    try {
-        // 4. Simpan ke Database
-        \DB::table('kunjungans')->insert([
-            'kode_ao'             => $karyawan->kode_ao,
-            'no_nasabah'          => $request->no_nasabah, 
-            'nama_nasabah'        => $request->nama_nasabah,
-            'alamat_nasabah'      => $request->alamat_nasabah,
-            'kol'                 => $nasabahMaster ? $nasabahMaster->kol : ($request->kol ?: 1),
-            'ada_di_lokasi'       => $request->ada_di_lokasi,
-            'catatan'             => $request->catatan, 
-            'tgl_janji_bayar'     => $request->tgl_janji_bayar,
-            'nominal_janji_bayar' => $request->filled('nominal_janji_bayar') 
-                                     ? str_replace(['.', ','], '', $request->nominal_janji_bayar) 
-                                     : 0,
-            'foto_kunjungan'      => json_encode($daftar_nama_foto), 
-            
-            // --- MASUKKAN KE DB ---
-            'bukti_transfer'      => $nama_bukti_transfer, 
-            // ----------------------
-
-            'koordinat'           => $request->koordinat, 
-            'created_at'          => now(),
-        ]);
-
-        return response()->json([
-            'success' => 'Laporan berhasil disimpan! ' . count($daftar_nama_foto) . ' foto tervalidasi GPS.'
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Terjadi kesalahan database: ' . $e->getMessage()], 500);
-    }
-}
 
     public function storeAo(Request $request)
     {
@@ -442,6 +442,37 @@ public function store(Request $request)
             'success' => true,
             'message' => 'Jadwal kunjungan berhasil Anda tambahkan!'
         ]);
+    }
+
+    public function destroyJadwal($no_angsuran)
+    {
+        try {
+            // Gunakan Transaksi agar kedua tabel aman
+            \DB::transaction(function () use ($no_angsuran) {
+                
+                // 1. Hapus laporannya di tabel kunjungans (jika ada)
+                // Kita filter juga berdasarkan bulan/tahun supaya tidak menghapus histori lama
+                \DB::table('kunjungans')
+                    ->where('no_nasabah', $no_angsuran)
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->delete();
+
+                // 2. Hapus jadwal utamanya
+                \DB::table('data_kunjungan_adms')
+                    ->where('no_angsuran', $no_angsuran)
+                    ->delete();
+            });
+
+            return response()->json([
+                'success' => 'Data jadwal dan laporan terkait berhasil dihapus!'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal menghapus data: ' . $e->getMessage()
+            ], 500);
+        }
     }
         
     private function getGps($exifCoord, $hemi) 

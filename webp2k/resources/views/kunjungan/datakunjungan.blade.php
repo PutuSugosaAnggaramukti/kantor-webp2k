@@ -198,23 +198,101 @@
     }
 
     // --- Fungsi Geolocation ---
-    function updateGPSLocation(inputId, statusId) {
+   function updateGPSLocation(inputId, statusId) {
         const input = document.getElementById(inputId);
         const status = document.getElementById(statusId);
-        if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari lokasi...';
+        
+        if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari lokasi (Pastikan GPS HP Aktif)...';
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
                     if (input) input.value = loc;
-                    if (status) status.innerHTML = '<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci</span>';
+                    if (status) {
+                        // Beri info akurasi juga agar AO tahu lokasinya sudah pas atau belum
+                        const akurasi = Math.round(pos.coords.accuracy);
+                        status.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci (Akurasi: ${akurasi}m)</span>`;
+                    }
                 },
-                () => { if (status) status.innerHTML = '<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> GPS Error</span>'; },
-                { enableHighAccuracy: true, timeout: 10000 }
+                (error) => {
+                    let pesanError = "GPS Error";
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            pesanError = "Izin Lokasi Ditolak Browser!";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            pesanError = "Sinyal GPS Tidak Tersedia";
+                            break;
+                        case error.TIMEOUT:
+                            pesanError = "Waktu Tunggu Habis (Sinyal Lemah)";
+                            break;
+                    }
+                    if (status) status.innerHTML = `<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> ${pesanError}</span>`;
+                },
+                { 
+                    enableHighAccuracy: true, 
+                    timeout: 15000, // Dinaikkan jadi 15 detik
+                    maximumAge: 0   // Memaksa browser mengambil lokasi baru, bukan lokasi cache
+                }
             );
+        } else {
+            if (status) status.innerHTML = "Browser tidak mendukung GPS";
         }
     }
+
+    function confirmDeleteJadwal(noAngsuran, nama) {
+    Swal.fire({
+        title: 'Hapus Jadwal?',
+        html: `Apakah Anda yakin ingin menghapus jadwal untuk:<br><b>${nama}</b><br><small>(${noAngsuran})</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545', // Warna merah untuk hapus
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="fa fa-trash"></i> Ya, Hapus!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Tampilkan loading saat proses hapus
+            Swal.fire({
+                title: 'Mohon Tunggu',
+                text: 'Sedang menghapus data...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            let url = "{{ route('hapus.jadwal', ':id') }}"; 
+            url = url.replace(':id', noAngsuran);
+
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Terhapus!',
+                        text: data.success,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload(); // Refresh halaman agar baris hilang
+                    });
+                } else {
+                    Swal.fire('Gagal!', data.error || 'Terjadi kesalahan.', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Error!', 'Koneksi ke server terputus.', 'error');
+            });
+        }
+    });
+}
 
     // --- Manajemen Akun & Settings ---
     function switchSettingsTab(tab) {

@@ -93,33 +93,43 @@
 
 <div class="table-responsive" style="width: 100%; overflow-x: auto;">
     <table id="tableKunjungan" style="width: 100%; border-collapse: collapse; background: white; border: 1px solid #333;">
-       <thead>
+        <thead>
             <tr style="background-color: #f5f5f5; text-align: center;">
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 60px;">No</th>
-                <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 120px;">Kode</th>
+                <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 120px;">No Angsuran</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700;">Nasabah</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 180px;">Tgl Kunjungan</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Bulan</th>
-                <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Option</th>
+                <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 200px;">Option</th> {{-- Lebar ditambah untuk 3 tombol --}}
             </tr>
         </thead>
         <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
-            <tr class="{{ $item->is_filled ? 'row-completed' : 'row-pending' }}" style="border-bottom: 2px solid #000; text-align: center;">
+            @php
+                $isFilledByNoAngsuran = \DB::table('kunjungans')
+                    ->where('no_nasabah', $item->no_angsuran)
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->exists();
+            @endphp
+            
+            <tr class="{{ $isFilledByNoAngsuran ? 'row-completed' : 'row-pending' }}" 
+                style="border-bottom: 2px solid #000; text-align: center; {{ $isFilledByNoAngsuran ? 'background-color: #f0fff4;' : '' }}">
+                
                 <td style="padding: 15px; border-right: 2px solid #000;">
                     {{ ($data->currentPage() - 1) * $data->perPage() + $index + 1 }}
                 </td>
                 
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->no_angsuran }}</td>
                 
                 <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
                     {{ $item->nama_nasabah }}
-                    @if($item->is_filled)
-                        <span class="badge-status" style="background-color: #dcfce7; color: #166534; border: 1px solid #166534;">
+                    @if($isFilledByNoAngsuran)
+                        <span class="badge-status" style="background-color: #dcfce7; color: #166534; border: 1px solid #166534; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">
                             <i class="fa-solid fa-circle-check"></i> Terisi
                         </span>
                     @else
-                        <span class="badge-status" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #991b1b;">
+                        <span class="badge-status" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">
                             <i class="fa-solid fa-triangle-exclamation"></i> Belum Diisi
                         </span>
                     @endif
@@ -141,25 +151,35 @@
                 </td>
 
                 <td style="border: 1px solid #333; padding: 15px;">
-                    <div style="display: flex; justify-content: center; gap: 15px; align-items: center;">
-                        @if($item->is_filled)
-                            <div style="background-color: #28a745; color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                    <div style="display: flex; justify-content: center; gap: 8px; align-items: center;">
+                        {{-- BAGIAN DINAMIS: CEKLIS ATAU TAMBAH --}}
+                        @if($isFilledByNoAngsuran)
+                            <div style="background-color: #28a745; color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #000;">
                                 <i class="fa-solid fa-check" style="font-size: 18px;"></i>
                             </div>
                         @else
-                        <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')" 
-                                    style="background-color: #A3A8AC; color: #333; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                            <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')" 
+                                    style="background-color: #A3A8AC; color: #333; border: 2px solid #000; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                 <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
                             </button>
                         @endif
-                        <button onclick="openDetailModal(...)" style="background: none; border: none; cursor: pointer;">
+
+                        {{-- TOMBOL HAPUS (Keluar dari IF agar selalu muncul) --}}
+                        <button onclick="confirmDeleteJadwal('{{ $item->no_angsuran }}', '{{ $item->nama_nasabah }}')" 
+                                style="background-color: #dc3545; color: white; border: 2px solid #000; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
+                                title="Hapus Jadwal">
+                            <i class="fa-solid fa-trash-can" style="font-size: 16px;"></i>
+                        </button>
+                        
+                        {{-- TOMBOL INFO --}}
+                        <button onclick="openDetailModal('{{ $item->no_angsuran }}')" style="background: none; border: none; cursor: pointer;">
                             <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
                         </button>
                     </div>
                 </td>
             </tr>
             @empty
-            <tr><td colspan="7" style="padding: 20px;">Data tidak ditemukan</td></tr> {{-- Colspan jadi 7 --}}
+            <tr><td colspan="6" style="padding: 20px;">Data tidak ditemukan</td></tr>
             @endforelse
         </tbody>
     </table>
