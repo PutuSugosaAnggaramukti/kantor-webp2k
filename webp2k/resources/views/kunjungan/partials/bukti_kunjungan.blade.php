@@ -227,15 +227,18 @@
             </div>
 
            {{-- 2. Koordinat --}}
-            <div class="detail-section">
+           <div class="detail-section">
                 <span class="section-label"><i class="fa-solid fa-location-dot"></i> Koordinat Lokasi</span>
                 
                 {{-- Gabungkan koordinat dari EXIF atau Database --}}
                 @php 
                     $fixCoord = $koordinatExif ?? $detail->koordinat; 
+                    // Cek apakah koordinatnya cuma 0,0 atau 0.0,0.0
+                    $isInvalidCoord = ($fixCoord == '0,0' || $fixCoord == '0, 0' || $fixCoord == '0.0,0.0' || $fixCoord == '0.0, 0.0');
                 @endphp
 
-                @if($fixCoord && $fixCoord !== '-')
+                {{-- Tampilkan link hanya jika koordinat valid (bukan strip dan bukan 0,0) --}}
+                @if($fixCoord && $fixCoord !== '-' && !$isInvalidCoord)
                     <p class="section-value">
                         <a href="https://www.google.com/maps/search/?api=1&query={{ $fixCoord }}" 
                         target="_blank" 
@@ -256,8 +259,12 @@
                         </small>
                     @endif
                 @else
+                    {{-- Jika koordinat adalah 0,0 atau strip --}}
                     <p class="section-value">-</p>
-                    <small style="color: #e74c3c;">Koordinat tidak tersedia.</small>
+                    <small style="color: #e74c3c;">
+                        <i class="fa-solid fa-ban"></i> 
+                        {{ $isInvalidCoord ? 'GPS tidak terkunci (0,0) saat pengambilan foto.' : 'Koordinat tidak tersedia.' }}
+                    </small>
                 @endif
             </div>
 
