@@ -256,10 +256,10 @@
                 <label>Pilih Nasabah</label>
                 <select name="id" class="form-control" required>
                     <option value="">-- Pilih jadwal nasabah yang ingin diubah --</option>
-                    @foreach($data as $item)
-                        @if(!$item->is_filled)
-                            <option value="{{ $item->id }}">{{ $item->nama_nasabah }} ({{ date('d-m-Y', strtotime($item->tanggal)) }})</option>
-                        @endif
+                    @foreach($daftar_jadwal_ao as $item)
+                        <option value="{{ $item->id }}">
+                            {{ $item->nama_nasabah }} ({{ date('d-m-Y', strtotime($item->tanggal)) }})
+                        </option>
                     @endforeach
                 </select>
 

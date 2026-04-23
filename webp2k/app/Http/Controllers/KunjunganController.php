@@ -46,6 +46,10 @@ class KunjunganController extends Controller
         $myCode = strtoupper(trim($karyawan->kode_ao));
         
         $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)->get();
+        $daftar_jadwal_ao = \App\Models\DataKunjunganAdm::where('karyawan_id', $karyawan->id)
+        ->where('bulan', date('Y-m')) 
+        ->orderBy('nama_nasabah', 'asc')
+        ->get();
         $jadwal = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
 
         $realisasi = \DB::table('kunjungans')
@@ -137,7 +141,7 @@ class KunjunganController extends Controller
             return view('kunjungan.partials.data_table', compact('data'))->render();
         }
 
-        return view('kunjungan.datakunjungan', compact('data', 'daftar_nasabah'));
+        return view('kunjungan.datakunjungan', compact('data', 'daftar_nasabah', 'daftar_jadwal_ao'));
     }
 
     public function laporanKunjunganContent()

@@ -171,10 +171,11 @@
 
                             <td style="padding: 12px;">
                                 <button type="button" 
-                                        onclick="hapusJadwalNasabah({{ $item->id }}, '{{ $item->nama_nasabah }}')"
-                                        style="background: #ff4d4d; color: white; border: 2px solid #000; padding: 6px 10px; border-radius: 8px; cursor: pointer; transition: 0.2s;"
-                                        onmouseover="this.style.backgroundColor='#cc0000'" 
-                                        onmouseout="this.style.backgroundColor='#ff4d4d'">
+                                    onclick="hapusJadwalNasabah(this, '{{ $item->nama_nasabah }}')"
+                                    data-url="{{ route('admin.hapusJadwalSingle', $item->id) }}"
+                                    style="background: #ff4d4d; color: white; border: 2px solid #000; padding: 6px 10px; border-radius: 8px; cursor: pointer;"
+                                    onmouseover="this.style.backgroundColor='#cc0000'" 
+                                    onmouseout="this.style.backgroundColor='#ff4d4d'">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </td>
@@ -387,49 +388,34 @@ function closeModalPilihHapus() {
     document.getElementById('modalPilihHapus').style.display = 'none';
 }
 
-function hapusJadwalNasabah(id, nama) {
+function hapusJadwalNasabah(btn, nama) {
+    // Ambil URL utuh dari atribut data-url
+    let urlHapus = $(btn).data('url'); 
+
     Swal.fire({
         title: 'Hapus Jadwal?',
-        text: "Anda akan menghapus nasabah " + nama + " dari daftar kunjungan.",
+        text: "Anda akan menghapus jadwal nasabah: " + nama,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal'
+        confirmButtonText: 'Ya, Hapus!'
     }).then((result) => {
         if (result.isConfirmed) {
-            // Generate URL menggunakan route name yang sudah Mas buat
-            let urlAction = "{{ route('admin.hapusJadwalSingle', ':id') }}";
-            urlAction = urlAction.replace(':id', id);
-
-            fetch(urlAction, {
-                method: 'POST', // Kita kirim sebagai POST
+            $.ajax({
+                url: urlHapus, // Pakai URL yang sudah jadi (Contoh: https://domain.com/admin/hapus_jadwal/139)
+                type: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
-                body: JSON.stringify({
-                    _method: 'DELETE' // Tapi kita suruh Laravel membacanya sebagai DELETE
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Gagal menghapus (Error ' + response.status + ')');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    Swal.fire('Terhapus!', data.message, 'success').then(() => {
-                        location.reload(); // Refresh halaman agar data hilang
+                success: function(response) {
+                    Swal.fire('Berhasil!', 'Data telah dihapus.', 'success').then(() => {
+                        location.reload();
                     });
+                },
+                error: function(xhr) {
+                    console.error("Link Error:", urlHapus); // Cek di console kalau masih 404
+                    Swal.fire('Gagal!', 'Error ' + xhr.status, 'error');
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire('Gagal!', error.message, 'error');
             });
         }
     });
