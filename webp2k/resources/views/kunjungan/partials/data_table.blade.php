@@ -128,7 +128,7 @@
                     {{ ($data->currentPage() - 1) * $data->perPage() + $index + 1 }}
                 </td>
                 
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->no_angsuran }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->no_angsuran ?? '-'}}</td>
                 
                 <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
                     {{ $item->nama_nasabah }}

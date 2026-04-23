@@ -98,6 +98,7 @@ class KunjunganController extends Controller
                     'id' => $r->id,
                     'kode_ao' => $r->kode_ao,
                     'nama_nasabah' => $r->nama_nasabah,
+                    'no_angsuran' => $r->no_angsuran ?? '-',
                     'tanggal' => $r->created_at, // Gunakan tgl input sebagai tgl kunjungan
                     'kol' => $r->kol ?? '-',
                     'bulan' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->translatedFormat('F Y') : date('F Y'), 
