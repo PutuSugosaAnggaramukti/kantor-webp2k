@@ -91,15 +91,18 @@ class KunjunganController extends Controller
             ]);
         }
 
-        // PROSES B: Loop Data Realisasi (Mandiri)
+            // PROSES B: Loop Data Realisasi (Mandiri)
         foreach ($realisasi as $r) {
             if (!in_array($r->id, $realisasiTerpakaiIds)) {
+                // CARI NO ANGSURAN DARI TABEL NASABAH BERDASARKAN NAMA
+                $nasabah = \App\Models\Nasabah::where('nasabah', $r->nama_nasabah)->first();
+
                 $dataFinal->push((object)[
                     'id' => $r->id,
                     'kode_ao' => $r->kode_ao,
                     'nama_nasabah' => $r->nama_nasabah,
-                    'no_angsuran' => $r->no_angsuran ?? '-',
-                    'tanggal' => $r->created_at, // Gunakan tgl input sebagai tgl kunjungan
+                    'no_angsuran' => $nasabah ? $nasabah->no_angsuran : ($r->no_angsuran ?? '-'), 
+                    'tanggal' => $r->created_at,
                     'kol' => $r->kol ?? '-',
                     'bulan' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->translatedFormat('F Y') : date('F Y'), 
                     'is_filled' => true,

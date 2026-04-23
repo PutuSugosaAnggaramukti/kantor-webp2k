@@ -18,10 +18,14 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot()
     {
+        // Fix untuk link pagination di HTTPS
         if (config('app.env') === 'production') {
             \URL::forceScheme('https');
         }
+        
+        // Opsional: Paksa pagination pakai bootstrap secara global
+        \Illuminate\Pagination\Paginator::useBootstrap();
     }
 }

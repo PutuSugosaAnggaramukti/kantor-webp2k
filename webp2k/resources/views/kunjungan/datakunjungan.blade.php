@@ -476,30 +476,27 @@
 
     // --- Handler Pagination AJAX ---
 $(document).on('click', '.pagination a', function(e) {
-    e.preventDefault(); // Mencegah reload halaman
+    e.preventDefault();
     
-    let url = $(this).attr('href');
+    // AMBIL URL ASLI (Contoh: https://sipantau.../user/data-kunjungan?page=3)
+    let url = $(this).attr('href'); 
+    
     if (url) {
-        // Kita ambil parameter query-nya saja agar pas dengan route Anda
-        // url biasanya: http://domain.com/user/data-kunjungan-content?page=2
-        
         const contentArea = document.getElementById('konten-utama');
         contentArea.style.opacity = '0.3';
 
         $.ajax({
-            url: url,
+            url: url, // Pakai URL utuh, jangan dipotong-potong
             type: 'GET',
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(response) {
                 $('#konten-utama').html(response);
                 contentArea.style.opacity = '1';
-                
-                // Scroll kembali ke atas tabel agar user tahu data sudah berubah
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             },
             error: function(xhr) {
                 contentArea.style.opacity = '1';
-                console.error("Error pagination:", xhr);
+                console.error("Error pagination detail:", xhr.responseText);
             }
         });
     }

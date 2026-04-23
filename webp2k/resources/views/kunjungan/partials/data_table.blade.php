@@ -211,7 +211,7 @@
 
 {{-- Navigasi Pagination --}}
 <div class="custom-pagination" style="margin-top: 20px; display: flex; justify-content: center;">
-    {{ $data->links() }}
+    {{ $data->links('pagination::bootstrap-4') }}
 </div>
 
 <div class="instruction-box" style="margin-top: 20px; background-color: #f1f1f1; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 20px;">
