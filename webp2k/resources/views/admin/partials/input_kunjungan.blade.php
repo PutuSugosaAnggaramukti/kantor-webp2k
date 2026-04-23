@@ -116,7 +116,10 @@
 
                     <tbody style="font-weight: 800; font-size: 14px; color: #000;">
                         @foreach($group as $index => $item)
-                        @php $isPrioritas = ($item->kol == 5); @endphp
+                        {{-- Tambahkan pengecekan ini: Jika ID kosong atau Nama Nasabah tidak ada, lewati --}}
+                        @if(!empty($item->id) && (!empty($item->nama_nasabah) || !empty($item->nasabah)))
+                            
+                            @php $isPrioritas = ($item->kol == 5); @endphp
                         <tr class="row-kunjungan" data-no-angsuran="{{ $item->no_angsuran }}" style="border-bottom: 2px solid #000; text-align: center; {{ $isPrioritas ? 'background-color: #fff5f5;' : '' }}">
                             <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
                             
@@ -180,6 +183,7 @@
                                 </button>
                             </td>
                         </tr>
+                        @endif
                         @endforeach
                     </tbody>
                 </table>
@@ -389,7 +393,6 @@ function closeModalPilihHapus() {
 }
 
 function hapusJadwalNasabah(btn, nama) {
-    // Ambil URL utuh dari atribut data-url
     let urlHapus = $(btn).data('url'); 
 
     Swal.fire({
@@ -398,23 +401,42 @@ function hapusJadwalNasabah(btn, nama) {
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
-        confirmButtonText: 'Ya, Hapus!'
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
+            // Berikan loading agar user tahu proses sedang jalan
+            Swal.fire({
+                title: 'Mohon Tunggu',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
             $.ajax({
-                url: urlHapus, // Pakai URL yang sudah jadi (Contoh: https://domain.com/admin/hapus_jadwal/139)
+                url: urlHapus,
                 type: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function(response) {
-                    Swal.fire('Berhasil!', 'Data telah dihapus.', 'success').then(() => {
-                        location.reload();
-                    });
+                    // CEK STATUS DARI CONTROLLER
+                    if (response.status === 'success') {
+                        Swal.fire('Berhasil!', response.message, 'success').then(() => {
+                            location.reload(); // Refresh agar baris hilang total
+                        });
+                    } else {
+                        Swal.fire('Gagal!', response.message, 'error');
+                    }
                 },
                 error: function(xhr) {
-                    console.error("Link Error:", urlHapus); // Cek di console kalau masih 404
-                    Swal.fire('Gagal!', 'Error ' + xhr.status, 'error');
+                    // Jika 404 (Data sudah tidak ada), tetap beri notif dan reload
+                    if(xhr.status === 404) {
+                        Swal.fire('Info', 'Data sudah tidak ada di server.', 'info').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Gagal!', 'Terjadi kesalahan sistem (Error ' + xhr.status + ')', 'error');
+                    }
                 }
             });
         }
