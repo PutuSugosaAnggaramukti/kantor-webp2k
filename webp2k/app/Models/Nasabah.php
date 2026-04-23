@@ -22,6 +22,7 @@ class Nasabah extends Model
         'kode_nasabah',
         'nasabah',
         'alamat',
+        'ikatan',
         'tgl_pinjam',
         'tgl_jt',
         'nominal',

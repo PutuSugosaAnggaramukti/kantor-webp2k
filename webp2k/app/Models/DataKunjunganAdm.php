@@ -20,6 +20,7 @@ class DataKunjunganAdm extends Model
         'bulan',
         'tanggal',
         'no_angsuran',
+        'kode_nasabah',
         'karyawan_id',
     ];
 

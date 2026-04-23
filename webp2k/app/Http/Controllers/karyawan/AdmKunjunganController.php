@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\DataKunjunganAdm;
 use App\Models\Kunjungan;
 use App\Models\Karyawan;
+use App\Models\Nasabah;
 use App\Models\User;
 use App\Exports\KunjunganExport;
+use App\Exports\DetailKunjunganExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,40 +20,108 @@ class AdmKunjunganController extends Controller
 {
    public function index(Request $request) 
     {
-        $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
-        $karyawans = \App\Models\Karyawan::where('status', 'aktif')->get();
-        
-      $daftar_ao_jadwal = \DB::table('data_kunjungan_adms')
-        ->join('karyawans', 'data_kunjungan_adms.karyawan_id', '=', 'karyawans.id')
-        ->select('karyawans.nama', 'data_kunjungan_adms.kode_ao', \DB::raw('count(*) as total_jadwal'))
-        // Gunakan LIKE untuk menghindari masalah spasi atau karakter aneh
-        ->where('data_kunjungan_adms.bulan', 'LIKE', date('Y-m') . '%')
-        ->groupBy('karyawans.nama', 'data_kunjungan_adms.kode_ao')
-        ->orderBy('karyawans.nama', 'asc')
-        ->get();
+        // 1. Filter Dropdown (Tetap seperti aslinya)
+        $nasabah_all = \App\Models\Nasabah::where('kode', 'LIKE', '%.8%')
+            ->orderBy('nasabah', 'asc')->get();
+        $karyawans = \App\Models\Karyawan::where('status', 'aktif')
+            ->where('kode_ao', 'LIKE', 'C-%')->get();
 
-        $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
-            ->where('bulan', now()->format('Y-m')) 
-            ->get()
-            ->groupBy('kode_ao');
+        // 2. LOGIKA MERGING (PENTING)
+        // Ambil Jadwal Admin
+        $jadwal = \App\Models\DataKunjunganAdm::with('karyawan')
+            ->where('bulan', now()->format('Y-m'))
+            ->get();
 
-        $kunjungans = \App\Models\DataKunjunganAdm::with('karyawan')
-            ->orderBy('kode_ao', 'asc')
-            ->paginate(15); 
+        // Ambil Realisasi AO (Tabel kunjungans)
+        $realisasi = \DB::table('kunjungans')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->get();
 
-        // Jika request AJAX (saat panggil loadAdminPage)
+        $dataFinal = collect();
+        $realisasiTerpakaiIds = [];
+
+        // PROSES A: Masukkan data Jadwal Admin
+        foreach ($jadwal as $j) {
+            $match = $realisasi->first(function ($r) use ($j) {
+                return strtoupper(trim($r->nama_nasabah)) === strtoupper(trim($j->nama_nasabah));
+            });
+
+            if ($match) { $realisasiTerpakaiIds[] = $match->id; }
+
+            $dataFinal->push((object)[
+                'id'             => $j->id,
+                'kode_ao'        => $j->kode_ao,
+                'nama_ao'        => $j->karyawan->nama ?? '-',
+                'no_angsuran'    => $j->no_angsuran,
+                // LOGIKA AGAR KODE MUNCUL:
+                'kode_nasabah'   => $j->kode_nasabah ?? (\App\Models\Nasabah::where('no_angsuran', $j->no_angsuran)->value('kode') ?? '-'),
+                'nama_nasabah'   => $j->nama_nasabah,
+                'alamat_nasabah' => $j->alamat_nasabah,
+                'kol'            => $j->kol ?? '-',
+                'tanggal'        => $j->tanggal,
+                'bulan'          => $j->bulan,
+                'nominal'        => $j->nominal,
+                'sisa_pokok'     => $j->sisa_pokok,
+                'is_filled'      => $match ? true : false,
+                'is_mandiri'     => false,
+            ]);
+        }
+
+        // PROSES B: Masukkan data Realisasi Mandiri AO
+        foreach ($realisasi as $r) {
+            if (!in_array($r->id, $realisasiTerpakaiIds)) {
+                $dataFinal->push((object)[
+                    'id'             => $r->id,
+                    'kode_ao'        => $r->kode_ao,
+                    'nama_ao'        => '-',
+                    'no_angsuran'    => $r->no_nasabah,
+                    'kode_nasabah'   => \App\Models\Nasabah::where('no_angsuran', $r->no_nasabah)->value('kode') ?? '-',
+                    'nama_nasabah'   => $r->nama_nasabah,
+                    'alamat_nasabah' => $r->alamat_nasabah,
+                    'kol'            => $r->kol ?? '-',
+                    'tanggal'        => $r->created_at,
+                    'bulan'          => \Carbon\Carbon::parse($r->created_at)->format('Y-m'),
+                    'nominal'        => 0, // Atau ambil dari master jika perlu
+                    'sisa_pokok'     => 0,
+                    'is_filled'      => true,
+                    'is_mandiri'     => true,
+                ]);
+            }
+        }
+
+        // 3. PAGINATION MANUAL (Wajib karena datanya Collection)
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
+        $perPage = 15;
+        $currentItems = $dataFinal->sortBy('kode_ao')->slice(($currentPage - 1) * $perPage, $perPage)->all();
+
+        $kunjungans = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentItems, $dataFinal->count(), $perPage, $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+
+        $kunjungansGrouped = $dataFinal->groupBy('kode_ao');
+
+        // Query daftar_ao_jadwal (Tetap seperti aslinya)
+        $daftar_ao_jadwal = \DB::table('data_kunjungan_adms')
+            ->join('karyawans', 'data_kunjungan_adms.karyawan_id', '=', 'karyawans.id')
+            ->select('karyawans.nama', 'data_kunjungan_adms.kode_ao', \DB::raw('count(*) as total_jadwal'))
+            ->where('data_kunjungan_adms.bulan', 'LIKE', date('Y-m') . '%')
+            ->groupBy('karyawans.nama', 'data_kunjungan_adms.kode_ao')
+            ->orderBy('karyawans.nama', 'asc')->get();
+
+        // 4. Return View
         if ($request->ajax()) {
             return view('admin.partials.input_kunjungan', [
                 'kunjungans' => $kunjungans,
                 'kunjungansGrouped' => $kunjungansGrouped,
-                'nasabah_all' => \App\Models\Nasabah::orderBy('nasabah', 'asc')->get(), // Ambil fresh
-                'karyawans' => \App\Models\Karyawan::where('status', 'aktif')->get() // WAJIB ADA
+                'nasabah_all' => $nasabah_all,
+                'karyawans' => $karyawans
             ])->render();
         }
 
         $data['page'] = 'adm-kunjungan';
         $data['title'] = 'Input Jadwal Kunjungan';
-        // Kirim juga ke konten utama
         $data['content'] = view('admin.partials.input_kunjungan', compact('kunjungans', 'kunjungansGrouped', 'nasabah_all', 'karyawans','daftar_ao_jadwal'))->render();
 
         return view('admin.datakaryawan', $data);
@@ -122,14 +192,19 @@ public function detail($kode_ao)
     $kode_ao_clean = str_replace('-content', '', $kode_ao);
 
     try {
-        // 1. Ambil data dari ADM (Jadwal)
+       // 1. Ambil data dari ADM (Jadwal)
         $data_adm = \DB::table('data_kunjungan_adms')
             ->leftJoin('kunjungans', function ($join) {
                 $join->on('data_kunjungan_adms.no_angsuran', '=', 'kunjungans.no_nasabah')
-                     ->on('data_kunjungan_adms.kode_ao', '=', 'kunjungans.kode_ao');
+                     ->on('data_kunjungan_adms.kode_ao', '=', 'kunjungans.kode_ao')
+                     // KUNCI DI SINI: Samakan tanggal jadwal dengan tanggal realisasi
+                     ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
             })
             ->leftJoin('nasabahs', 'data_kunjungan_adms.no_angsuran', '=', 'nasabahs.no_angsuran')
             ->where('data_kunjungan_adms.kode_ao', $kode_ao_clean)
+            // Tambahkan filter bulan berjalan jika ingin benar-benar sama dengan HP Wahyu
+            ->whereRaw('MONTH(data_kunjungan_adms.created_at) = ?', [date('m')])
+            ->whereRaw('YEAR(data_kunjungan_adms.created_at) = ?', [date('Y')])
             ->select(
                 'data_kunjungan_adms.no_angsuran',
                 'data_kunjungan_adms.nama_nasabah',
@@ -146,18 +221,22 @@ public function detail($kode_ao)
                 'nasabahs.alamat as alamat_master'
             );
 
-        // 2. Ambil data dari Kunjungan Mandiri
+       // 2. Ambil data dari Kunjungan Mandiri
         $data_mandiri = \DB::table('kunjungans')
             ->leftJoin('data_kunjungan_adms', function ($join) {
                 $join->on('kunjungans.no_nasabah', '=', 'data_kunjungan_adms.no_angsuran')
-                     ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao');
+                     ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao')
+                     // Sama seperti di atas
+                     ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
             })
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->where('kunjungans.kode_ao', $kode_ao_clean)
             ->whereNull('data_kunjungan_adms.no_angsuran')
+            // KUNCI DI SINI: Batasi hanya bulan ini
+            ->whereRaw('MONTH(kunjungans.created_at) = ?', [date('m')])
+            ->whereRaw('YEAR(kunjungans.created_at) = ?', [date('Y')])
             ->select(
                 'kunjungans.no_nasabah as no_angsuran',
-                // PERBAIKAN: Ambil langsung dari tabel kunjungans (input manual AO)
                 'kunjungans.nama_nasabah as nama_nasabah',
                 'kunjungans.alamat_nasabah as alamat_nasabah',
                 'kunjungans.created_at',
@@ -177,10 +256,16 @@ public function detail($kode_ao)
             ->get();
 
         foreach ($data_detail as $item) {
-            // Logika Fallback: Gunakan data Master (nasabahs) jika ada, 
-            // jika tidak ada (null), gunakan data input manual (nama_nasabah/alamat_nasabah)
+            // 1. Logika Fallback Nama & Alamat (Tetap)
             $item->nama_nasabah = $item->nama_nasabah_asli ?? ($item->nama_nasabah ?? 'Nama Tidak Ada');
             $item->alamat_nasabah = $item->alamat_master ?? ($item->alamat_nasabah ?? 'Alamat Tidak Ada');
+
+            // 2. Tambahan: Ambil data nasabah untuk keperluan Export per baris
+            // Kita simpan ke dalam property item agar bisa dipanggil di Blade
+            $item->info_nasabah = (object) [
+                'no_angsuran' => $item->no_angsuran,
+                'nama' => $item->nama_nasabah
+            ];
 
             // Proses EXIF tetap sama
             if ($item->id_kunjungan && $item->foto_kunjungan) {
@@ -198,14 +283,16 @@ public function detail($kode_ao)
             }
         }
 
+        // 3. PENTING: Sediakan variabel $nasabah 'global' untuk Header agar Blade tidak error
+        $nasabah = $data_detail->first() ?? (object) ['no_angsuran' => null, 'nasabah' => ''];
         $kode_ao = $kode_ao_clean;
 
         if (request()->ajax()) {
-            return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao'));
+            return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao', 'nasabah'));
         }
 
         $karyawans = \DB::table('karyawans')->get(); 
-        return view('admin.datakaryawan', compact('data_detail', 'kode_ao', 'karyawans'));
+        return view('admin.datakaryawan', compact('data_detail', 'kode_ao', 'karyawans', 'nasabah'));
 
     } catch (\Exception $e) {
         \Log::error("Error Detail Kunjungan: " . $e->getMessage());
@@ -241,23 +328,29 @@ public function detail($kode_ao)
         return (float) $fraction;
     }
 
-    public function getDaftarNoAnggota()
-    {
-        try {
-            // Mengambil seluruh data tanpa terkecuali
-            $nasabah = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol')
-                ->orderByRaw("CASE WHEN kol = '5' THEN 0 ELSE 1 END") 
-                ->orderBy('nasabah', 'asc')
-                ->get();
+public function getDaftarNoAnggota()
+{
+    try {
+        $nasabah = \DB::table('nasabahs')
+            ->select(
+                'no_angsuran', 
+                'nasabah', 
+                'alamat', 
+                'kol', 
+                'kode' // Ini yang isinya PG.001 sesuai Tinker
+            )
+            ->where(function($q) {
+                $q->where('no_angsuran', 'LIKE', '150%')
+                  ->orWhere('no_angsuran', 'LIKE', '8%');
+            })
+            ->orderBy('nasabah', 'asc')
+            ->get();
 
-            // Log jumlah data yang dikirim untuk dicek di storage/logs/laravel.log
-            // \Log::info('Jumlah nasabah dikirim ke dropdown: ' . $nasabah->count());
-
-            return response()->json($nasabah);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
+        return response()->json($nasabah);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
 
     private function getComponent($coordinate, $ref)
     {
@@ -276,7 +369,7 @@ public function detail($kode_ao)
         return $parts[1] == 0 ? 0 : $parts[0] / $parts[1];
     }
 
-   public function store(Request $request)
+  public function store(Request $request)
     {
         $request->validate([
             'karyawan_id'    => 'required|exists:karyawans,id',
@@ -287,18 +380,6 @@ public function detail($kode_ao)
             'no_angsuran'    => 'required',
             'tanggal'        => 'required|date',
         ]);
-
-        $cekDuplikat = DataKunjunganAdm::where('karyawan_id', $request->karyawan_id)
-                        ->where('no_angsuran', $request->no_angsuran)
-                        ->where('bulan', $request->bulan)
-                        ->exists();
-
-        if ($cekDuplikat) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Jadwal untuk nasabah ini sudah dibuat oleh AO tersebut di bulan ini!'
-            ], 422); 
-        }
 
         $nasabahMaster = \App\Models\Nasabah::where('no_angsuran', $request->no_angsuran)->first();
         $karyawan = Karyawan::find($request->karyawan_id);
@@ -313,6 +394,9 @@ public function detail($kode_ao)
             'is_hb'          => $isHb, 
             'bulan'          => $request->bulan,
             'no_angsuran'    => $request->no_angsuran,
+            // --- TAMBAHKAN INI ---
+            'kode_nasabah'   => $nasabahMaster->kode ?? '-', 
+            // ---------------------
             'tanggal'        => $request->tanggal,
             'kode_ao'        => $karyawan->kode_ao ?? null,
             'nominal'        => $nasabahMaster->nominal ?? 0,
@@ -363,6 +447,17 @@ public function detail($kode_ao)
         $fileName = 'Rekap_Kunjungan_' . ($kode_ao ?: 'SEMUA') . '_' . date('Y-m-d') . '.xlsx';
 
         return Excel::download(new KunjunganExport($kode_ao), $fileName);
+    }
+
+    public function exportDetailAO($kode_ao)
+    {
+        // Bersihkan kode AO jika ada embel-embel '-content'
+        $kode_ao_clean = str_replace('-content', '', $kode_ao);
+        
+        $namaFile = 'Laporan_Kunjungan_AO_' . $kode_ao_clean . '_' . date('Y-m-d') . '.xlsx';
+
+        // Kirim $kode_ao_clean ke Class Export
+        return Excel::download(new DetailKunjunganExport($kode_ao_clean), $namaFile);
     }
 
    public function importExcel(Request $request)

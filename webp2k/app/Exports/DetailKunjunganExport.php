@@ -7,21 +7,22 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting; // Tambahkan ini
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class KunjunganExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnFormatting
+class DetailKunjunganExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnFormatting
 {
-    protected $kode_ao;
+    protected $no_nasabah;
 
-    public function __construct($kode_ao = null)
+    // Kita minta no_nasabah saat memanggil class ini
+    public function __construct($no_nasabah)
     {
-        $this->kode_ao = $kode_ao;
+        $this->no_nasabah = $no_nasabah;
     }
 
     public function collection()
     {
-        $query = DB::table('kunjungans')
+        return DB::table('kunjungans')
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->leftJoin('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
             ->select(
@@ -34,46 +35,26 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
                 'kunjungans.kode_ao as k_ao',
                 'karyawans.nama as nama_ao'
             )
-            ->orderBy('kunjungans.created_at', 'asc');
-
-        if (!empty($this->kode_ao)) {
-            $query->where('kunjungans.kode_ao', 'LIKE', '%' . $this->kode_ao . '%');
-        }
-
-        return $query->get();
+            ->where('kunjungans.kode_ao', $this->no_nasabah) // Filter khusus nasabah ini
+            ->orderBy('kunjungans.created_at', 'desc')
+            ->get();
     }
 
     public function headings(): array
     {
+        // Sama persis dengan KunjunganExport Mas
         return [
-            'kode', 
-            'no.ang', 
-            'rekening kredit', 
-            'kode nasabah', 
-            'nama', 
-            'alamat', 
-            'tanggal pinjam', 
-            'tanggal jt', 
-            'nominal', 
-            'sisa pokok', 
-            'pokok/bulan', 
-            'bunga/bulan', 
-            'tunggakan pokok', 
-            'tunggakan bunga', 
-            'denda', 
-            'total tunggakan', 
-            'agunan', 
-            'ikatan', 
-            'kode ao', 
-            'nama ao', 
-            'tanggal kunjungan', 
-            'keterangan', 
-            'status/jb'
+            'kode', 'no.ang', 'rekening kredit', 'kode nasabah', 'nama', 'alamat', 
+            'tanggal pinjam', 'tanggal jt', 'nominal', 'sisa pokok', 'pokok/bulan', 
+            'bunga/bulan', 'tunggakan pokok', 'tunggakan bunga', 'denda', 
+            'total tunggakan', 'agunan', 'ikatan', 'kode ao', 'nama ao', 
+            'tanggal kunjungan', 'keterangan', 'status/jb'
         ];
     }
 
     public function map($row): array
     {
+        // Logika Status JB sama persis
         $statusJB = '-';
         if ($row->ada_di_lokasi == 'tidak') {
             $statusJB = 'TDK BERTEMU';
@@ -113,25 +94,16 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
         ];
     }
 
-    /**
-     * Mengatur format kolom agar menjadi format angka/nominal
-     */
-   public function columnFormats(): array
+    public function columnFormats(): array
     {
         return [
             'D' => \PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_TEXT, 
-            'I' => '#,##0', // Nominal
-            'J' => '#,##0', // Sisa Pokok
-            'K' => '#,##0', // Pokok/Bulan
-            'L' => '#,##0', // Bunga/Bulan
-            'M' => '#,##0', // Tunggakan Pokok
-            'N' => '#,##0', // Tunggakan Bunga
-            'O' => '#,##0', // Denda
-            'P' => '#,##0', // Total Tunggakan
+            'I' => '#,##0', 'J' => '#,##0', 'K' => '#,##0', 'L' => '#,##0',
+            'M' => '#,##0', 'N' => '#,##0', 'O' => '#,##0', 'P' => '#,##0',
         ];
     }
 
-   public function styles(Worksheet $sheet)
+    public function styles(Worksheet $sheet)
     {
         foreach (range('A', 'W') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
@@ -141,7 +113,6 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
         $range = 'A1:W' . $highestRow;
 
         return [
-            // Header tetap bold dan center
             1 => [
                 'font' => ['bold' => true],
                 'alignment' => ['horizontal' => 'center'],
@@ -150,11 +121,7 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
                     'startColor' => ['rgb' => 'D9D9D9']
                 ]
             ],
-            // Merapikan Kolom D (Kode Nasabah) ke Tengah
-            'D' => [
-                'alignment' => ['horizontal' => 'center']
-            ],
-            // Semua sel agar rapi secara vertikal dan memiliki border
+            'D' => ['alignment' => ['horizontal' => 'center']],
             $range => [
                 'alignment' => ['vertical' => 'center'],
                 'borders' => [

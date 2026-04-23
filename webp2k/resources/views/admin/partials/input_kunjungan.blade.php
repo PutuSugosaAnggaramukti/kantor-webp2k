@@ -83,7 +83,7 @@
             <h3 style="margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 12px;">
                 <i class="fa-solid fa-chevron-down"></i>
                 <i class="fa-solid fa-user-tie"></i> 
-                {{ $group->first()->karyawan->nama ?? 'Nama AO Tidak Ditemukan' }} ({{ $kodeAo }})
+              {{ $group->first()->nama_ao ?? 'Nama AO Tidak Ditemukan' }} ({{ $kodeAo }})
             </h3>
             
             <div style="display: flex; gap: 10px; align-items: center;">
@@ -98,11 +98,12 @@
 
         <div class="table-container">
             <div class="table-responsive" style="max-height: 400px; overflow-y: auto; border: 2px solid #000; border-top: none; border-radius: 0 0 12px 12px;">
-                <table style="width: 100%; border-collapse: collapse; background-color: #fff; position: relative;">
+               <table style="width: 100%; border-collapse: collapse; background-color: #fff; position: relative;">
                     <thead>
                         <tr style="position: sticky; top: 0; z-index: 10; background-color: #f8f9fa; border-bottom: 2px solid #000; text-align: center;">
                             <th style="padding: 15px; border-right: 2px solid #000; width: 60px;">No</th>
                             <th style="padding: 15px; border-right: 2px solid #000; width: 140px;">No Angsuran</th> 
+                            <th style="padding: 15px; border-right: 2px solid #000; width: 100px;">Kode</th>
                             <th style="padding: 15px; border-right: 2px solid #000; width: 130px;">Bulan</th>
                             <th style="padding: 15px; border-right: 2px solid #000; width: 130px; background-color: #eef2ff;">Tgl Kunjungan</th>
                             <th style="padding: 15px; border-right: 2px solid #000;">Data Nasabah</th> 
@@ -121,6 +122,10 @@
                             
                             <td style="padding: 12px; border-right: 2px solid #000; color: #444;">
                                 {{ $item->no_angsuran ?? '-' }}
+                            </td>
+
+                            <td style="padding: 12px; border-right: 2px solid #000; color: #4e4bc1;">
+                                {{ $item->kode_nasabah ?? '-' }}
                             </td>
 
                             <td style="padding: 12px; border-right: 2px solid #000;">
@@ -197,28 +202,57 @@
             if (modal) modal.style.display = 'flex';
         };
 
-      window.openModalKunjungan = function() {
+     window.openModalKunjungan = function() {
             const modal = document.querySelector('#modalTambahKunjungan');
             if (modal) {
                 modal.style.display = 'flex';
                 const dropdown = modal.querySelector('#dropdown_no_angsuran');
+                
                 if (dropdown) {
+                    // Destroy Select2 lama jika ada
                     if ($(dropdown).hasClass("select2-hidden-accessible")) {
                         $(dropdown).select2('destroy');
                     }
-                    const options = dropdown.options;
-                    for (let i = 0; i < options.length; i++) {
-                        options[i].removeAttribute('hidden');
-                        options[i].disabled = false;
-                        options[i].style.cssText = "display: block !important; visibility: visible !important;";
-                    }
+
+                    // Reset dropdown
                     dropdown.value = "";
+
+                    // Re-inisialisasi Select2
                     $(dropdown).select2({
-                        dropdownParent: $(modal)
+                        dropdownParent: $(modal),
+                        placeholder: "Cari No Angsuran / Nama Nasabah...",
+                        allowClear: true
+                    });
+
+                    // --- LOGIKA AUTO-FILL DISINI ---
+                    $(dropdown).on('select2:select', function (e) {
+                        // Cara paling ampuh: cari elemen option yang sedang aktif/dipilih
+                        const selectedOption = $(this).find(':selected');
+                        
+                        // Ambil datanya satu per satu menggunakan .attr() atau .data()
+                        const kode   = selectedOption.attr('data-kode'); 
+                        const nama   = selectedOption.attr('data-nama');
+                        const alamat = selectedOption.attr('data-alamat');
+                        const kol    = selectedOption.attr('data-kol');
+
+                        console.log("DEBUG - Cek Data Terpilih:", { kode, nama, alamat, kol });
+
+                        // Masukkan ke input HTML Mas (ID harus pas!)
+                        $('#display_kode').val(kode || '-'); 
+                        $('#input_nama_nasabah').val(nama || '');
+                        $('#input_alamat_nasabah').val(alamat || '');
+                        
+                        // Opsional: jika Mas punya input untuk kol
+                        $('#input_kol_nasabah').val(kol || '-'); 
                     });
                 }
+
                 const form = modal.querySelector('#formTambahKunjungan');
-                if(form) form.reset();
+                if(form) {
+                    form.reset();
+                    // Kosongkan manual jika reset() tidak membersihkan Select2
+                    $(dropdown).val(null).trigger('change');
+                }
             }
         };
 

@@ -105,13 +105,21 @@
         </thead>
         <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
-            @php
+                @php
+            $isFilledByNoAngsuran = false;
+            
+            if (!empty($item->no_angsuran) && !empty($item->tanggal)) {
+                // Ambil tanggal jadwal
+                $tglJadwal = \Carbon\Carbon::parse($item->tanggal);
                 $isFilledByNoAngsuran = \DB::table('kunjungans')
                     ->where('no_nasabah', $item->no_angsuran)
-                    ->whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
+                    ->whereBetween('created_at', [
+                        $tglJadwal->copy()->subDays(2)->startOfDay(), // H-2
+                        $tglJadwal->copy()->addDays(2)->endOfDay()    // H+2
+                    ])
                     ->exists();
-            @endphp
+            }
+        @endphp
             
             <tr class="{{ $isFilledByNoAngsuran ? 'row-completed' : 'row-pending' }}" 
                 style="border-bottom: 2px solid #000; text-align: center; {{ $isFilledByNoAngsuran ? 'background-color: #f0fff4;' : '' }}">
@@ -136,18 +144,34 @@
                 </td>
 
                 <td style="padding: 15px; border-right: 2px solid #000; color: #007bff;">
-                    {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') : '-' }}
+                    @if(!empty($item->tanggal) && $item->tanggal != '0000-00-00')
+                        {{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') }}
+                    @else
+                        -
+                    @endif
                 </td>
                 
-                <td style="padding: 15px; border-right: 2px solid #000;">
+               <td style="padding: 15px; border-right: 2px solid #000;">
                     @php
                         $valBulan = $item->bulan ?? '-';
-                        if (preg_match('/^[0-9]{4}-[0-9]{2}/', $valBulan)) {
-                            echo \Carbon\Carbon::parse($valBulan)->translatedFormat('M Y');
-                        } else {
-                            echo $valBulan;
+                        // Ambil string mentahnya dulu
+                        $bulanTampil = $valBulan; 
+
+                        // Cek format: Wajib bukan null, bukan '-', dan harus berformat YYYY-MM
+                        if (!empty($valBulan) && $valBulan !== '-' && preg_match('/^[0-9]{4}-[0-9]{2}/', $valBulan)) {
+                            // Gunakan PHP Native Try-Catch agar kompatibel di semua versi Laravel
+                            try {
+                                // Parse hanya jika formatnya sesuai YYYY-MM
+                                $bulanTampil = \Carbon\Carbon::parse($valBulan)->translatedFormat('M Y');
+                            } catch (\Exception $e) {
+                                // Jika gagal parse, biarkan tampil apa adanya (safe fallback)
+                                $bulanTampil = $valBulan; 
+                            }
                         }
                     @endphp
+                    
+                    {{-- Tampilkan hasil akhir yang sudah aman --}}
+                    {{ $bulanTampil }}
                 </td>
 
                 <td style="border: 1px solid #333; padding: 15px;">

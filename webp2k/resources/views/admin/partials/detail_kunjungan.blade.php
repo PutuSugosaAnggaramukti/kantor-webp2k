@@ -9,6 +9,17 @@
     </p>
 </div>
 
+<div class="mb-3">
+    <a href="{{ route('admin.export.ao', $kode_ao) }}" 
+    class="btn btn-success btn-sm shadow-sm" 
+    style="background-color: #28a745 !important; color: white !important; padding: 6px 15px; text-decoration: none; border-radius: 4px; display: inline-flex; align-items: center;">
+        
+        <i class="fas fa-file-excel fa-sm text-white" style="margin-right: 12px !important;"></i> 
+        
+        <strong>Export Semua Data AO</strong>
+    </a>
+</div>
+
 <div class="table-responsive">
    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
         <thead>

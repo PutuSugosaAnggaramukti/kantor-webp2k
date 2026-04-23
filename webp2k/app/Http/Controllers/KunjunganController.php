@@ -381,9 +381,9 @@ class KunjunganController extends Controller
         }
     }
 
-    public function storeAo(Request $request)
+   public function storeAo(Request $request)
     {
-        // 1. Validasi Input dari Form Modal
+        // 1. Validasi Input
         $request->validate([
             'nama_nasabah'   => 'required|string|max:255',
             'alamat_nasabah' => 'required',
@@ -393,8 +393,7 @@ class KunjunganController extends Controller
             'tanggal'        => 'required|date',
         ]);
 
-        // 2. Ambil data AO yang sedang login via Guard Karyawan
-        // Ini menggantikan auth()->user() agar tidak mencari ke tabel admin/users
+        // 2. Ambil data AO
         $karyawan = \Illuminate\Support\Facades\Auth::guard('karyawan')->user();
 
         if (!$karyawan) {
@@ -406,24 +405,12 @@ class KunjunganController extends Controller
 
         $karyawanId = $karyawan->id;
 
-        // 3. Cek Duplikat: Mencegah AO membuat jadwal untuk nasabah yang sama di bulan yang sama
-        $cekDuplikat = \App\Models\DataKunjunganAdm::where('karyawan_id', $karyawanId)
-                        ->where('no_angsuran', $request->no_angsuran)
-                        ->where('bulan', $request->bulan)
-                        ->exists();
 
-        if ($cekDuplikat) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda sudah membuat jadwal untuk nasabah ini di bulan ini!'
-            ], 422); 
-        }
-
-        // 4. Ambil data nominal & sisa pokok dari Master Nasabah
+        // 3. Ambil data nominal & sisa pokok
         $nasabahMaster = \App\Models\Nasabah::where('no_angsuran', $request->no_angsuran)->first();
         $isHb = ($request->kol == 5) ? true : false;
 
-        // 5. Simpan ke database
+        // 4. Simpan ke database
         \App\Models\DataKunjunganAdm::create([
             'karyawan_id'    => $karyawanId,
             'nama_nasabah'   => $request->nama_nasabah,
@@ -433,7 +420,7 @@ class KunjunganController extends Controller
             'bulan'          => $request->bulan,
             'no_angsuran'    => $request->no_angsuran,
             'tanggal'        => $request->tanggal,
-            'kode_ao'        => $karyawan->kode_ao, // Otomatis C-011 dsb
+            'kode_ao'        => $karyawan->kode_ao,
             'nominal'        => $nasabahMaster->nominal ?? 0,
             'sisa_pokok'     => $nasabahMaster->sisa_pokok ?? 0,
         ]);

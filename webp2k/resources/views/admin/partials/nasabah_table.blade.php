@@ -69,12 +69,15 @@
 <div id="main-content-area" style="border: 2px solid #000; background: #fff; padding: 0px; border-radius: 0 0 10px 10px; overflow: hidden; transition: opacity 0.3s;">
    <div class="table-responsive" style="overflow-x: auto;">
         <table class="table table-bordered table-hover" style="min-width: 2000px; font-size: 12px;">
-            <thead class="bg-light text-center">
+           <thead class="bg-light text-center">
                 <tr>
                     <th>No</th>
                     <th>Kode</th>
                     <th>No. Anggota</th>
-                    <th>Rekening Kredit</th> <th>Kode Nasabah</th>    <th>Nama Nasabah</th>    <th style="min-width: 250px;">Alamat</th>
+                    <th>Rekening Kredit</th> 
+                    <th>Kode Nasabah</th>    
+                    <th>Nama Nasabah</th>    
+                    <th style="min-width: 250px;">Alamat</th>
                     <th>Tgl Pinjam</th>
                     <th>Tgl JT</th>
                     <th>Nominal</th>
@@ -87,6 +90,8 @@
                     <th>Hari</th>
                     <th>Denda</th>
                     <th>Total Tunggakan</th>
+                    <th>Agunan</th>
+                    <th>Ikatan</th>
                     <th>KOL</th>
                 </tr>
             </thead>
@@ -96,9 +101,10 @@
                     <td class="text-center">{{ $nasabah_all->firstItem() + $index }}</td>
                     <td class="text-center">{{ $row->kode }}</td>
                     <td>{{ $row->no_angsuran }}</td>
-                    
-                    {{-- PERBAIKAN URUTAN DI SINI --}}
-                    <td>{{ $row->rekening_kredit }}</td> <td>{{ $row->kode_nasabah }}</td>    <td>{{ $row->nasabah }}</td>         <td><small>{{ $row->alamat }}</small></td>
+                    <td>{{ $row->rekening_kredit }}</td> 
+                    <td>{{ $row->kode_nasabah }}</td>    
+                    <td>{{ $row->nasabah }}</td>         
+                    <td><small>{{ $row->alamat }}</small></td>
                     <td class="text-center">{{ $row->tgl_pinjam ?? '-' }}</td>
                     <td class="text-center">{{ $row->tgl_jt ?? '-' }}</td>
                     <td class="text-end">{{ number_format($row->nominal, 0, ',', '.') }}</td>
@@ -111,6 +117,10 @@
                     <td class="text-center">{{ $row->hari_bunga }}</td>
                     <td class="text-end">{{ number_format($row->denda, 0, ',', '.') }}</td>
                     <td class="text-end"><strong>{{ number_format($row->bakidebet, 0, ',', '.') }}</strong></td>
+                    
+                    <td class="text-center">{{ $row->kode_agunan ?? '-' }}</td>
+                    <td class="text-center">{{ $row->ikatan ?? '-' }}</td>
+
                     <td class="text-center">
                         <span class="badge bg-{{ $row->kol == 1 ? 'success' : ($row->kol >= 4 ? 'danger' : 'warning') }}">
                             {{ $row->kol }}

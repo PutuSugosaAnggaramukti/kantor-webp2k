@@ -51,39 +51,55 @@ class AdmDokumenController extends Controller
 }
    public function downloadWord($no_angsuran)
     {
-        // PERUBAHAN DI SINI: Cari berdasarkan no_angsuran di tabel Nasabah
+        // Cari data nasabah
         $data = Nasabah::where('no_angsuran', $no_angsuran)->firstOrFail();
         
         $templatePath = public_path('templates/Template_p2k.docx');
         
         if (!file_exists($templatePath)) {
-            dd("File TIDAK ditemukan di: " . $templatePath); 
+            return back()->with('error', "File template tidak ditemukan."); 
         }
 
         $templateProcessor = new TemplateProcessor($templatePath);
 
-        // Isi variabel template
+        // --- 1. DATA IDENTITAS (Halaman 1 & 2) ---
         $templateProcessor->setValue('nama_nasabah', strtoupper($data->nasabah));
         $templateProcessor->setValue('alamat_nasabah', $data->alamat);
         $templateProcessor->setValue('no_angsuran', $data->no_angsuran);
-        $templateProcessor->setValue('kode_ao', $data->kode_ao ?? '-');
+        $templateProcessor->setValue('kode', $data->kode ?? '-'); // PG.333 dsb
+        $templateProcessor->setValue('rekening', $data->rekening_kredit ?? '-');
+        $templateProcessor->setValue('tanggal', Carbon::now()->isoFormat('D MMMM YYYY'));
+
+        // --- 2. DATA KEUANGAN & PERHITUNGAN ---
+        $pokokPerBulan = (float) ($data->pokok_per_bulan ?? 0);
+        $bungaPerBulan = (float) ($data->bunga_per_bulan ?? 0);
+        $denda = (float) ($data->denda ?? 0);
+        $totalTagihan = $pokokPerBulan + $bungaPerBulan + $denda;
+
+        // Format Rupiah untuk Halaman 1
+        $templateProcessor->setValue('nominal', "Rp " . number_format($data->nominal ?? 0, 0, ',', '.'));
+        $templateProcessor->setValue('sisa_pokok', "Rp " . number_format($data->sisa_pokok ?? 0, 0, ',', '.'));
         
-        // Gunakan tanggal hari ini untuk surat tagihan
-        $templateProcessor->setValue('tanggal', Carbon::now()->format('d-m-Y'));
+        // Variabel Tabel (Bisa dipakai di Halaman 1 & 2)
+        $templateProcessor->setValue('pokok_per_bulan', number_format($pokokPerBulan, 0, ',', '.'));
+        $templateProcessor->setValue('bunga_per_bulan', number_format($bungaPerBulan, 0, ',', '.'));
+        $templateProcessor->setValue('denda', number_format($denda, 0, ',', '.'));
+        $templateProcessor->setValue('jumlah_tagihan', number_format($totalTagihan, 0, ',', '.'));
 
-        // Format Rupiah
-        $nominalFormat = "Rp " . number_format($data->nominal ?? 0, 0, ',', '.') . ",-";
-        $sisaFormat = "Rp " . number_format($data->sisa_pokok ?? 0, 0, ',', '.') . ",-";
+        // --- 3. DATA KHUSUS HALAMAN 2 (LAPORAN KUNJUNGAN) ---
+        $templateProcessor->setValue('plafon', number_format($data->nominal ?? 0, 0, ',', '.'));
+        $templateProcessor->setValue('agunan', $data->kode_agunan ?? '-');
+        $templateProcessor->setValue('pengikatan', $data->ikatan ?? '-');
+        
+        // Data Tunggakan (Sesuai kolom di Tinker)
+        $templateProcessor->setValue('tunggakan_pokok', number_format($data->tunggakan_pokok ?? 0, 0, ',', '.'));
+        $templateProcessor->setValue('tunggakan_bunga', number_format($data->tunggakan_bunga ?? 0, 0, ',', '.'));
 
-        $templateProcessor->setValue('nominal', $nominalFormat);
-        $templateProcessor->setValue('sisa_pokok', $sisaFormat);
-
+        // --- 4. PROSES DOWNLOAD ---
         $fileName = 'Surat_Tagihan_' . str_replace(' ', '_', $data->nasabah) . '.docx';
         $tempFile = tempnam(sys_get_temp_dir(), 'PHPWord');
         $templateProcessor->saveAs($tempFile);
 
-        return response()->download($tempFile, $fileName, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ])->deleteFileAfterSend(true);
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 }

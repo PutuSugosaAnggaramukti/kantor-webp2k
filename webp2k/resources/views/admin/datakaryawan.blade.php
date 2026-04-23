@@ -427,16 +427,32 @@ function openModalKunjungan() {
     if (modal) {
         modal.style.display = 'flex';
         
-        // GUNAKAN TIMEOUT AGAR SEARCH BAR MUNCUL
         setTimeout(function() {
-            $('#dropdown_no_angsuran').select2({
+            const $dropdown = $('#dropdown_no_angsuran');
+            
+            $dropdown.select2({
                 placeholder: "-- Cari No. Anggota atau Nama --",
                 allowClear: true,
                 width: '100%',
                 dropdownParent: $('#modalTambahKunjungan') 
             });
-            console.log("Select2 Berhasil Diinisialisasi");
-        }, 200); // Jeda 200ms
+
+            $dropdown.on('select2:select', function (e) {
+                const data = e.params.data.element.dataset; 
+                
+                // Isi field-field di form secara otomatis
+                $('#input_nama_nasabah').val(data.nama || '');
+                $('#input_alamat_nasabah').val(data.alamat || '');
+                $('#input_no_angsuran').val(data.no_angsuran || '');
+                
+                // Pastikan ID ini sesuai dengan input "Kode" di HTML Mas
+                $('#input_kode_nasabah').val(data.kode || ''); 
+                
+                console.log("Auto-fill berhasil: ", data.kode);
+            });
+            // ---------------------------------
+
+        }, 100);
     }
 }
 
@@ -859,32 +875,42 @@ function refreshNoAnggotaDropdown() {
     fetch('/admin/get-daftar-no-anggota')
         .then(response => response.json())
         .then(data => {
-            const select = $('#dropdown_no_angsuran'); // Gunakan jQuery selector agar sinkron dengan Select2
+            const select = $('#dropdown_no_angsuran');
             if (!select.length) return;
 
             select.empty().append('<option value="">-- Pilih No. Anggota --</option>');
 
-            data.forEach(item => {
-                let noAng = item.no_angsuran ? item.no_angsuran.toString().trim() : '';
-                let namaNasabah = item.nasabah ? item.nasabah.toUpperCase() : 'TANPA NAMA';
-                
-                // Buat elemen option dengan template literal
-                let optionText = item.kol == 5 ? `⭐ [HB] ${noAng} - ${namaNasabah}` : `${noAng} - ${namaNasabah} (KOL ${item.kol})`;
-                
-                let newOption = new Option(optionText, noAng, false, false);
-                $(newOption).attr('data-nama', namaNasabah);
-                $(newOption).attr('data-alamat', item.alamat || '-');
-                $(newOption).attr('data-kol', item.kol || '1');
-                
-                if (item.kol == 5) {
-                    $(newOption).css({'color': '#d32f2f', 'font-weight': 'bold'});
-                }
+           data.forEach(item => {
+                let option = $('<option></option>')
+                    .val(item.no_angsuran)
+                    .text(`${item.no_angsuran} - ${item.nasabah}`)
+                    .attr('data-kode', item.kode) // <--- PASTIKAN INI item.kode
+                    .attr('data-nama', item.nasabah)
+                    .attr('data-alamat', item.alamat)
+                    .attr('data-kol', item.kol);
 
-                select.append(newOption);
+                select.append(option);
             });
 
-            // Beritahu Select2 bahwa data dropdown telah berubah
-            select.trigger('change');
+            // Gunakan event 'select2:select' karena lebih paten untuk Select2
+           select.off('select2:select').on('select2:select', function(e) {
+                // Ambil elemen option asli dari DOM
+                const selectedOption = e.params.data.element;
+                
+                // Ambil data-kode langsung dari atribut HTML-nya
+                const kode = $(selectedOption).attr('data-kode');
+                const nama = $(selectedOption).attr('data-nama');
+                const alamat = $(selectedOption).attr('data-alamat');
+                const kol = $(selectedOption).attr('data-kol');
+
+                console.log("DEBUG - Kode dari Atribut:", kode);
+
+                // Tembak langsung ke input
+                $('#display_kode').val(kode || '-'); 
+                $('#display_nama').val(nama || '-');
+                $('#display_alamat').val(alamat || '-');
+                $('#display_kol').val(kol || '-');
+            });
         })
         .catch(err => console.error("Error load dropdown:", err));
 }

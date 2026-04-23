@@ -214,14 +214,17 @@
             <button onclick="closeModalKunjungan()" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
         </div>
         
-       <form id="formTambahKunjungan" style="padding-bottom: 15px;"> @csrf
+        <form id="formTambahKunjungan" style="padding-bottom: 15px;"> @csrf
             <div style="margin-bottom: 12px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama AO (Karyawan)</label>
                 <select name="karyawan_id" id="selectKaryawan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
                     <option value="">-- Pilih AO --</option>
                     @php
-                        // Ambil data langsung jika variabel dari controller tidak sampai
-                        $list_karyawan = isset($karyawans) ? $karyawans : \App\Models\Karyawan::where('status', 'aktif')->get();
+                        // FILTER: Hanya ambil AO Aktif yang kodenya berawalan C-
+                        $list_karyawan = isset($karyawans) ? $karyawans : \App\Models\Karyawan::where('status', 'aktif')
+                                            ->where('kode_ao', 'LIKE', 'C-%')
+                                            ->orderBy('nama', 'asc')
+                                            ->get();
                     @endphp
                     @foreach($list_karyawan as $k)
                         <option value="{{ $k->id }}">{{ $k->nama }} ({{ $k->kode_ao }})</option>
@@ -235,20 +238,22 @@
                     <option value="">-- Cari No. Anggota atau Nama --</option>
                     
                     @php
-                        // Tetap gunakan query Anda, tapi pastikan data terbaru
-                        $data_nasabah_mentah = \DB::table('nasabahs')
-                                                ->select('no_angsuran', 'nasabah', 'alamat', 'kol')
-                                                ->orderBy('nasabah', 'asc')
-                                                ->get();
+                        // Menggunakan Model lebih disarankan daripada DB Table langsung agar lebih "Laravel"
+                       $data_nasabah_mentah = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol', 'kode')
+                        ->where('no_angsuran', 'LIKE', '150%') // Agar Agus (15003265) masuk
+                        ->orWhere('no_angsuran', 'LIKE', '8%')
+                        ->orderBy('nasabah', 'asc')
+                        ->get();
                     @endphp
 
                     @foreach($data_nasabah_mentah as $n)
                         <option value="{{ $n->no_angsuran }}" 
-                                data-nama="{{ strtoupper($n->nasabah) }}" 
-                                data-alamat="{{ $n->alamat }}" 
-                                data-kol="{{ $n->kol }}">
-                            {{ $n->no_angsuran }} - {{ strtoupper($n->nasabah) }}
-                        </option>
+                            data-kode="{{ $n->kode }}" 
+                            data-nama="{{ $n->nasabah }}" 
+                            data-alamat="{{ $n->alamat }}" 
+                            data-kol="{{ $n->kol }}">
+                        {{ $n->no_angsuran }} - {{ $n->nasabah }}
+                    </option>
                     @endforeach
                 </select>
             </div>
@@ -268,23 +273,24 @@
                 <input type="text" name="kol" id="display_kol" readonly style="width: 100%; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #e9ecef;">
             </div>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;"> <div style="flex: 1;">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;"> 
+                <div style="flex: 1;">
                     <label style="display: block; font-weight: 700; margin-bottom: 5px;">Bulan</label>
-                    <input type="month" name="bulan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+                    <input type="month" name="bulan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;" value="{{ date('Y-m') }}">
                 </div>
                 <div style="flex: 1;">
                     <label style="display: block; font-weight: 700; margin-bottom: 5px;">Tanggal Kunjungan</label>
-                    <input type="date" name="tanggal" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
+                    <input type="date" name="tanggal" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;" value="{{ date('Y-m-d') }}">
                 </div>
             </div>
 
-         <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; padding-bottom: 10px;"> 
-            <button type="button" onclick="closeModalKunjungan()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #000; background: #fff; font-weight: 700; cursor: pointer;">Batal</button>
-            
-            <button type="button" onclick="simpanJadwalManual()" style="padding: 10px 20px; border-radius: 8px; background: #28a745; color: #fff; border: 2px solid #000; font-weight: 700; cursor: pointer;">
-                Simpan Jadwal
-            </button>
-        </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; padding-bottom: 10px;"> 
+                <button type="button" onclick="closeModalKunjungan()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #000; background: #fff; font-weight: 700; cursor: pointer;">Batal</button>
+                
+                <button type="button" onclick="simpanJadwalManual()" style="padding: 10px 20px; border-radius: 8px; background: #28a745; color: #fff; border: 2px solid #000; font-weight: 700; cursor: pointer;">
+                    Simpan Jadwal
+                </button>
+            </div>
         </form>
     </div>
 </div>
