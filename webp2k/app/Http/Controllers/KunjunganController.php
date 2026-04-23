@@ -109,22 +109,31 @@ class KunjunganController extends Controller
             }
         }
 
-        // --- LOGIKA PAGINATION ---
+       // --- LOGIKA PAGINATION ---
         $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
         $perPage = 10; 
-        $currentItems = $dataFinal->slice(($currentPage - 1) * $perPage, $perPage)->all();
+        
+        // Pastikan kita slice data sesuai halaman
+        $currentItems = $dataFinal->slice(($currentPage - 1) * $perPage, $perPage)->values();
 
         $data = new \Illuminate\Pagination\LengthAwarePaginator(
             $currentItems,
             $dataFinal->count(),
             $perPage,
             $currentPage,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            [
+                // PAKSA PATH AGAR TETAP KE URL INI SAAT PAGINATION
+                'path' => url()->current(), 
+                'query' => request()->query(),
+            ]
         );
 
-        return request()->ajax() 
-            ? view('kunjungan.partials.data_table', compact('data')) 
-            : view('kunjungan.datakunjungan', compact('data','daftar_nasabah'));
+        if (request()->ajax()) {
+            // Render partial table-nya saja
+            return view('kunjungan.partials.data_table', compact('data'))->render();
+        }
+
+        return view('kunjungan.datakunjungan', compact('data', 'daftar_nasabah'));
     }
 
     public function laporanKunjunganContent()
