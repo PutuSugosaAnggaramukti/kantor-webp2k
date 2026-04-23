@@ -448,28 +448,30 @@ class KunjunganController extends Controller
         ]);
     }
 
-    public function destroyJadwal($no_angsuran)
+   public function destroyJadwal($id) // Ganti dari $no_angsuran ke $id
     {
         try {
-            // Gunakan Transaksi agar kedua tabel aman
-            \DB::transaction(function () use ($no_angsuran) {
-                
-                // 1. Hapus laporannya di tabel kunjungans (jika ada)
-                // Kita filter juga berdasarkan bulan/tahun supaya tidak menghapus histori lama
-                \DB::table('kunjungans')
-                    ->where('no_nasabah', $no_angsuran)
-                    ->whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
-                    ->delete();
+            \DB::transaction(function () use ($id) {
+                // Ambil data jadwalnya dulu untuk dapat no_angsuran (buat hapus laporan terkait)
+                $jadwal = \DB::table('data_kunjungan_adms')->where('id', $id)->first();
 
-                // 2. Hapus jadwal utamanya
-                \DB::table('data_kunjungan_adms')
-                    ->where('no_angsuran', $no_angsuran)
-                    ->delete();
+                if ($jadwal) {
+                    // 1. Hapus laporannya (Filter pakai no_angsuran nasabah tersebut di bulan ini)
+                    \DB::table('kunjungans')
+                        ->where('no_nasabah', $jadwal->no_angsuran)
+                        ->whereMonth('created_at', now()->month)
+                        ->whereYear('created_at', now()->year)
+                        ->delete();
+
+                    // 2. Hapus jadwal utamanya HANYA untuk ID ini saja
+                    \DB::table('data_kunjungan_adms')
+                        ->where('id', $id) // INI KUNCINYA: pakai ID, bukan no_angsuran
+                        ->delete();
+                }
             });
 
             return response()->json([
-                'success' => 'Data jadwal dan laporan terkait berhasil dihapus!'
+                'success' => 'Data jadwal berhasil dihapus!'
             ]);
 
         } catch (\Exception $e) {

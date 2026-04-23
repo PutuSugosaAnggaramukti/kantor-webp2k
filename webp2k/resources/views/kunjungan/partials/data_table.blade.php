@@ -189,7 +189,7 @@
                         @endif
 
                         {{-- TOMBOL HAPUS (Keluar dari IF agar selalu muncul) --}}
-                        <button onclick="confirmDeleteJadwal('{{ $item->no_angsuran }}', '{{ $item->nama_nasabah }}')" 
+                        <button onclick="confirmDeleteJadwal('{{ $item->id }}', '{{ $item->nama_nasabah }}')" 
                                 style="background-color: #dc3545; color: white; border: 2px solid #000; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
                                 title="Hapus Jadwal">
                             <i class="fa-solid fa-trash-can" style="font-size: 16px;"></i>

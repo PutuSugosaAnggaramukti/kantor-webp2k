@@ -241,20 +241,19 @@
         }
     }
 
-    function confirmDeleteJadwal(noAngsuran, nama) {
+    function confirmDeleteJadwal(id, nama, noAngsuran) { 
     Swal.fire({
         title: 'Hapus Jadwal?',
-        html: `Apakah Anda yakin ingin menghapus jadwal untuk:<br><b>${nama}</b><br><small>(${noAngsuran})</small>`,
+        html: `Apakah Anda yakin ingin menghapus jadwal?`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc3545', // Warna merah untuk hapus
+        confirmButtonColor: '#dc3545',
         cancelButtonColor: '#6c757d',
         confirmButtonText: '<i class="fa fa-trash"></i> Ya, Hapus!',
         cancelButtonText: 'Batal',
         reverseButtons: true
     }).then((result) => {
         if (result.isConfirmed) {
-            // Tampilkan loading saat proses hapus
             Swal.fire({
                 title: 'Mohon Tunggu',
                 text: 'Sedang menghapus data...',
@@ -262,13 +261,15 @@
                 didOpen: () => { Swal.showLoading(); }
             });
 
+            // GUNAKAN ID UNTUK URL
             let url = "{{ route('hapus.jadwal', ':id') }}"; 
-            url = url.replace(':id', noAngsuran);
+            url = url.replace(':id', id); 
 
             fetch(url, {
-                method: 'GET',
+                method: 'DELETE', // Gunakan DELETE sesuai route:list Mas tadi
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}' // Tambahkan CSRF Token agar tidak error 419
                 }
             })
             .then(response => response.json())
@@ -281,7 +282,7 @@
                         timer: 2000,
                         showConfirmButton: false
                     }).then(() => {
-                        location.reload(); // Refresh halaman agar baris hilang
+                        location.reload();
                     });
                 } else {
                     Swal.fire('Gagal!', data.error || 'Terjadi kesalahan.', 'error');
@@ -293,7 +294,6 @@
         }
     });
 }
-
     // --- Manajemen Akun & Settings ---
     function switchSettingsTab(tab) {
         const isAkun = tab === 'akun';
