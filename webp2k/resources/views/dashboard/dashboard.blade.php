@@ -91,7 +91,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
                 
                 <div class="bg-white p-4 rounded-xl shadow-sm border-b-4 border-blue-500 cursor-pointer hover:shadow-md transition" onclick="openModal('modalRencana')">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Target Harian</p>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">Target</p>
                     <div class="relative inline-flex items-center justify-center">
                         <svg class="w-16 h-16 transform -rotate-90">
                             <circle class="text-gray-200" stroke-width="6" stroke="currentColor" fill="transparent" r="28" cx="32" cy="32" />

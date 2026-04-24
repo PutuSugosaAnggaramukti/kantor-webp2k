@@ -10,14 +10,11 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index()
+   public function index()
     {
         $user = Auth::guard('karyawan')->user();
         if (!$user) return redirect()->route('login');
-
-        // --- LOGIKA BARU: HITUNG NOTIFIKASI UPDATE STATUS ---
-        // Menghitung notifikasi database yang belum dibaca (unread) 
-        // khusus untuk update status dari admin
+        
         $notifCount = $user->unreadNotifications
             ->where('type', 'App\Notifications\UpdateStatusNotification')
             ->count();
@@ -40,29 +37,37 @@ class DashboardController extends Controller
             ->where($applyAoFilter)->count();
         $belum_dikunjungi = max(0, $total_rencana - $total_kunjungan);
 
-        // --- LOGIKA KOL 5 (Tetap sama) ---
+        // --- LOGIKA KOL 5 ---
         $rencana_admin = DB::table('data_kunjungan_adms')
             ->where('kol', 5)->where($applyAoFilter)
             ->select('nama_nasabah', 'alamat_nasabah as alamat', 'kol')->get();
         $nama_rencana = $rencana_admin->pluck('nama_nasabah')->toArray();
+        
         $mandiri_kol5 = DB::table('kunjungans')
             ->where('kol', 5)->where($applyAoFilter)
             ->whereNotIn('nama_nasabah', $nama_rencana)
             ->select('nama_nasabah', DB::raw("'-' as alamat"), 'kol')->get();
+            
         $detail_kol5_all = $rencana_admin->concat($mandiri_kol5);
         $wajib_kol5 = $detail_kol5_all->count();
         $nama_sudah_visit = DB::table('kunjungans')->where($applyAoFilter)->pluck('nama_nasabah')->toArray();
+        
         $detail_kol5 = $detail_kol5_all->map(function ($item) use ($nama_sudah_visit) {
             $item->status_label = in_array($item->nama_nasabah, $nama_sudah_visit) ? 'Sudah Dikunjungi' : 'Wajib Dikunjungi Segera';
             return $item;
         });
+        
         $kol5_terkunjungi = $detail_kol5->where('status_label', 'Sudah Dikunjungi')->count();
         $kpi_kol5 = $wajib_kol5 > 0 ? ($kol5_terkunjungi / $wajib_kol5) * 100 : 0;
 
-        // --- LOGIKA KPI (Tetap sama) ---
-        $kpi_target_harian = $total_rencana > 0 ? ($kunjungan_hari_ini / $total_rencana) * 100 : 0;
+        // --- LOGIKA KPI (DIUBAH MENJADI AKUMULASI TOTAL) ---
+        // Sekarang pembaginya adalah total_rencana agar persenan tidak 0% terus
+        $kpi_progres_total = $total_rencana > 0 ? ($total_kunjungan / $total_rencana) * 100 : 0;
+
+        // --- LOGIKA KPI Lainnya ---
         $ketemu = DB::table('kunjungans')->where('ada_di_lokasi', 'Ada')->where($applyAoFilter)->count();
         $kpi_success_rate = $total_kunjungan > 0 ? ($ketemu / $total_kunjungan) * 100 : 0;
+
         $janji_bayar = DB::table('kunjungans')->whereNotNull('tgl_janji_bayar')->where($applyAoFilter)->count();
         $kpi_janji_bayar = $total_kunjungan > 0 ? ($janji_bayar / $total_kunjungan) * 100 : 0;
 
@@ -86,13 +91,13 @@ class DashboardController extends Controller
         return view('dashboard.dashboard', array_merge(
             compact('total_rencana', 'total_kunjungan', 'belum_dikunjungi', 'wajib_kol5', 'kunjungan_hari_ini', 'detail_rencana', 'detail_sudah_dikunjungi', 'detail_kol5',
             'detail_belum_dikunjungi','nama_sudah_visit','notif_acc','list_pengajuan','total_gagal_kunjungan','list_gagal_kunjungan', 
-            'notifCount'), // <--- KIRIM VARIABLE NOTIF KE VIEW
+            'notifCount'), 
             [
                 'labels' => $dataGrafik->pluck('tgl'),
                 'nasabahAda' => $dataGrafik->pluck('ada')->map(fn($v) => (int)$v),
                 'nasabahTidakAda' => $dataGrafik->pluck('tidak_ada')->map(fn($v) => (int)$v),
                 'kpi' => [
-                    'target'  => round($kpi_target_harian),
+                    'target'  => round($kpi_progres_total), // Sekarang menampilkan progres keseluruhan
                     'success' => round($kpi_success_rate),
                     'kol5'    => round($kpi_kol5),
                     'janji'   => round($kpi_janji_bayar)
