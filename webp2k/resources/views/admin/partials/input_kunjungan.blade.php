@@ -66,6 +66,11 @@
     <button onclick="openModalPilihHapus()" style="background-color: #ffc107; color: #000; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <i class="fa-solid fa-list-check"></i> Pilih Jadwal yang Dihapus
     </button>
+
+    <button onclick="window.location.href='{{ route('admin.jadwal.export') }}'" 
+        style="background-color: #198754; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <i class="fa-solid fa-file-excel"></i> Export Ke Excel
+    </button>
 </div>
 
 @if($kunjungansGrouped->isEmpty())

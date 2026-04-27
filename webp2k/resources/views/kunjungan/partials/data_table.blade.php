@@ -105,22 +105,15 @@
         </thead>
         <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
-                @php
-            $isFilledByNoAngsuran = false;
-            
-            if (!empty($item->no_angsuran) && !empty($item->tanggal)) {
-                // Ambil tanggal jadwal
-                $tglJadwal = \Carbon\Carbon::parse($item->tanggal);
-                $isFilledByNoAngsuran = \DB::table('kunjungans')
-                    ->where('no_nasabah', $item->no_angsuran)
-                    ->whereBetween('created_at', [
-                        $tglJadwal->copy()->subDays(2)->startOfDay(), // H-2
-                        $tglJadwal->copy()->addDays(2)->endOfDay()    // H+2
-                    ])
-                    ->exists();
-            }
-        @endphp
-            
+              @php
+                    $isFilledByNoAngsuran = false;
+                    
+                    if (!empty($item->no_angsuran)) {
+                        $isFilledByNoAngsuran = \DB::table('kunjungans')
+                            ->where('no_nasabah', $item->no_angsuran)
+                            ->exists();
+                    }
+                @endphp
             <tr class="{{ $isFilledByNoAngsuran ? 'row-completed' : 'row-pending' }}" 
                 style="border-bottom: 2px solid #000; text-align: center; {{ $isFilledByNoAngsuran ? 'background-color: #f0fff4;' : '' }}">
                 

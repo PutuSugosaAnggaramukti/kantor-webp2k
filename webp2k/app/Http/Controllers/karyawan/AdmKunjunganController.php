@@ -9,12 +9,14 @@ use App\Models\Karyawan;
 use App\Models\Nasabah;
 use App\Models\User;
 use App\Exports\KunjunganExport;
+use App\Exports\JadwalKunjunganExport;
 use App\Exports\DetailKunjunganExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\dashboard\DashboardAdminController;
 use App\Notifications\UpdateStatusNotification;
+use Carbon\Carbon;
 
 class AdmKunjunganController extends Controller
 {
@@ -447,6 +449,17 @@ public function getDaftarNoAnggota()
         $fileName = 'Rekap_Kunjungan_' . ($kode_ao ?: 'SEMUA') . '_' . date('Y-m-d') . '.xlsx';
 
         return Excel::download(new KunjunganExport($kode_ao), $fileName);
+    }
+
+    public function exportJadwalExcel(Request $request)
+    {
+        $namaFile = 'jadwal_kunjungan_' . Carbon::now()->format('d-m-Y_H-i') . '.xlsx';
+
+        try {
+            return Excel::download(new JadwalKunjunganExport, $namaFile);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengekspor data: ' . $e->getMessage());
+        }
     }
 
     public function exportDetailAO($kode_ao)
