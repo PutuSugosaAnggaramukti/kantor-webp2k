@@ -62,7 +62,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/admin/export-ao/{kode_ao}', [AdmKunjunganController::class, 'exportDetailAO'])->name('admin.export.ao');
     Route::get('/export-jadwal', [AdmKunjunganController::class, 'exportJadwalExcel'])->name('admin.jadwal.export');
 
-    // 4. DATA NASABAH (Dibenahi rutenya)
+    // 4. DATA NASABAH 
     Route::get('/nasabah', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.index'); // Rute bersih
     Route::get('/nasabah-content', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.content');
     Route::post('/nasabah/store', [NasabahController::class, 'store'])->name('nasabah.store');
@@ -74,7 +74,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::post('/nasabah/import', [NasabahController::class, 'importExcel'])->name('admin.nasabah.import');
     Route::post('/nasabah/import-hb', [NasabahController::class, 'import_hb'])->name('admin.nasabah.import_hb');
 
-    // 5. PELAPORAN (Dibenahi rutenya)
+    // 5. PELAPORAN 
     Route::get('/pelaporan', [PelaporanController::class, 'index'])->name('pelaporan.index'); // Rute bersih
     Route::get('/pelaporan-content', [PelaporanController::class, 'index']);
     Route::get('/pelaporan-detail/{id_ao}', [PelaporanController::class, 'detailAo'])->name('pelaporan.detail');
@@ -82,12 +82,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/pelaporan/export', [PelaporanController::class, 'exportExcel'])->name('admin.pelaporan.export');
     Route::get('/pelaporan/export-detail/{id}', [PelaporanController::class, 'exportDetailAo'])->name('admin.pelaporan.export-detail');
 
-    // 6. DOKUMEN (Dibenahi rutenya)
+    // 6. DOKUMEN 
     Route::get('/dokumen', [AdmDokumenController::class, 'dokumenIndex'])->name('admin.dokumen.index'); // Rute bersih
     Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumenIndex']);
     Route::get('/download-word/{id}', [AdmDokumenController::class, 'downloadWord'])->name('download.docx');
 
-    // 7. IJIN KUNJUNGAN (Fitur Persetujuan Admin)
+    // 7. IJIN KUNJUNGAN 
     Route::get('/ijin-kunjungan', [IjinKunjunganController::class, 'indexAdmin'])->name('admin.ijin.index');
     Route::post('/ijin-kunjungan/update-status/{id}', [IjinKunjunganController::class, 'updateStatus'])->name('admin.ijin.updateStatus');
 

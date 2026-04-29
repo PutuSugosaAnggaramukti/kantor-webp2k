@@ -50,27 +50,44 @@
     </ul>
 </div>
 
-<div style="margin-bottom: 25px; display: flex; gap: 12px; flex-wrap: wrap;">
+<div style="margin-bottom: 25px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+    
     <button onclick="openModalKunjungan()" style="background-color: #28a745; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <i class="fa-solid fa-plus"></i> Tambah Jadwal Baru
     </button>
 
-    <button type="button" class="btn-import-excel" onclick="openModalImport()">
+    <button type="button" class="btn-import-excel" onclick="openModalImport()" style="padding: 12px 25px; border-radius: 8px; font-weight: 700;">
          <i class="fa-solid fa-file-excel"></i> Import dari Excel
     </button>
 
     <button onclick="resetJadwal()" style="background-color: #dc3545; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <i class="fa-solid fa-rotate"></i> Reset Jadwal (Hapus Semua)
+        <i class="fa-solid fa-rotate"></i> Reset Jadwal
     </button>
 
     <button onclick="openModalPilihHapus()" style="background-color: #ffc107; color: #000; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <i class="fa-solid fa-list-check"></i> Pilih Jadwal yang Dihapus
+        <i class="fa-solid fa-list-check"></i> Pilih Jadwal
     </button>
 
-    <button onclick="window.location.href='{{ route('admin.jadwal.export') }}'" 
-        style="background-color: #198754; color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <i class="fa-solid fa-file-excel"></i> Export Ke Excel
-    </button>
+    <form action="{{ route('admin.jadwal.export') }}" method="GET" class="d-flex align-items-center gap-2" style="margin: 0;">
+        <select name="bulan" class="form-select" style="width: 140px; height: 45px; border-radius: 8px; border: 1px solid #ced4da; font-weight: 600;">
+            @foreach(range(1, 12) as $m)
+                <option value="{{ sprintf('%02d', $m) }}" {{ date('m') == $m ? 'selected' : '' }}>
+                    {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
+                </option>
+            @endforeach
+        </select>
+
+        <select name="tahun" class="form-select" style="width: 100px; height: 45px; border-radius: 8px; border: 1px solid #ced4da; font-weight: 600;">
+            @foreach(range(date('Y')-1, date('Y')+1) as $y)
+                <option value="{{ $y }}" {{ date('Y') == $y ? 'selected' : '' }}>{{ $y }}</option>
+            @endforeach
+        </select>
+
+        <button type="submit" 
+            style="background-color: #198754; height: 45px; color: white; border: none; padding: 0 25px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <i class="fa-solid fa-file-excel"></i> Export Ke Excel
+        </button>
+    </form>
 </div>
 
 @if($kunjungansGrouped->isEmpty())
@@ -219,40 +236,29 @@
                 const dropdown = modal.querySelector('#dropdown_no_angsuran');
                 
                 if (dropdown) {
-                    // Destroy Select2 lama jika ada
                     if ($(dropdown).hasClass("select2-hidden-accessible")) {
                         $(dropdown).select2('destroy');
                     }
 
-                    // Reset dropdown
-                    dropdown.value = "";
-
-                    // Re-inisialisasi Select2
-                    $(dropdown).select2({
+                    $(dropdown).val("").select2({
                         dropdownParent: $(modal),
                         placeholder: "Cari No Angsuran / Nama Nasabah...",
                         allowClear: true
                     });
 
-                    // --- LOGIKA AUTO-FILL DISINI ---
-                    $(dropdown).on('select2:select', function (e) {
-                        // Cara paling ampuh: cari elemen option yang sedang aktif/dipilih
+                    // GUNAKAN .off() dulu baru .on() agar event tidak dobel
+                    $(dropdown).off('select2:select').on('select2:select', function (e) {
                         const selectedOption = $(this).find(':selected');
                         
-                        // Ambil datanya satu per satu menggunakan .attr() atau .data()
                         const kode   = selectedOption.attr('data-kode'); 
                         const nama   = selectedOption.attr('data-nama');
                         const alamat = selectedOption.attr('data-alamat');
                         const kol    = selectedOption.attr('data-kol');
 
-                        console.log("DEBUG - Cek Data Terpilih:", { kode, nama, alamat, kol });
-
-                        // Masukkan ke input HTML Mas (ID harus pas!)
-                        $('#display_kode').val(kode || '-'); 
+                        // Gunakan .val() untuk input, atau .text() untuk label biasa
+                        $('#display_kode').text(kode || '-'); 
                         $('#input_nama_nasabah').val(nama || '');
                         $('#input_alamat_nasabah').val(alamat || '');
-                        
-                        // Opsional: jika Mas punya input untuk kol
                         $('#input_kol_nasabah').val(kol || '-'); 
                     });
                 }
@@ -260,8 +266,14 @@
                 const form = modal.querySelector('#formTambahKunjungan');
                 if(form) {
                     form.reset();
-                    // Kosongkan manual jika reset() tidak membersihkan Select2
                     $(dropdown).val(null).trigger('change');
+                    
+                    // Tambahan: Reset tampilan kode nasabah ke tanda strip
+                    $('#display_kode').text('-');
+                    
+                    // Reset dropdown AO/Karyawan jika menggunakan select2 juga
+                    const aoSelect = $('#karyawan_id'); // Sesuaikan ID dropdown AO Mas
+                    if(aoSelect.length) aoSelect.val(null).trigger('change');
                 }
             }
         };

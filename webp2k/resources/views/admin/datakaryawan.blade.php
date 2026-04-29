@@ -418,56 +418,6 @@ function openModalDetail(id) {
 }
 function closeModalDetail() { document.getElementById('modalDetailKaryawan').style.display = 'none'; }
 
-// --- MODAL KUNJUNGAN ---
-function openModalKunjungan() {
-    refreshKaryawanDropdown();
-    refreshNoAnggotaDropdown(); 
-    
-    const modal = document.getElementById('modalTambahKunjungan');
-    if (modal) {
-        modal.style.display = 'flex';
-        
-        setTimeout(function() {
-            const $dropdown = $('#dropdown_no_angsuran');
-            
-            $dropdown.select2({
-                placeholder: "-- Cari No. Anggota atau Nama --",
-                allowClear: true,
-                width: '100%',
-                dropdownParent: $('#modalTambahKunjungan') 
-            });
-
-            $dropdown.on('select2:select', function (e) {
-                const data = e.params.data.element.dataset; 
-                
-                // Isi field-field di form secara otomatis
-                $('#input_nama_nasabah').val(data.nama || '');
-                $('#input_alamat_nasabah').val(data.alamat || '');
-                $('#input_no_angsuran').val(data.no_angsuran || '');
-                
-                // Pastikan ID ini sesuai dengan input "Kode" di HTML Mas
-                $('#input_kode_nasabah').val(data.kode || ''); 
-                
-                console.log("Auto-fill berhasil: ", data.kode);
-            });
-            // ---------------------------------
-
-        }, 100);
-    }
-}
-
-function closeModalKunjungan() {
-    const modal = document.getElementById('modalTambahKunjungan');
-    if (modal) {
-        modal.style.display = 'none';
-        document.getElementById('formTambahKunjungan').reset();
-        
-        // Reset Select2 ke state awal
-        $('#dropdown_no_angsuran').val(null).trigger('change');
-        
-        resetFormKunjungan(); 
-    }
-}
 
 // --- MODAL EXPORT NASABAH ---
 function openModalExportNasabah() {
@@ -983,45 +933,6 @@ $(document).on('click', '.pagination a', function(e) {
     });
 });
 
-function simpanJadwalManual() {
-    const formData = {
-        karyawan_id: $('#selectKaryawan').val(),
-        no_angsuran: $('#dropdown_no_angsuran').val(),
-        nama_nasabah: $('#display_nama').val(),
-        alamat_nasabah: $('#display_alamat').val(),
-        kol: $('#display_kol').val(),
-        bulan: $('input[name="bulan"]').val(),
-        tanggal: $('input[name="tanggal"]').val(),
-        _token: '{{ csrf_token() }}'
-    };
-
-    console.log("Data dikirim ke server:", formData);
-
-    if (!formData.karyawan_id || !formData.no_angsuran || !formData.tanggal) {
-        alert('Mohon lengkapi data wajib: Nama AO, No. Anggota, dan Tanggal!');
-        return;
-    }
-
-    $.ajax({
-        // SESUAIKAN DENGAN ROUTE DI WEB.PHP: /admin/datakunjungan/store
-        url: '/admin/datakunjungan/store', 
-        type: 'POST',
-        data: formData,
-        success: function(response) {
-            if (response.success) {
-                alert(response.message);
-                location.reload(); 
-            } else {
-                alert('Gagal: ' + response.message);
-            }
-        },
-        error: function(xhr) {
-            // Jika error 404 masih muncul, cek console log URL-nya
-            console.error(xhr);
-            alert('Error ' + xhr.status + ': Route tidak ditemukan atau terjadi kesalahan server.');
-        }
-    });
-}
 
 function showDetailKunjungan(kode_ao) {
     const contentArea = document.getElementById('main-content-area');

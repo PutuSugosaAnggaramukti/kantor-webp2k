@@ -14,10 +14,20 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class JadwalKunjunganExport implements FromCollection, WithHeadings, WithMapping, WithColumnFormatting, ShouldAutoSize, WithStyles
 {
+    protected $bulan;
+    protected $tahun;
+
+    public function __construct($bulan, $tahun)
+    {
+        $this->bulan = $bulan;
+        $this->tahun = $tahun;
+    }
+
     public function collection()
     {
-        // Mengambil semua data jadwal kunjungan
-        return DataKunjunganAdm::all();
+       return DataKunjunganAdm::whereMonth('tanggal', $this->bulan)
+                               ->whereYear('tanggal', $this->tahun)
+                               ->get();
     }
 
     public function headings(): array
@@ -40,21 +50,20 @@ class JadwalKunjunganExport implements FromCollection, WithHeadings, WithMapping
             'agunan', 
             'ikatan', 
             'kode ao', 
-            'nama ao', 
             'tanggal kunjungan'
         ];
     }
 
-    public function map($jadwal): array
+   public function map($jadwal): array
     {
-        // Mencari data di model Nasabah untuk mengisi kolom yang kosong
+        // Mencari data di model Nasabah untuk mengisi kolom pendukung
         $nasabah = \App\Models\Nasabah::where('no_angsuran', $jadwal->no_angsuran)->first();
 
-        // Hitung total tunggakan dari data model Nasabah
+        // Hitung total tunggakan
         $totalTunggakan = ($nasabah->tunggakan_pokok ?? 0) + ($nasabah->tunggakan_bunga ?? 0) + ($nasabah->denda ?? 0);
 
         return [
-            " " . $jadwal->no_angsuran, // Tambah spasi agar No Angsuran tidak error (E+)
+            " " . $jadwal->no_angsuran,
             $jadwal->kode_nasabah ?? ($nasabah->kode_nasabah ?? '-'),
             strtoupper($jadwal->nama_nasabah),
             $jadwal->alamat_nasabah,
@@ -71,14 +80,13 @@ class JadwalKunjunganExport implements FromCollection, WithHeadings, WithMapping
             $nasabah->kode_agunan ?? '-',
             $nasabah->ikatan ?? '-',
             $jadwal->kode_ao,
-            strtoupper($nasabah->nama_ao ?? '-'), 
+            
             $jadwal->tanggal ? \Carbon\Carbon::parse($jadwal->tanggal)->format('d/m/Y') : '-'
         ];
     }
 
     public function columnFormats(): array
     {
-        // Format nominal uang dari kolom G sampai N
         return [
             'G' => '#,##0', 
             'H' => '#,##0', 
@@ -91,22 +99,23 @@ class JadwalKunjunganExport implements FromCollection, WithHeadings, WithMapping
         ];
     }
 
-    public function styles(Worksheet $sheet)
+   public function styles(Worksheet $sheet)
     {
         $highestRow = $sheet->getHighestRow();
-        $range = 'A1:S' . $highestRow; // S adalah kolom ke-19 (Tanggal Kunjungan)
+        
+        $range = 'A1:R' . $highestRow; 
 
         return [
-            // Styling Header (Baris 1)
+            // Style Header
             1 => [
                 'font' => ['bold' => true],
                 'alignment' => ['horizontal' => 'center'],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'D9D9D9'] // Abu-abu terang
+                    'startColor' => ['rgb' => 'D9D9D9']
                 ]
             ],
-            // Tambahkan Border ke seluruh sel agar rapi
+            // Style Body (Border & Alignment)
             $range => [
                 'alignment' => ['vertical' => 'center'],
                 'borders' => [

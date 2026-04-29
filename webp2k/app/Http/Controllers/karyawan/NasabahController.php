@@ -159,11 +159,17 @@ class NasabahController extends Controller
         }
     }
 
-    public function getDaftarNoAnggota()
+   public function getDaftarNoAnggota()
     {
-        // Gunakan try-catch untuk debugging jika terjadi error internal
         try {
-            $nasabah = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol')->get();
+            // Kita buat format yang sama dengan database: "April 2026"
+            $bulanSekarang = \Carbon\Carbon::now()->translatedFormat('F Y');
+
+            $nasabah = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol')
+                ->where('bulan', $bulanSekarang) // Mencari yang isinya "April 2026"
+                ->orderBy('nasabah', 'asc')    // KUNCI: Biar urut abjad dan tidak loncat-lompat
+                ->get();
+
             return response()->json($nasabah);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

@@ -232,32 +232,35 @@
                 </select>
             </div>
 
-            <div style="margin-bottom: 12px;">
+           <div style="margin-bottom: 12px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota / Nasabah</label>
                 <select name="no_angsuran" id="dropdown_no_angsuran" required class="select2-nasabah" style="width: 100%;">
                     <option value="">-- Cari No. Anggota atau Nama --</option>
                     
                     @php
-                        // Menggunakan Model lebih disarankan daripada DB Table langsung agar lebih "Laravel"
-                       $data_nasabah_mentah = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol', 'kode')
-                        ->where('no_angsuran', 'LIKE', '150%') // Agar Agus (15003265) masuk
-                        ->orWhere('no_angsuran', 'LIKE', '8%')
-                        ->orderBy('nasabah', 'asc')
-                        ->get();
+                        if (!isset($nasabah_all)) {
+                            $bulanSekarang = \Carbon\Carbon::now()->translatedFormat('F Y');
+                            $nasabah_all = \App\Models\Nasabah::where('bulan', $bulanSekarang)
+                                ->where(function($q) {
+                                    $q->where('no_angsuran', 'LIKE', '150%')
+                                    ->orWhere('no_angsuran', 'LIKE', '8%');
+                                })
+                                ->orderBy('nasabah', 'asc')
+                                ->get();
+                        }
                     @endphp
 
-                    @foreach($data_nasabah_mentah as $n)
+                    @foreach($nasabah_all as $n)
                         <option value="{{ $n->no_angsuran }}" 
                             data-kode="{{ $n->kode }}" 
                             data-nama="{{ $n->nasabah }}" 
                             data-alamat="{{ $n->alamat }}" 
                             data-kol="{{ $n->kol }}">
-                        {{ $n->no_angsuran }} - {{ $n->nasabah }}
-                    </option>
+                            {{ $n->no_angsuran }} - {{ $n->nasabah }}
+                        </option>
                     @endforeach
                 </select>
             </div>
-
             <div style="margin-bottom: 12px;">
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">Nama Nasabah</label>
                 <input type="text" name="nama_nasabah" id="display_nama" readonly style="width: 100%; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #e9ecef;">
