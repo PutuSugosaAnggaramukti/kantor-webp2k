@@ -199,10 +199,8 @@ class NasabahController extends Controller
 
         try {
             $labelBulan = date('F Y'); 
-            \App\Models\Nasabah::truncate();
+            \App\Models\Nasabah::truncate(); 
 
-            // PANGGILAN SANGAT PENTING: 
-            // Jangan masukkan '1' di parameter pertama. Biarkan null.
             \Maatwebsite\Excel\Facades\Excel::import(
                 new \App\Imports\NasabahImport(null, $labelBulan), 
                 $request->file('file')

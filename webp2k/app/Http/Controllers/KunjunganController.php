@@ -38,24 +38,33 @@ class KunjunganController extends Controller
         return $this->getMergedKunjunganData();
     }
 
-   private function getMergedKunjunganData()
+  private function getMergedKunjunganData()
     {
         $karyawan = Auth::guard('karyawan')->user();
         if (!$karyawan) return redirect()->back();
 
         $myCode = strtoupper(trim($karyawan->kode_ao));
         
-        $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)->get();
-        $daftar_jadwal_ao = \App\Models\DataKunjunganAdm::where('karyawan_id', $karyawan->id)
-        ->where('bulan', date('Y-m')) 
-        ->orderBy('nama_nasabah', 'asc')
+        // 1. QUERY DENGAN FILTER KETAT
+       $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)
+        ->where(function($query) {
+            $query->where('kode', 'LIKE', 'PU.8%') 
+                ->orWhere('kode', 'LIKE', 'PG.8%');
+        })
+        ->orderBy('nasabah', 'asc')
         ->get();
-        $jadwal = DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
+        
+        // 2. Ambil Jadwal
+        $jadwal = \App\Models\DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
 
+        // 3. Ambil Realisasi
         $realisasi = \DB::table('kunjungans')
             ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // 4. Mapping untuk pencarian No Angsuran otomatis
+        $mapNasabah = $daftar_nasabah->keyBy('nasabah'); 
 
         $dataFinal = collect();
         $realisasiTerpakaiIds = []; 
@@ -86,7 +95,7 @@ class KunjunganController extends Controller
                 'alamat_nasabah' => $j->alamat_nasabah,
                 'nominal' => $j->nominal,
                 'sisa_pokok' => $j->sisa_pokok,
-                'tanggal' => $j->tanggal, // TAMBAHKAN INI AGAR TIDAK ERROR
+                'tanggal' => $j->tanggal, 
                 'kol' => $j->kol ?? '-',
                 'bulan' => $j->bulan, 
                 'is_filled' => $match ? true : false,
@@ -95,17 +104,16 @@ class KunjunganController extends Controller
             ]);
         }
 
-            // PROSES B: Loop Data Realisasi (Mandiri)
+        // PROSES B: Loop Data Realisasi (Mandiri)
         foreach ($realisasi as $r) {
             if (!in_array($r->id, $realisasiTerpakaiIds)) {
-                // CARI NO ANGSURAN DARI TABEL NASABAH BERDASARKAN NAMA
-                $nasabah = \App\Models\Nasabah::where('nasabah', $r->nama_nasabah)->first();
+                $nasabahInfo = $mapNasabah->get($r->nama_nasabah);
 
                 $dataFinal->push((object)[
                     'id' => $r->id,
                     'kode_ao' => $r->kode_ao,
                     'nama_nasabah' => $r->nama_nasabah,
-                    'no_angsuran' => $nasabah ? $nasabah->no_angsuran : ($r->no_angsuran ?? '-'), 
+                    'no_angsuran' => $nasabahInfo ? $nasabahInfo->no_angsuran : ($r->no_angsuran ?? '-'), 
                     'tanggal' => $r->created_at,
                     'kol' => $r->kol ?? '-',
                     'bulan' => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->translatedFormat('F Y') : date('F Y'), 
@@ -117,11 +125,9 @@ class KunjunganController extends Controller
             }
         }
 
-       // --- LOGIKA PAGINATION ---
+        // --- PAGINATION ---
         $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
         $perPage = 10; 
-        
-        // Pastikan kita slice data sesuai halaman
         $currentItems = $dataFinal->slice(($currentPage - 1) * $perPage, $perPage)->values();
 
         $data = new \Illuminate\Pagination\LengthAwarePaginator(
@@ -129,19 +135,18 @@ class KunjunganController extends Controller
             $dataFinal->count(),
             $perPage,
             $currentPage,
-            [
-                // PAKSA PATH AGAR TETAP KE URL INI SAAT PAGINATION
-                'path' => url()->current(), 
-                'query' => request()->query(),
-            ]
+            ['path' => url()->current(), 'query' => request()->query()]
         );
 
         if (request()->ajax()) {
-            // Render partial table-nya saja
             return view('kunjungan.partials.data_table', compact('data'))->render();
         }
 
-        return view('kunjungan.datakunjungan', compact('data', 'daftar_nasabah', 'daftar_jadwal_ao'));
+        return view('kunjungan.datakunjungan', [
+            'data' => $data,
+            'daftar_nasabah' => $daftar_nasabah,
+            'daftar_jadwal_ao' => $jadwal 
+        ]);
     }
 
     public function laporanKunjunganContent()

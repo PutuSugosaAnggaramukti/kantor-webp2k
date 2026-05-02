@@ -29,7 +29,7 @@ class NasabahImport implements ToModel, WithMultipleSheets
         ];
     }
 
-   public function model(array $row)
+  public function model(array $row)
     {
         // 1. Ambil No Angsuran dari indeks 2 (Kolom C)
         $noAngsuran = isset($row[2]) ? trim($row[2]) : null;
@@ -39,10 +39,26 @@ class NasabahImport implements ToModel, WithMultipleSheets
             return null;
         }
 
-        // 2. DEFINISIKAN SEMUA VARIABELNYA DI SINI
+        // 2. LOGIKA DINAMIS UNTUK KOLOM YANG BERGESER (AJ atau AK)
+        // Ambil nilai dari kolom AJ (indeks 35) dan AK (indeks 36)
+        $valAJ = isset($row[35]) ? trim($row[35]) : '';
+        $valAK = isset($row[36]) ? trim($row[36]) : '';
+
+        // Deteksi Kode AO: Prioritaskan kolom yang berisi teks (seperti C-011) 
+        // dan bukan angka '0' atau kosong.
+        $aoNasabahAsli = '-';
+        if ($valAJ !== '' && $valAJ !== '0' && $valAJ !== '-') {
+            $aoNasabahAsli = $valAJ;
+        } elseif ($valAK !== '' && $valAK !== '0' && $valAK !== '-') {
+            $aoNasabahAsli = $valAK;
+        }
+
+        // Gunakan logika serupa untuk Ikatan jika kolom AA (26) bergeser ke AB (27)
+        $valAA = isset($row[26]) ? trim($row[26]) : '';
+        $valAB = isset($row[27]) ? trim($row[27]) : '';
+        $ikatanAsli = ($valAA !== '' && $valAA !== '0') ? $valAA : (($valAB !== '' && $valAB !== '0') ? $valAB : '-');
+
         $kodeAgunanAsli = isset($row[25]) ? trim($row[25]) : '-'; // Kolom Z
-        $ikatanAsli     = isset($row[26]) ? trim($row[26]) : '-'; // Kolom AA (PENTING: Baris ini tadi belum ada)
-        $aoNasabahAsli  = isset($row[35]) ? trim($row[35]) : '-'; // Kolom AJ
 
         return Nasabah::updateOrCreate(
             ['no_angsuran' => (string)$noAngsuran],
@@ -53,11 +69,9 @@ class NasabahImport implements ToModel, WithMultipleSheets
                 'nasabah'         => trim($row[5] ?? '-'),
                 'alamat'          => trim($row[6] ?? '-'),
                 
-                // Masukkan variabel yang sudah dibuat di atas ke sini
                 'kode_agunan'     => $kodeAgunanAsli, 
-                'ikatan'          => $ikatanAsli, // Tanda koma ditambahkan
-
-                'kode_ao_nasabah' => $aoNasabahAsli, 
+                'ikatan'          => $ikatanAsli,
+                'kode_ao_nasabah' => $aoNasabahAsli, // Hasil deteksi dinamis
 
                 'tgl_pinjam'      => $this->transformDate($row[8] ?? null), 
                 'tgl_jt'          => $this->transformDate($row[9] ?? null), 
