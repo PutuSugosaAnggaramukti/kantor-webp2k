@@ -103,100 +103,96 @@
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 200px;">Option</th> {{-- Lebar ditambah untuk 3 tombol --}}
             </tr>
         </thead>
-        <tbody style="font-weight: 800; font-size: 16px; color: #000;">
+      <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
               @php
-                    $isFilledByNoAngsuran = false;
+                    $isFilled = false;
                     
-                    if (!empty($item->no_angsuran)) {
-                        $isFilledByNoAngsuran = \DB::table('kunjungans')
-                            ->where('no_nasabah', $item->no_angsuran)
+                    if (!empty($item->no_angsuran) && !empty($item->tanggal)) {
+                        // Gunakan trim untuk menghapus spasi tersembunyi
+                        $noAngsuran = trim($item->no_angsuran);
+                        
+                        // Pastikan format tanggal searah dengan format SQL (YYYY-MM-DD)
+                        $tglJadwal = date('Y-m-d', strtotime($item->tanggal));
+
+                        $isFilled = \DB::table('kunjungans')
+                            ->where('no_nasabah', $noAngsuran)
+                            ->whereDate('tgl_janji_bayar', $tglJadwal) 
                             ->exists();
                     }
                 @endphp
-            <tr class="{{ $isFilledByNoAngsuran ? 'row-completed' : 'row-pending' }}" 
-                style="border-bottom: 2px solid #000; text-align: center; {{ $isFilledByNoAngsuran ? 'background-color: #f0fff4;' : '' }}">
-                
-                <td style="padding: 15px; border-right: 2px solid #000;">
-                    {{ ($data->currentPage() - 1) * $data->perPage() + $index + 1 }}
-                </td>
-                
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->no_angsuran ?? '-'}}</td>
-                
-                <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
-                    {{ $item->nama_nasabah }}
-                    @if($isFilledByNoAngsuran)
-                        <span class="badge-status" style="background-color: #dcfce7; color: #166534; border: 1px solid #166534; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">
-                            <i class="fa-solid fa-circle-check"></i> Terisi
-                        </span>
-                    @else
-                        <span class="badge-status" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">
-                            <i class="fa-solid fa-triangle-exclamation"></i> Belum Diisi
-                        </span>
-                    @endif
-                </td>
 
-                <td style="padding: 15px; border-right: 2px solid #000; color: #007bff;">
-                    @if(!empty($item->tanggal) && $item->tanggal != '0000-00-00')
-                        {{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') }}
-                    @else
-                        -
-                    @endif
-                </td>
-                
-               <td style="padding: 15px; border-right: 2px solid #000;">
-                    @php
-                        $valBulan = $item->bulan ?? '-';
-                        // Ambil string mentahnya dulu
-                        $bulanTampil = $valBulan; 
-
-                        // Cek format: Wajib bukan null, bukan '-', dan harus berformat YYYY-MM
-                        if (!empty($valBulan) && $valBulan !== '-' && preg_match('/^[0-9]{4}-[0-9]{2}/', $valBulan)) {
-                            // Gunakan PHP Native Try-Catch agar kompatibel di semua versi Laravel
-                            try {
-                                // Parse hanya jika formatnya sesuai YYYY-MM
-                                $bulanTampil = \Carbon\Carbon::parse($valBulan)->translatedFormat('M Y');
-                            } catch (\Exception $e) {
-                                // Jika gagal parse, biarkan tampil apa adanya (safe fallback)
-                                $bulanTampil = $valBulan; 
-                            }
-                        }
-                    @endphp
+                {{-- Baris akan berwarna hijau (#f0fff4) hanya jika No Angsuran & Tanggal cocok di tabel laporan --}}
+                <tr class="{{ $isFilled ? 'row-completed' : 'row-pending' }}" 
+                    style="border-bottom: 2px solid #000; text-align: center; {{ $isFilled ? 'background-color: #f0fff4;' : '' }}">
                     
-                    {{-- Tampilkan hasil akhir yang sudah aman --}}
-                    {{ $bulanTampil }}
-                </td>
-
-                <td style="border: 1px solid #333; padding: 15px;">
-                    <div style="display: flex; justify-content: center; gap: 8px; align-items: center;">
-                        {{-- BAGIAN DINAMIS: CEKLIS ATAU TAMBAH --}}
-                        @if($isFilledByNoAngsuran)
-                            <div style="background-color: #28a745; color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #000;">
-                                <i class="fa-solid fa-check" style="font-size: 18px;"></i>
-                            </div>
+                    <td style="padding: 15px; border-right: 2px solid #000;">
+                        {{ ($data->currentPage() - 1) * $data->perPage() + $index + 1 }}
+                    </td>
+                    
+                    <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->no_angsuran ?? '-'}}</td>
+                    
+                    <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">
+                        {{ $item->nama_nasabah }}
+                        @if($isFilled)
+                            <span class="badge-status" style="background-color: #dcfce7; color: #166534; border: 1px solid #166534; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">
+                                <i class="fa-solid fa-circle-check"></i> Terisi
+                            </span>
                         @else
-                            <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')" 
-                                    style="background-color: #A3A8AC; color: #333; border: 2px solid #000; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
-                                <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
-                            </button>
+                            <span class="badge-status" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">
+                                <i class="fa-solid fa-triangle-exclamation"></i> Belum Diisi
+                            </span>
                         @endif
+                    </td>
 
-                        {{-- TOMBOL HAPUS (Keluar dari IF agar selalu muncul) --}}
-                        <button onclick="confirmDeleteJadwal('{{ $item->id }}', '{{ $item->nama_nasabah }}')" 
-                                style="background-color: #dc3545; color: white; border: 2px solid #000; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;"
-                                title="Hapus Jadwal">
-                            <i class="fa-solid fa-trash-can" style="font-size: 16px;"></i>
-                        </button>
-                        
-                        {{-- TOMBOL INFO --}}
-                        <button onclick="openDetailModal('{{ $item->no_angsuran }}')" style="background: none; border: none; cursor: pointer;">
-                            <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
+                    <td style="padding: 15px; border-right: 2px solid #000; color: #007bff;">
+                        @if(!empty($item->tanggal) && $item->tanggal != '0000-00-00')
+                            {{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M Y') }}
+                        @else
+                            -
+                        @endif
+                    </td>
+                    
+                    {{-- Bagian kolom Bulan dan tombol opsi tetap sama seperti sebelumnya --}}
+                    <td style="padding: 15px; border-right: 2px solid #000;">
+                        @php
+                            $valBulan = $item->bulan ?? '-';
+                            $bulanTampil = $valBulan; 
+                            if (!empty($valBulan) && $valBulan !== '-' && preg_match('/^[0-9]{4}-[0-9]{2}/', $valBulan)) {
+                                try {
+                                    $bulanTampil = \Carbon\Carbon::parse($valBulan)->translatedFormat('M Y');
+                                } catch (\Exception $e) { $bulanTampil = $valBulan; }
+                            }
+                        @endphp
+                        {{ $bulanTampil }}
+                    </td>
+
+                    <td style="border: 1px solid #333; padding: 15px;">
+                        <div style="display: flex; justify-content: center; gap: 8px; align-items: center;">
+                            @if($isFilled)
+                                <div style="background-color: #28a745; color: white; width: 35px; height: 35px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #000;">
+                                    <i class="fa-solid fa-check" style="font-size: 18px;"></i>
+                                </div>
+                            @else
+                                <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')" 
+                                        style="background-color: #A3A8AC; color: #333; border: 2px solid #000; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
+                                </button>
+                            @endif
+
+                            <button onclick="confirmDeleteJadwal('{{ $item->id }}', '{{ $item->nama_nasabah }}')" 
+                                    style="background-color: #dc3545; color: white; border: 2px solid #000; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-trash-can" style="font-size: 16px;"></i>
+                            </button>
+                            
+                            <button onclick="openDetailModal('{{ $item->no_angsuran }}')" style="background: none; border: none; cursor: pointer;">
+                                <i class="fa-solid fa-circle-info" style="font-size: 32px; color: #3A3A4C;"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
             @empty
-            <tr><td colspan="6" style="padding: 20px;">Data tidak ditemukan</td></tr>
+                <tr><td colspan="6" style="padding: 20px;">Data tidak ditemukan</td></tr>
             @endforelse
         </tbody>
     </table>
