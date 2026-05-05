@@ -108,9 +108,16 @@
              @php
                 $isFilled = false;
                 
-                if (!empty($item->no_angsuran)) {
+                if (!empty($item->no_angsuran) && !empty($item->tanggal)) {
+                    $noAngsuran = trim($item->no_angsuran);
+                    $tglJadwal = date('Y-m-d', strtotime($item->tanggal));
+
                     $isFilled = \DB::table('kunjungans')
-                        ->where('no_nasabah', trim($item->no_angsuran))
+                        ->where('no_nasabah', $noAngsuran)
+                        ->where(function($query) use ($tglJadwal) {
+                            $query->whereDate('tgl_janji_bayar', '>=', $tglJadwal)
+                                ->orWhereNull('tgl_janji_bayar'); 
+                        })
                         ->exists();
                 }
             @endphp
