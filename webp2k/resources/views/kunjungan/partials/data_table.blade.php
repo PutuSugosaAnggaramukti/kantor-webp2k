@@ -105,22 +105,15 @@
         </thead>
       <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
-              @php
-                    $isFilled = false;
-                    
-                    if (!empty($item->no_angsuran) && !empty($item->tanggal)) {
-                        // Gunakan trim untuk menghapus spasi tersembunyi
-                        $noAngsuran = trim($item->no_angsuran);
-                        
-                        // Pastikan format tanggal searah dengan format SQL (YYYY-MM-DD)
-                        $tglJadwal = date('Y-m-d', strtotime($item->tanggal));
-
-                        $isFilled = \DB::table('kunjungans')
-                            ->where('no_nasabah', $noAngsuran)
-                            ->whereDate('tgl_janji_bayar', $tglJadwal) 
-                            ->exists();
-                    }
-                @endphp
+             @php
+                $isFilled = false;
+                
+                if (!empty($item->no_angsuran)) {
+                    $isFilled = \DB::table('kunjungans')
+                        ->where('no_nasabah', trim($item->no_angsuran))
+                        ->exists();
+                }
+            @endphp
 
                 {{-- Baris akan berwarna hijau (#f0fff4) hanya jika No Angsuran & Tanggal cocok di tabel laporan --}}
                 <tr class="{{ $isFilled ? 'row-completed' : 'row-pending' }}" 
