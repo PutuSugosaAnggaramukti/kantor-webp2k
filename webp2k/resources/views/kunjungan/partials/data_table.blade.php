@@ -105,20 +105,42 @@
         </thead>
       <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
-             @php
+           @php
                 $isFilled = false;
-                
-                if (!empty($item->no_angsuran) && !empty($item->tanggal)) {
-                    $noAngsuran = trim($item->no_angsuran);
-                    $tglJadwal = date('Y-m-d', strtotime($item->tanggal));
 
-                    $isFilled = \DB::table('kunjungans')
-                        ->where('no_nasabah', $noAngsuran)
-                        ->where(function($query) use ($tglJadwal) {
-                            $query->whereDate('tgl_janji_bayar', '>=', $tglJadwal)
-                                ->orWhereNull('tgl_janji_bayar'); 
-                        })
-                        ->exists();
+                if (!empty($item->no_angsuran)) {
+                    $noAngsuran = trim($item->no_angsuran);
+                    $tglJadwal = !empty($item->tanggal) ? date('Y-m-d', strtotime($item->tanggal)) : null;
+
+                    if ($tglJadwal) {
+                        $bulan = date('m', strtotime($tglJadwal));
+                        $tahun = date('Y', strtotime($tglJadwal));
+
+                        // 1. Cari semua jadwal nasabah ini di bulan yang sama, urutkan dari tanggal terkecil
+                        $semuaJadwalId = \DB::table('data_kunjungan_adms')
+                            ->where('no_angsuran', $item->no_angsuran)
+                            ->whereMonth('tanggal', $bulan)
+                            ->whereYear('tanggal', $tahun)
+                            ->orderBy('tanggal', 'asc')
+                            ->pluck('id')
+                            ->toArray();
+
+                        // 2. Cari posisi jadwal yang sedang di-loop ini ada di urutan ke berapa (0, 1, 2...)
+                        $posisiJadwal = array_search($item->id, $semuaJadwalId);
+
+                        // 3. Ambil semua laporan nasabah ini di bulan yang sama, urutkan dari yang paling lama
+                        $semuaLaporan = \DB::table('kunjungans')
+                            ->where('no_nasabah', $noAngsuran)
+                            ->whereMonth('tgl_janji_bayar', $bulan)
+                            ->whereYear('tgl_janji_bayar', $tahun)
+                            ->orderBy('created_at', 'asc') // Berdasarkan waktu input
+                            ->get();
+
+                        // 4. Jadwal ke-N dianggap terisi HANYA JIKA ada laporan ke-N
+                        if (isset($semuaLaporan[$posisiJadwal])) {
+                            $isFilled = true;
+                        }
+                    }
                 }
             @endphp
 
