@@ -197,7 +197,6 @@
         fileSiapUpload = null;
     }
 
-    // --- Fungsi Geolocation ---
    function updateGPSLocation(inputId, statusId) {
         const input = document.getElementById(inputId);
         const status = document.getElementById(statusId);
@@ -210,7 +209,6 @@
                     const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
                     if (input) input.value = loc;
                     if (status) {
-                        // Beri info akurasi juga agar AO tahu lokasinya sudah pas atau belum
                         const akurasi = Math.round(pos.coords.accuracy);
                         status.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci (Akurasi: ${akurasi}m)</span>`;
                     }
@@ -228,12 +226,28 @@
                             pesanError = "Waktu Tunggu Habis (Sinyal Lemah)";
                             break;
                     }
+
+                    // --- NOTIFIKASI PETUNJUK BARU ---
+                    Swal.fire({
+                        title: 'GPS Tidak Terkunci',
+                        html: `<p>${pesanError}</p>
+                            <hr>
+                            <p style="font-size: 14px; text-align: left;">
+                                <b>Petunjuk:</b><br>
+                                1. Pastikan GPS HP Aktif.<br>
+                                2. Jika masih gagal, <b>mohon cantumkan link Share Location</b> dari Google Maps pada kolom <b>Hasil Kunjungan</b>.<br>
+                                3. Pastikan foto yang diupload diambil langsung dari lokasi (EXIF akan dicek sistem).
+                            </p>`,
+                        icon: 'warning',
+                        confirmButtonText: 'Saya Mengerti'
+                    });
+
                     if (status) status.innerHTML = `<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> ${pesanError}</span>`;
                 },
                 { 
                     enableHighAccuracy: true, 
-                    timeout: 15000, // Dinaikkan jadi 15 detik
-                    maximumAge: 0   // Memaksa browser mengambil lokasi baru, bukan lokasi cache
+                    timeout: 15000, 
+                    maximumAge: 0 
                 }
             );
         } else {
@@ -679,6 +693,8 @@ $(document).ready(function() {
             $(this).toggleClass('fa-eye fa-eye-slash');
         });
     });
+
+    
 
 function updateSandiAO() {
     const current_password = $('#current_password').val();

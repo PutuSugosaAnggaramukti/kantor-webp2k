@@ -31,14 +31,9 @@ public function index(Request $request)
     $namaBulanIndo = \Carbon\Carbon::create($tahunFilter, $bulanFilter, 1)->translatedFormat('F Y');
 
     // --- DAFTAR MAPPING NAMA AO (Tambahkan di sini jika ada AO baru) ---
-    $mappingAO = [
-        'C-004' => 'Tri Suryana',
-        'C-006' => 'Fajar Setyahartadi',
-        'C-007' => 'Tegar Pamungkas',
-        'C-008' => 'Muhammad Abu Kholid',
-        'C-009' => 'Hengky Noviento Purnomohadi',
-        'C-011' => 'Wahyu Nugroho',
-    ];
+    $mappingAO = \App\Models\Karyawan::whereIn('kode_ao', ['C-004', 'C-006', 'C-007', 'C-008', 'C-009', 'C-011'])
+    ->pluck('nama', 'kode_ao')
+    ->toArray();
 
     // 2. DROPDOWN NASABAH
     $nasabah_all = \App\Models\Nasabah::where('bulan', $namaBulanIndo)
@@ -160,12 +155,18 @@ public function index(Request $request)
     return view('admin.datakaryawan', $data);
 }
 
-   public function dataKunjunganContent(Request $request)
+ public function dataKunjunganContent(Request $request)
 {
-    // 1. Ambil keyword dari request search
+    // 1. TANGKAP FILTER DARI DROPDOWN (Bulan dan Tahun)
+    // Default ke bulan dan tahun saat ini jika tidak ada input
+    $bulanFilter = $request->get('bulan', date('m')); 
+    $tahunFilter = $request->get('tahun', date('Y'));
+    
+    // Format untuk query ke tabel data_kunjungan_adms (Y-m)
+    $bulanFormatDB = $tahunFilter . '-' . str_pad($bulanFilter, 2, '0', STR_PAD_LEFT);
     $keyword = $request->search;
 
-    // Tambahkan filter 'when' agar database hanya menarik data yang sesuai keyword
+    // 2. Filter Karyawan berdasarkan Keyword Search
     $karyawans = Karyawan::where('status', 'aktif')
         ->when($keyword, function($query) use ($keyword) {
             $query->where(function($q) use ($keyword) {
@@ -175,15 +176,19 @@ public function index(Request $request)
         })
         ->get();
 
-    // 2. Kita hitung manual angka-angkanya (Logika Sam tetap dipertahankan)
-    $karyawans->map(function($karyawan) {
+    // 3. Hitung angka-angka berdasarkan Bulan & Tahun yang dipilih
+    $karyawans->map(function($karyawan) use ($bulanFilter, $tahunFilter, $bulanFormatDB) {
+        // Hitung Total Rencana berdasarkan bulan yang dipilih
         $karyawan->kunjungan_count = \DB::table('data_kunjungan_adms')
             ->where('kode_ao', $karyawan->kode_ao)
-            ->where('bulan', now()->format('Y-m'))
+            ->where('bulan', $bulanFormatDB) // Menggunakan variabel dinamis
             ->count();
 
+        // Hitung Sudah Dikunjungi (Realisasi) berdasarkan bulan/tahun yang dipilih
         $karyawan->total_realisasi = \DB::table('kunjungans')
             ->where('kode_ao', $karyawan->kode_ao)
+            ->whereMonth('created_at', $bulanFilter) // Filter bulan spesifik
+            ->whereYear('created_at', $tahunFilter)  // Filter tahun spesifik
             ->whereNotNull('catatan')
             ->where('catatan', '!=', '')
             ->count();
@@ -193,17 +198,19 @@ public function index(Request $request)
 
     $nasabah_all = \App\Models\Nasabah::orderBy('nasabah', 'asc')->get();
 
+    // Pastikan grouping juga mengikuti bulan yang dipilih
     $kunjungansGrouped = \App\Models\DataKunjunganAdm::with('karyawan')
-        ->where('bulan', now()->format('Y-m'))
+        ->where('bulan', $bulanFormatDB)
         ->get()
         ->groupBy('kode_ao');
 
-    // Cek jika request datang dari AJAX (saat user mengetik di searchInput)
+    // 4. Return View
+    $compactData = compact('karyawans', 'kunjungansGrouped', 'nasabah_all', 'bulanFilter', 'tahunFilter');
+
     if ($request->ajax()) {
-        return view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped', 'nasabah_all'))->render();
+        return view('admin.partials.kunjungan', $compactData)->render();
     }
 
-    // Bagian Dashboard (untuk load halaman pertama kali)
     try {
         $dashboard = new DashboardAdminController();
         $data = $dashboard->getDashboardData(); 
@@ -213,7 +220,7 @@ public function index(Request $request)
 
     $data['title'] = 'Data Kunjungan';
     $data['page'] = 'kunjungan';
-    $data['content'] = view('admin.partials.kunjungan', compact('karyawans', 'kunjungansGrouped', 'nasabah_all'))->render();
+    $data['content'] = view('admin.partials.kunjungan', $compactData)->render();
     $data['karyawans'] = $karyawans;
     $data['nasabah_all'] = $nasabah_all;
 

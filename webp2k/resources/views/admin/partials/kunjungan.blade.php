@@ -8,27 +8,30 @@
 </div>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <!-- Form Export Dinamis -->
-    <form action="{{ route('admin.kunjungan.export') }}" method="GET" style="display: flex; align-items: center; gap: 10px; margin: 0;">
-        <!-- Hidden input untuk filter AO jika ada -->
+    <!-- Form Filter & Export Dinamis -->
+    <!-- 1. Ubah action ke route index agar dropdown berfungsi sebagai filter tabel -->
+    <form action="{{ route('admin.kunjungan.index') }}" method="GET" id="filterForm" style="display: flex; align-items: center; gap: 10px; margin: 0;">
+        
         <input type="hidden" name="kode_ao" value="{{ request('kode_ao') }}">
 
-        <select name="bulan" style="padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-weight: 600;">
+        <!-- 2. Tambahkan onchange="this.form.submit()" agar otomatis reload saat dipilih -->
+        <select name="bulan" onchange="this.form.submit()" style="padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-weight: 600;">
             @foreach(range(1, 12) as $m)
                 @php $mVal = sprintf('%02d', $m); @endphp
-                <option value="{{ $mVal }}" {{ (request('bulan') ?? date('m')) == $mVal ? 'selected' : '' }}>
+                <option value="{{ $mVal }}" {{ ($bulanFilter ?? date('m')) == $mVal ? 'selected' : '' }}>
                     {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
                 </option>
             @endforeach
         </select>
 
-        <select name="tahun" style="padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-weight: 600;">
+        <select name="tahun" onchange="this.form.submit()" style="padding: 8px; border-radius: 8px; border: 1px solid #ccc; font-weight: 600;">
             @foreach(range(date('Y')-2, date('Y')+1) as $y)
-                <option value="{{ $y }}" {{ (request('tahun') ?? date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                <option value="{{ $y }}" {{ ($tahunFilter ?? date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
             @endforeach
         </select>
 
-        <button type="submit" class="btn-export-excel" style="border: none; cursor: pointer; display: flex; align-items: center; padding: 8px 15px;">
+        <!-- 3. Tambahkan formaction untuk tombol Export agar tetap bisa mendownload Excel -->
+        <button type="submit" formaction="{{ route('admin.kunjungan.export') }}" class="btn-export-excel" style="border: none; cursor: pointer; display: flex; align-items: center; padding: 8px 15px;">
             <span style="margin-right: 8px;">
                 <i class="fa-solid fa-file-excel"></i>
             </span> 
@@ -36,9 +39,10 @@
         </button>
     </form>
         
-    <!-- Input Pencarian Tetap di Kanan -->
+    <!-- Input Pencarian -->
     <div style="position: relative;">
-        <input type="text" placeholder="Pencarian..." style="padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; width: 250px;">
+        <!-- Pastikan input pencarian masuk ke form jika ingin digabung, atau biarkan jika menggunakan JS -->
+        <input type="text" name="search" value="{{ request('search') }}" placeholder="Pencarian..." style="padding: 8px 15px; border-radius: 20px; border: 1px solid #ccc; width: 250px;">
     </div>
 </div>
 

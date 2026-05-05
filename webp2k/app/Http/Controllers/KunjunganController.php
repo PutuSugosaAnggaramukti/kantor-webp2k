@@ -45,6 +45,7 @@ class KunjunganController extends Controller
 
         $myCode = strtoupper(trim($karyawan->kode_ao));
         
+        
         // 1. QUERY DENGAN FILTER KETAT
        $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)
         ->where(function($query) {
