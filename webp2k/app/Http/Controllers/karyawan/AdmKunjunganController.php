@@ -368,28 +368,33 @@ public function detail($kode_ao)
         return (float) $fraction;
     }
 
-public function getDaftarNoAnggota()
+public function getDaftarNoAnggota(Request $request)
 {
-    try {
-        $nasabah = \DB::table('nasabahs')
-            ->select(
-                'no_angsuran', 
-                'nasabah', 
-                'alamat', 
-                'kol', 
-                'kode' // Ini yang isinya PG.001 sesuai Tinker
-            )
-            ->where(function($q) {
-                $q->where('no_angsuran', 'LIKE', '150%')
-                  ->orWhere('no_angsuran', 'LIKE', '8%');
-            })
-            ->orderBy('nasabah', 'asc')
-            ->get();
+    $search = $request->q;
 
-        return response()->json($nasabah);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
+    $nasabah = \DB::table('nasabahs')
+        ->select('no_angsuran', 'nasabah', 'alamat', 'kol', 'kode')
+        // Query pencarian hanya aktif jika ada teks yang diketik
+        ->when($search, function($query) use ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('no_angsuran', 'LIKE', "%$search%")
+                  ->orWhere('nasabah', 'LIKE', "%$search%");
+            });
+        })
+        ->limit(15) // Menampilkan 15 data nasabah pertama saat dropdown diklik
+        ->get()
+        ->map(function($item) {
+            return [
+                'id' => $item->no_angsuran,
+                'text' => $item->no_angsuran . " - " . $item->nasabah,
+                'nasabah' => $item->nasabah,
+                'alamat' => $item->alamat,
+                'kol' => $item->kol,
+                'kode' => $item->kode
+            ];
+        });
+
+    return response()->json($nasabah);
 }
 
     private function getComponent($coordinate, $ref)

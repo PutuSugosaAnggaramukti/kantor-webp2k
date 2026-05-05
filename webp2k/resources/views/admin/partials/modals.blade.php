@@ -220,7 +220,6 @@
                 <select name="karyawan_id" id="selectKaryawan" required style="width: 100%; padding: 10px; border: 2px solid #000; border-radius: 8px;">
                     <option value="">-- Pilih AO --</option>
                     @php
-                        // FILTER: Hanya ambil AO Aktif yang kodenya berawalan C-
                         $list_karyawan = isset($karyawans) ? $karyawans : \App\Models\Karyawan::where('status', 'aktif')
                                             ->where('kode_ao', 'LIKE', 'C-%')
                                             ->orderBy('nama', 'asc')
@@ -236,29 +235,6 @@
                 <label style="display: block; font-weight: 700; margin-bottom: 5px;">No. Anggota / Nasabah</label>
                 <select name="no_angsuran" id="dropdown_no_angsuran" required class="select2-nasabah" style="width: 100%;">
                     <option value="">-- Cari No. Anggota atau Nama --</option>
-                    
-                    @php
-                        if (!isset($nasabah_all)) {
-                            $bulanSekarang = \Carbon\Carbon::now()->translatedFormat('F Y');
-                            $nasabah_all = \App\Models\Nasabah::where('bulan', $bulanSekarang)
-                                ->where(function($q) {
-                                    $q->where('no_angsuran', 'LIKE', '150%')
-                                    ->orWhere('no_angsuran', 'LIKE', '8%');
-                                })
-                                ->orderBy('nasabah', 'asc')
-                                ->get();
-                        }
-                    @endphp
-
-                    @foreach($nasabah_all as $n)
-                        <option value="{{ $n->no_angsuran }}" 
-                            data-kode="{{ $n->kode }}" 
-                            data-nama="{{ $n->nasabah }}" 
-                            data-alamat="{{ $n->alamat }}" 
-                            data-kol="{{ $n->kol }}">
-                            {{ $n->no_angsuran }} - {{ $n->nasabah }}
-                        </option>
-                    @endforeach
                 </select>
             </div>
             <div style="margin-bottom: 12px;">

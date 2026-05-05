@@ -159,18 +159,39 @@ class NasabahController extends Controller
         }
     }
 
-   public function getDaftarNoAnggota()
+  public function getDaftarNoAnggota(Request $request)
     {
         try {
-            // Kita buat format yang sama dengan database: "April 2026"
-            $bulanSekarang = \Carbon\Carbon::now()->translatedFormat('F Y');
+            $search = $request->q;
+            
+            // Ambil data menggunakan Model Nasabah
+            $query = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol', 'kode');
 
-            $nasabah = \App\Models\Nasabah::select('no_angsuran', 'nasabah', 'alamat', 'kol')
-                ->where('bulan', $bulanSekarang) // Mencari yang isinya "April 2026"
-                ->orderBy('nasabah', 'asc')    // KUNCI: Biar urut abjad dan tidak loncat-lompat
-                ->get();
+            // 1. Logika Pencarian (Jika User Mengetik)
+            if (!empty($search)) {
+                $query->where(function($q) use ($search) {
+                    $q->where('no_angsuran', 'LIKE', "%$search%")
+                    ->orWhere('nasabah', 'LIKE', "%$search%");
+                });
+            }
+            
+            $nasabah = $query->orderBy('nasabah', 'asc')
+                ->limit(20) // Batasi agar respons cepat
+                ->get()
+                ->map(function($item) {
+                    // Return format yang dibutuhkan Select2 AJAX
+                    return [
+                        'id'    => $item->no_angsuran,
+                        'text'  => $item->no_angsuran . " - " . $item->nasabah,
+                        'nasabah' => $item->nasabah,
+                        'alamat'  => $item->alamat,
+                        'kol'     => $item->kol,
+                        'kode'    => $item->kode
+                    ];
+                });
 
             return response()->json($nasabah);
+
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }

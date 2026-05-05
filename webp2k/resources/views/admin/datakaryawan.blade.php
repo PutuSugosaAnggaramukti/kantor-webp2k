@@ -792,22 +792,7 @@ function switchTab(type) {
 }
 
 // FUNGSI AUTO-FILL NASABAH BERDASARKAN NO ANGSURAN
-// 1. FUNGSI AUTO-FILL SAAT DROPDOWN DIPILIH
-$(document).on('select2:select', '#dropdown_no_angsuran', function(e) {
-    let data = e.params.data.element; // Mengambil elemen asli option
-    
-    let nama = $(data).data('nama');
-    let alamat = $(data).data('alamat');
-    let kol = $(data).data('kol');
-    
-    if (nama) {
-        $('#display_nama').val(nama);
-        $('#display_alamat').val(alamat);
-        $('#display_kol').val(kol);
-    }
-});
 
-// Tambahkan juga handle jika user menghapus pilihan (clear)
 $(document).on('select2:unselect', '#dropdown_no_angsuran', function() {
     resetFormKunjungan();
 });
@@ -821,50 +806,6 @@ function resetFormKunjungan() {
 }
 
 // 3. FUNGSI LOAD DAFTAR NOMOR ANGGOTA (Panggil saat modal dibuka)
-function refreshNoAnggotaDropdown() {
-    fetch('/admin/get-daftar-no-anggota')
-        .then(response => response.json())
-        .then(data => {
-            const select = $('#dropdown_no_angsuran');
-            if (!select.length) return;
-
-            select.empty().append('<option value="">-- Pilih No. Anggota --</option>');
-
-           data.forEach(item => {
-                let option = $('<option></option>')
-                    .val(item.no_angsuran)
-                    .text(`${item.no_angsuran} - ${item.nasabah}`)
-                    .attr('data-kode', item.kode) // <--- PASTIKAN INI item.kode
-                    .attr('data-nama', item.nasabah)
-                    .attr('data-alamat', item.alamat)
-                    .attr('data-kol', item.kol);
-
-                select.append(option);
-            });
-
-            // Gunakan event 'select2:select' karena lebih paten untuk Select2
-           select.off('select2:select').on('select2:select', function(e) {
-                // Ambil elemen option asli dari DOM
-                const selectedOption = e.params.data.element;
-                
-                // Ambil data-kode langsung dari atribut HTML-nya
-                const kode = $(selectedOption).attr('data-kode');
-                const nama = $(selectedOption).attr('data-nama');
-                const alamat = $(selectedOption).attr('data-alamat');
-                const kol = $(selectedOption).attr('data-kol');
-
-                console.log("DEBUG - Kode dari Atribut:", kode);
-
-                // Tembak langsung ke input
-                $('#display_kode').val(kode || '-'); 
-                $('#display_nama').val(nama || '-');
-                $('#display_alamat').val(alamat || '-');
-                $('#display_kol').val(kol || '-');
-            });
-        })
-        .catch(err => console.error("Error load dropdown:", err));
-}
-
    function openModalImportNasabah() {
     const modal = document.getElementById('importNasabahModal');
     modal.style.display = 'flex'; // Gunakan flex agar centering aktif

@@ -229,54 +229,69 @@
             if (modal) modal.style.display = 'flex';
         };
 
-     window.openModalKunjungan = function() {
-            const modal = document.querySelector('#modalTambahKunjungan');
-            if (modal) {
-                modal.style.display = 'flex';
-                const dropdown = modal.querySelector('#dropdown_no_angsuran');
-                
-                if (dropdown) {
-                    if ($(dropdown).hasClass("select2-hidden-accessible")) {
-                        $(dropdown).select2('destroy');
+        window.openModalKunjungan = function() {
+                const modal = document.querySelector('#modalTambahKunjungan');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    const dropdown = modal.querySelector('#dropdown_no_angsuran');
+                    
+                    if (dropdown) {
+                        // 1. Hancurkan instance lama agar tidak error 'isConnected'
+                        if ($(dropdown).hasClass("select2-hidden-accessible")) {
+                            $(dropdown).select2('destroy');
+                        }
+
+                        // 2. Inisialisasi dengan fitur AJAX
+                    $(dropdown).select2({
+                    dropdownParent: $(modal),
+                    placeholder: "Cari No Angsuran / Nama Nasabah...",
+                    allowClear: true,
+                    // UBAH INI:
+                    minimumInputLength: 0, 
+                    ajax: {
+                        url: '/admin/get-daftar-no-anggota',
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                q: params.term // Jika kosong, controller akan tetap mengirim 15 data pertama
+                            };
+                        },
+                        processResults: function (data) {
+                            return { results: data };
+                        },
+                        cache: true
                     }
+                });
 
-                    $(dropdown).val("").select2({
-                        dropdownParent: $(modal),
-                        placeholder: "Cari No Angsuran / Nama Nasabah...",
-                        allowClear: true
-                    });
+                // 3. Update event listener untuk mengambil data dari objek AJAX
+               $(dropdown).off('select2:select').on('select2:select', function (e) {
+                    const data = e.params.data; 
 
-                    // GUNAKAN .off() dulu baru .on() agar event tidak dobel
-                    $(dropdown).off('select2:select').on('select2:select', function (e) {
-                        const selectedOption = $(this).find(':selected');
-                        
-                        const kode   = selectedOption.attr('data-kode'); 
-                        const nama   = selectedOption.attr('data-nama');
-                        const alamat = selectedOption.attr('data-alamat');
-                        const kol    = selectedOption.attr('data-kol');
-
-                        // Gunakan .val() untuk input, atau .text() untuk label biasa
-                        $('#display_kode').text(kode || '-'); 
-                        $('#input_nama_nasabah').val(nama || '');
-                        $('#input_alamat_nasabah').val(alamat || '');
-                        $('#input_kol_nasabah').val(kol || '-'); 
-                    });
-                }
-
-                const form = modal.querySelector('#formTambahKunjungan');
-                if(form) {
-                    form.reset();
-                    $(dropdown).val(null).trigger('change');
+                    // 1. Update Kode Nasabah (Label)
+                    $('#display_kode').text(data.kode || '-'); 
                     
-                    // Tambahan: Reset tampilan kode nasabah ke tanda strip
-                    $('#display_kode').text('-');
+                    // 2. Update Nama Nasabah (Sesuai ID HTML Anda: display_nama)
+                    // Gunakan data.nasabah karena di Controller kuncinya adalah 'nasabah'
+                    $('#display_nama').val(data.nasabah || ''); 
                     
-                    // Reset dropdown AO/Karyawan jika menggunakan select2 juga
-                    const aoSelect = $('#karyawan_id'); // Sesuaikan ID dropdown AO Mas
-                    if(aoSelect.length) aoSelect.val(null).trigger('change');
-                }
+                    // 3. Update Alamat dan KOL
+                    $('#display_alamat').val(data.alamat || '');
+                    $('#display_kol').val(data.kol || '-');
+
+                    // Jika Anda punya input hidden atau field lain dengan ID berbeda, sesuaikan di sini:
+                    // $('#input_nama_nasabah').val(data.nasabah || ''); 
+                });
             }
-        };
+
+            const form = modal.querySelector('#formTambahKunjungan');
+            if(form) {
+                form.reset();
+                $(dropdown).val(null).trigger('change');
+                $('#display_kode').text('-');
+            }
+        }
+    };
 
         window.closeModalKunjungan = function() {
             const modals = document.querySelectorAll('#modalTambahKunjungan');

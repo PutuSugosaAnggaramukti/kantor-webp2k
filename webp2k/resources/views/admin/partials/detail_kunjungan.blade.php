@@ -10,30 +10,30 @@
 </div>
 
 <div class="mb-4">
-    <form action="{{ route('admin.kunjungan.export') }}" method="GET" class="d-flex align-items-center gap-2">
-        <!-- Hidden input untuk menangkap Kode AO dari URL -->
-        <input type="hidden" name="kode_ao" value="{{ request()->route('kode_ao') }}">
-
+    <!-- Action mengarah ke halaman detail AO itu sendiri untuk memicu filter -->
+    <form action="{{ url('admin/kunjungan-detail/' . request()->route('kode_ao')) }}" method="GET" class="d-flex align-items-center gap-2">
+        
         <!-- Dropdown Pilih Bulan -->
-        <select name="bulan" class="form-select form-select-sm" style="width: 130px; border-radius: 4px; border: 1px solid #28a745;">
+        <select name="bulan" onchange="this.form.submit()" class="form-select form-select-sm" style="width: 130px; border-radius: 4px; border: 1px solid #28a745;">
             @foreach(range(1, 12) as $m)
                 @php $mVal = sprintf('%02d', $m); @endphp
-                <option value="{{ $mVal }}" {{ date('m') == $mVal ? 'selected' : '' }}>
+                <option value="{{ $mVal }}" {{ (request('bulan', date('m'))) == $mVal ? 'selected' : '' }}>
                     {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
                 </option>
             @endforeach
         </select>
 
         <!-- Dropdown Pilih Tahun -->
-        <select name="tahun" class="form-select form-select-sm" style="width: 90px; border-radius: 4px; border: 1px solid #28a745;">
-            @foreach(range(date('Y')-1, date('Y')+1) as $y)
-                <option value="{{ $y }}" {{ date('Y') == $y ? 'selected' : '' }}>{{ $y }}</option>
+        <select name="tahun" onchange="this.form.submit()" class="form-select form-select-sm" style="width: 90px; border-radius: 4px; border: 1px solid #28a745;">
+            @foreach(range(date('Y')-2, date('Y')+1) as $y)
+                <option value="{{ $y }}" {{ (request('tahun', date('Y'))) == $y ? 'selected' : '' }}>{{ $y }}</option>
             @endforeach
         </select>
 
-        <!-- Tombol Submit -->
-        <button type="submit" class="btn btn-success btn-sm shadow-sm" 
+        <!-- Tombol Export (Gunakan formaction agar menembak route export excel) -->
+        <button type="submit" formaction="{{ route('admin.kunjungan.export') }}" class="btn btn-success btn-sm shadow-sm" 
             style="background-color: #28a745 !important; color: white !important; padding: 6px 15px; border-radius: 4px; display: inline-flex; align-items: center; border: none;">
+            <input type="hidden" name="kode_ao" value="{{ request()->route('kode_ao') }}">
             <i class="fas fa-file-excel fa-sm text-white" style="margin-right: 8px !important;"></i> 
             <strong>Export Data AO</strong>
         </button>
