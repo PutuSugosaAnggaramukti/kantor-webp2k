@@ -105,7 +105,7 @@
         </thead>
       <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
-           @php
+            @php
                 $isFilled = false;
                 
                 if (!empty($item->no_angsuran)) {
@@ -129,7 +129,6 @@
                     }
                 }
             @endphp
-
                 {{-- Baris akan berwarna hijau (#f0fff4) hanya jika No Angsuran & Tanggal cocok di tabel laporan --}}
                 <tr class="{{ $isFilled ? 'row-completed' : 'row-pending' }}" 
                     style="border-bottom: 2px solid #000; text-align: center; {{ $isFilled ? 'background-color: #f0fff4;' : '' }}">
