@@ -119,10 +119,8 @@
                         $isFilled = \DB::table('kunjungans')
                             ->where('no_nasabah', $noAngsuran)
                             ->where(function($query) use ($bulanJadwal, $tahunJadwal) {
-                                // Hijaukan jika bulannya cocok
                                 $query->whereMonth('tgl_janji_bayar', $bulanJadwal)
                                     ->whereYear('tgl_janji_bayar', $tahunJadwal)
-                                // ATAU hijaukan jika tgl_janji_bayar kosong (NULL)
                                     ->orWhereNull('tgl_janji_bayar');
                             })
                             ->exists();
