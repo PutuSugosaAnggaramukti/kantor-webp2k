@@ -5,6 +5,7 @@ namespace App\Http\Controllers\login;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 
 class LoginController extends Controller
 {
@@ -20,17 +21,37 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        // 1. Cek Login Admin (Guard Web)
-        if (Auth::guard('web')->attempt(['name' => $credentials['username'], 'password' => $credentials['password']])) {
+        $throttleKey = $request->ip() . '|' . $credentials['username'];
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return back()->with('error', "Terlalu banyak percobaan login. Coba lagi dalam {$seconds} detik.");
+        }
+
+        // 1. LOGIN ADMIN
+        if (Auth::guard('web')->attempt([
+            'name' => $credentials['username'],
+            'password' => $credentials['password']
+        ])) {
+            RateLimiter::clear($throttleKey); // reset jika sukses
+
             $request->session()->regenerate();
             return redirect()->intended('/admin/dashboard');
         }
 
-        // 2. Cek Login Karyawan (Guard Karyawan)
-        if (Auth::guard('karyawan')->attempt(['username' => $credentials['username'], 'password' => $credentials['password']])) {
+        // 2. LOGIN KARYAWAN
+        if (Auth::guard('karyawan')->attempt([
+            'username' => $credentials['username'],
+            'password' => $credentials['password']
+        ])) {
+            RateLimiter::clear($throttleKey); 
+
             $request->session()->regenerate();
             return redirect()->intended('/user/dashboard');
         }
+
+        RateLimiter::hit($throttleKey, 60);
 
         return back()->withInput()->with('error', 'Username atau password salah');
     }
