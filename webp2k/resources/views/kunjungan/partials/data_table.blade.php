@@ -106,26 +106,7 @@
       <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @forelse($data as $index => $item)
             @php
-                $isFilled = false;
-                
-                if (!empty($item->no_angsuran)) {
-                    $noAngsuran = trim($item->no_angsuran);
-                    $tglJadwal = !empty($item->tanggal) ? date('Y-m-d', strtotime($item->tanggal)) : null;
-
-                    if ($tglJadwal) {
-                        $bulanJadwal = date('m', strtotime($tglJadwal));
-                        $tahunJadwal = date('Y', strtotime($tglJadwal));
-
-                        $isFilled = \DB::table('kunjungans')
-                            ->where('no_nasabah', $noAngsuran)
-                            ->where(function($query) use ($bulanJadwal, $tahunJadwal) {
-                                $query->whereMonth('tgl_janji_bayar', $bulanJadwal)
-                                    ->whereYear('tgl_janji_bayar', $tahunJadwal)
-                                    ->orWhereNull('tgl_janji_bayar');
-                            })
-                            ->exists();
-                    }
-                }
+                $isFilled = $item->is_filled ?? false;
             @endphp
                 {{-- Baris akan berwarna hijau (#f0fff4) hanya jika No Angsuran & Tanggal cocok di tabel laporan --}}
                 <tr class="{{ $isFilled ? 'row-completed' : 'row-pending' }}" 
@@ -179,7 +160,7 @@
                                     <i class="fa-solid fa-check" style="font-size: 18px;"></i>
                                 </div>
                             @else
-                                <button onclick="openModal('{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')" 
+                                <button onclick="openModal('{{ $item->id }}', '{{ $item->nama_nasabah }}', '{{ $item->kode_ao }}', '{{ $item->no_angsuran }}')"
                                         style="background-color: #A3A8AC; color: #333; border: 2px solid #000; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                                     <i class="fa-solid fa-plus" style="font-size: 18px;"></i>
                                 </button>

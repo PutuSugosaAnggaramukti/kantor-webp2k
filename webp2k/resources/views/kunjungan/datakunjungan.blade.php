@@ -157,12 +157,16 @@
     }
 
     // --- Fungsi Modal (General) ---
-    function openModal(nama, kodeAO, noAngsuran) {
+   function openModal(jadwalId, nama, kodeAO, noAngsuran) {
+        document.getElementById('form-jadwal-id').value = jadwalId;
+
         document.getElementById('form-no-nasabah').value = noAngsuran;
         document.getElementById('form-nama-nasabah').value = nama;
         document.getElementById('display-kode-ao').value = kodeAO;
         document.getElementById('display-nama').value = nama;
+
         document.getElementById('visitModal').style.display = 'flex';
+
         updateGPSLocation('form-koordinat', 'location-status');
     }
 

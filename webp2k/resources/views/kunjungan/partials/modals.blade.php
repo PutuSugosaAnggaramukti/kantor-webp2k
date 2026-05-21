@@ -19,6 +19,7 @@
                 
                 <input type="hidden" name="no_nasabah" id="form-no-nasabah">
                 <input type="hidden" name="nama_nasabah" id="form-nama-nasabah">
+                <input type="hidden" name="jadwal_id" id="form-jadwal-id">
 
                 <div class="form-group mb-3">
                     <label>Kode AO</label>
