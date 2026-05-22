@@ -875,14 +875,18 @@ $(document).on('click', '.pagination a', function(e) {
 });
 
 
-function showDetailKunjungan(kode_ao) {
+function showDetailKunjungan(kode_ao, bulan = null, tahun = null) {
     const contentArea = document.getElementById('main-content-area');
     if (!contentArea) return;
 
+    // Ambil bulan & tahun dari URL jika tidak dikirim sebagai parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const bulanFinal = bulan || urlParams.get('bulan') || new Date().getMonth() + 1;
+    const tahunFinal = tahun || urlParams.get('tahun') || new Date().getFullYear();
+
     contentArea.style.opacity = '0.3';
 
-    // Sesuaikan URL dengan Route yang kamu miliki
-    fetch(`/admin/kunjungan-detail/${kode_ao}`, {
+    fetch(`/admin/kunjungan-detail/${kode_ao}?bulan=${bulanFinal}&tahun=${tahunFinal}`, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -893,9 +897,7 @@ function showDetailKunjungan(kode_ao) {
     .then(html => {
         contentArea.innerHTML = html;
         contentArea.style.opacity = '1';
-        
-        // Update URL di browser agar user tahu sedang di halaman detail
-        history.pushState({page: 'detail-kunjungan'}, "", `/admin/kunjungan-detail/${kode_ao}`);
+        history.pushState({page: 'detail-kunjungan'}, "", `/admin/kunjungan-detail/${kode_ao}?bulan=${bulanFinal}&tahun=${tahunFinal}`);
     })
     .catch(err => {
         console.error("Gagal memuat detail:", err);

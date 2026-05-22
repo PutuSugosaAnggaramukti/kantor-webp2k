@@ -230,21 +230,22 @@ public function index(Request $request)
 public function detail($kode_ao)
 {
     $kode_ao_clean = str_replace('-content', '', $kode_ao);
+    
+    // Tambahkan ini untuk tangkap parameter dari URL
+    $bulanFilter = request()->get('bulan', date('m'));
+    $tahunFilter = request()->get('tahun', date('Y'));
 
     try {
-       // 1. Ambil data dari ADM (Jadwal)
         $data_adm = \DB::table('data_kunjungan_adms')
             ->leftJoin('kunjungans', function ($join) {
                 $join->on('data_kunjungan_adms.no_angsuran', '=', 'kunjungans.no_nasabah')
                      ->on('data_kunjungan_adms.kode_ao', '=', 'kunjungans.kode_ao')
-                     // KUNCI DI SINI: Samakan tanggal jadwal dengan tanggal realisasi
                      ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
             })
             ->leftJoin('nasabahs', 'data_kunjungan_adms.no_angsuran', '=', 'nasabahs.no_angsuran')
             ->where('data_kunjungan_adms.kode_ao', $kode_ao_clean)
-            // Tambahkan filter bulan berjalan jika ingin benar-benar sama dengan HP Wahyu
-            ->whereRaw('MONTH(data_kunjungan_adms.created_at) = ?', [date('m')])
-            ->whereRaw('YEAR(data_kunjungan_adms.created_at) = ?', [date('Y')])
+            ->whereRaw('MONTH(data_kunjungan_adms.created_at) = ?', [$bulanFilter]) // ← dinamis
+            ->whereRaw('YEAR(data_kunjungan_adms.created_at) = ?', [$tahunFilter])  // ← dinamis
             ->select(
                 'data_kunjungan_adms.no_angsuran',
                 'data_kunjungan_adms.nama_nasabah',
@@ -255,7 +256,34 @@ public function detail($kode_ao)
                 'kunjungans.catatan as catatan_lapangan',
                 'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
                 'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
-                'kunjungans.foto_kunjungan', 
+                'kunjungans.foto_kunjungan',
+                'kunjungans.created_at as tgl_realisasi',
+                'nasabahs.nasabah as nama_nasabah_asli',
+                'nasabahs.alamat as alamat_master'
+            );
+
+        $data_mandiri = \DB::table('kunjungans')
+            ->leftJoin('data_kunjungan_adms', function ($join) {
+                $join->on('kunjungans.no_nasabah', '=', 'data_kunjungan_adms.no_angsuran')
+                     ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao')
+                     ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
+            })
+            ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
+            ->where('kunjungans.kode_ao', $kode_ao_clean)
+            ->whereNull('data_kunjungan_adms.no_angsuran')
+            ->whereRaw('MONTH(kunjungans.created_at) = ?', [$bulanFilter]) // ← dinamis
+            ->whereRaw('YEAR(kunjungans.created_at) = ?', [$tahunFilter])  // ← dinamis
+            ->select(
+                'kunjungans.no_nasabah as no_angsuran',
+                'kunjungans.nama_nasabah as nama_nasabah',
+                'kunjungans.alamat_nasabah as alamat_nasabah',
+                'kunjungans.created_at',
+                'kunjungans.id as id_kunjungan',
+                'kunjungans.status as status_kunjungan',
+                'kunjungans.catatan as catatan_lapangan',
+                'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
+                'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
+                'kunjungans.foto_kunjungan',
                 'kunjungans.created_at as tgl_realisasi',
                 'nasabahs.nasabah as nama_nasabah_asli',
                 'nasabahs.alamat as alamat_master'

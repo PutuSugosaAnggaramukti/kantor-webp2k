@@ -60,7 +60,7 @@
         <tbody style="font-weight: 700; font-size: 14px;">
             @foreach($karyawans as $index => $item)
                 <tr style="border-bottom: 2px solid #000; text-align: center; cursor: pointer;" 
-                    onclick="showDetailKunjungan('{{ $item->kode_ao }}')">
+                    onclick="showDetailKunjungan('{{ $item->kode_ao }}', '{{ $bulanFilter }}', '{{ $tahunFilter }}')">
                     <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
                     <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
                     <td style="padding: 15px; border-right: 2px solid #000; text-align: left;">{{ $item->nama }}</td>
