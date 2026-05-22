@@ -1076,11 +1076,10 @@ window.showVisitDetail = function(data) {
         textElem.style.color = "#999";
     }
     // --- 4. TANGGAL JANJI BAYAR ---
-    document.getElementById('view-janji').innerText = data.tgl_janji_bayar || '-';
+    document.getElementById('view-janji').innerText = data.tgl_janji_hasil || '-';
 
-    // --- 5. NOMINAL (Format Rupiah) ---
-    // Pastikan nama properti sesuai database: nominal_janji_bayar
-    let nominal = data.nominal_janji_bayar || 0;
+    // --- 5. NOMINAL ---
+    let nominal = data.nominal_janji_hasil || 0;
     document.getElementById('view-nominal').innerText = new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
@@ -1088,7 +1087,7 @@ window.showVisitDetail = function(data) {
     }).format(nominal);
 
     // --- 6. CATATAN ---
-    document.getElementById('view-catatan').innerText = data.catatan || 'Tidak ada catatan.';
+    document.getElementById('view-catatan').innerText = data.catatan_lapangan || 'Tidak ada catatan.';
 
     // Tampilkan Modal
     document.getElementById('modalDetailKunjungan').style.display = 'flex';

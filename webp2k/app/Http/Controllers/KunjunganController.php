@@ -84,9 +84,15 @@ class KunjunganController extends Controller
 
             $namaJadwal = strtoupper(trim(preg_replace('/\s+/', ' ', $j->nama_nasabah)));
 
-           $match = $realisasi->first(function ($r) use ($j) {
-                return isset($r->jadwal_id)
-                    && $r->jadwal_id == $j->id;
+            $match = $realisasi->first(function ($r) use ($j) {
+
+                // PRIORITAS 1: cocok berdasarkan jadwal_id
+                if (!empty($r->jadwal_id)) {
+                    return $r->jadwal_id == $j->id;
+                }
+
+                // PRIORITAS 2: fallback data lama
+                return trim($r->no_nasabah) == trim($j->no_angsuran);
             });
 
            if ($match) {
@@ -515,26 +521,21 @@ class KunjunganController extends Controller
         ]);
     }
 
-   public function destroyJadwal($id) // Ganti dari $no_angsuran ke $id
+  public function destroyJadwal($id)
     {
         try {
+
             \DB::transaction(function () use ($id) {
-                // Ambil data jadwalnya dulu untuk dapat no_angsuran (buat hapus laporan terkait)
-                $jadwal = \DB::table('data_kunjungan_adms')->where('id', $id)->first();
 
-                if ($jadwal) {
-                    // 1. Hapus laporannya (Filter pakai no_angsuran nasabah tersebut di bulan ini)
-                    \DB::table('kunjungans')
-                        ->where('no_nasabah', $jadwal->no_angsuran)
-                        ->whereMonth('created_at', now()->month)
-                        ->whereYear('created_at', now()->year)
-                        ->delete();
+                // Hapus laporan yang terkait jadwal ini saja
+                \DB::table('kunjungans')
+                    ->where('jadwal_id', $id)
+                    ->delete();
 
-                    // 2. Hapus jadwal utamanya HANYA untuk ID ini saja
-                    \DB::table('data_kunjungan_adms')
-                        ->where('id', $id) // INI KUNCINYA: pakai ID, bukan no_angsuran
-                        ->delete();
-                }
+                // Hapus jadwal utama
+                \DB::table('data_kunjungan_adms')
+                    ->where('id', $id)
+                    ->delete();
             });
 
             return response()->json([
@@ -542,6 +543,7 @@ class KunjunganController extends Controller
             ]);
 
         } catch (\Exception $e) {
+
             return response()->json([
                 'error' => 'Gagal menghapus data: ' . $e->getMessage()
             ], 500);
