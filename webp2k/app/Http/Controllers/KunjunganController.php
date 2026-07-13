@@ -158,7 +158,7 @@ class KunjunganController extends Controller
         );
 
         if (request()->ajax()) {
-            return view('kunjungan.partials.data_table', compact('data', 'daftar_nasabah') + ['daftar_jadwal_ao' => $jadwal])->render();
+            return view('kunjungan.partials.data_table', compact('data'))->render();
         }
 
         return view('kunjungan.datakunjungan', [

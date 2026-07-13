@@ -96,6 +96,8 @@
         Sistem Aplikasi P2K
     </div>
 
+    @include('kunjungan.partials.modals')
+
   <script>
     // --- State Global ---
     let fileSiapUpload = null;
