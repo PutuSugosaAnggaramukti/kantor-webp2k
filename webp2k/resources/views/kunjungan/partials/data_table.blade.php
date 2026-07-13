@@ -201,3 +201,5 @@
     </div>
 </div>
 
+@include('kunjungan.partials.modals')
+

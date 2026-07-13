@@ -96,8 +96,6 @@
         Sistem Aplikasi P2K
     </div>
 
-    @include('kunjungan.partials.modals')
-
   <script>
     // --- State Global ---
     let fileSiapUpload = null;
@@ -588,7 +586,7 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
 function simpanJadwalMandiri() {
     // Ambil data dari form
     let formData = {
-        _token: "{{ csrf_token() }}",
+        _token: $('meta[name="csrf-token"]').attr('content'),
         no_angsuran: $('#no_angsuran').val(),
         nama_nasabah: $('#nama_nasabah').val(),
         alamat_nasabah: $('#alamat_nasabah').val(),

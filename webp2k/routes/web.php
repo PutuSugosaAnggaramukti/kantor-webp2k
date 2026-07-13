@@ -103,14 +103,14 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('user.dashboard');
     Route::get('/data-kunjungan', [KunjunganController::class, 'index'])->name('data-kunjungan');
     Route::get('/data-kunjungan-content', [KunjunganController::class, 'dataKunjunganContent'])->name('data.kunjungan');
-    Route::delete('user/hapus-jadwal/{id}', [KunjunganController::class, 'destroyJadwal'])->name('hapus.jadwal');
+    Route::delete('/hapus-jadwal/{id}', [KunjunganController::class, 'destroyJadwal'])->name('hapus.jadwal');
     Route::get('/laporan-kunjungan-content', [KunjunganController::class, 'indexpelaporan'])->name('user.laporan.content');
     Route::get('/detail-pelaporan', [KunjunganController::class, 'detailPelaporan']);
     Route::get('/dokumen-content', [DokumenController::class, 'dokumenContent'])->name('dokumen.content');
     Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
     Route::post('/kunjungan/update-jadwal-global', [KunjunganController::class, 'updateJadwalGlobal'])->name('kunjungan.updateJadwalGlobal');
     Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
-    Route::post('user/kunjungan/tambah-jadwal', [KunjunganController::class, 'storeAo'])->name('ao.kunjungan.store');
+    Route::post('/kunjungan/tambah-jadwal', [KunjunganController::class, 'storeAo'])->name('ao.kunjungan.store');
     Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');
     Route::post('/pengaturan/update-akun', [PengaturanController::class, 'updateAkun'])->name('settings.akun');
     Route::post('/pengaturan/update-sandi', [PengaturanController::class, 'updateSandi'])->name('settings.sandi');

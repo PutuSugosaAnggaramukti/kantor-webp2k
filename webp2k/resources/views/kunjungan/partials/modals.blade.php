@@ -193,6 +193,7 @@
         <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
         
         <form id="formTambahJadwalAO">
+            @csrf
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <div style="flex: 1;">
                     <label style="display:block; font-weight:bold; margin-bottom:5px; font-size:13px;">Kode AO</label>
