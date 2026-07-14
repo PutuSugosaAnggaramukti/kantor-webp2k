@@ -100,6 +100,7 @@
         
         <form id="formKunjunganMandiri" action="{{ route('kunjungan.store') }}" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; overflow: hidden;">
             @csrf
+            <input type="hidden" name="jadwal_id" value="">
            <div class="modal-body" style="padding: 10px 30px; overflow-y: auto; flex: 1;">
             
             <div class="form-group mb-3">

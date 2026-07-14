@@ -91,8 +91,13 @@ class KunjunganController extends Controller
                     return $r->jadwal_id == $j->id;
                 }
 
-                // PRIORITAS 2: fallback data lama
-                return trim($r->no_nasabah) == trim($j->no_angsuran);
+                // PRIORITAS 2: fallback data lama — cocok no_angsuran DAN tanggal sama
+                $tglJadwal = $j->tanggal ? \Carbon\Carbon::parse($j->tanggal)->format('Y-m-d') : null;
+                $tglVisit = $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('Y-m-d') : null;
+
+                return $tglJadwal && $tglVisit
+                    && $tglJadwal === $tglVisit
+                    && trim($r->no_nasabah) == trim($j->no_angsuran);
             });
 
            if ($match) {
