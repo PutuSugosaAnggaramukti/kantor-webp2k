@@ -43,4 +43,9 @@
             @endforeach
         </tbody>
     </table>
+
+<div style="margin-top: 20px; display: flex; justify-content: center;">
+    {{ $karyawan->links() }}
+</div>
+
 </div>

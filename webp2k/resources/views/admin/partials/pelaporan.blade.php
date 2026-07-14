@@ -114,9 +114,14 @@
                 @empty
                 <tr><td colspan="5" style="padding: 30px; text-align: center; color: #888;">Belum ada data nasabah yang berhasil dikunjungi.</td></tr>
                 @endforelse
-            </tbody>
-        </table>
+        </tbody>
+    </table>
+
+    <div style="margin-top: 20px; display: flex; justify-content: center;">
+        {{ $nasabah_terkunjungi->links() }}
     </div>
+
+</div>
 
 @if(!request()->ajax())
 </div>

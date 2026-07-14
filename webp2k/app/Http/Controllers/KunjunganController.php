@@ -218,7 +218,7 @@ class KunjunganController extends Controller
 
         $myCode = strtoupper(trim($user->kode_ao));
 
-        $laporan = \DB::table('kunjungans')
+        $laporanQuery = \DB::table('kunjungans')
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
             ->select(
@@ -227,23 +227,22 @@ class KunjunganController extends Controller
                 'kunjungans.nama_nasabah', 
                 'kunjungans.created_at',
                 'kunjungans.kol',
-                'kunjungans.status', // 1. Pastikan kolom ini diselect
+                'kunjungans.status',
                 'nasabahs.kol as kol_master'
             )
             ->distinct() 
-            ->orderBy('kunjungans.created_at', 'desc')
-            ->get()
-            ->map(function($item) {
-                return (object)[
-                    'id_kunjungan' => $item->id_kunjungan,
-                    'kode_ao'      => $item->kode_ao,
-                    'nama_nasabah' => $item->nama_nasabah,
-                    'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
-                    'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
-                    // 2. WAJIB TAMBAHKAN INI agar status terbawa ke View
-                    'status'       => $item->status, 
-                ];
-            });
+            ->orderBy('kunjungans.created_at', 'desc');
+
+        $laporan = $laporanQuery->paginate(10)->withQueryString()->through(function($item) {
+            return (object)[
+                'id_kunjungan' => $item->id_kunjungan,
+                'kode_ao'      => $item->kode_ao,
+                'nama_nasabah' => $item->nama_nasabah,
+                'kol'          => $item->kol ?: ($item->kol_master ?: '-'), 
+                'bulan'        => \Carbon\Carbon::parse($item->created_at)->translatedFormat('F Y'),
+                'status'       => $item->status, 
+            ];
+        });
 
         return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
     }

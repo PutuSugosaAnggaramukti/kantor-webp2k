@@ -48,4 +48,9 @@
             @endforelse
         </tbody>
     </table>
+
+    <div style="margin-top: 20px; display: flex; justify-content: center;">
+        {{ $histori_ao->links() }}
+    </div>
+
 </div>

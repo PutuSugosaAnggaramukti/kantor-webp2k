@@ -11,12 +11,12 @@ class KaryawanController extends Controller
 {
     public function index()
     {
-        $karyawan = karyawan::all();
+        $karyawan = karyawan::paginate(10);
         return view('admin.datakaryawan', compact('karyawan'));
     }
 
     public function getContent(){
-        $karyawan = karyawan::all();
+        $karyawan = karyawan::paginate(10)->withQueryString();
         return view('admin.partials.karyawan_table', compact('karyawan'));
 
     }

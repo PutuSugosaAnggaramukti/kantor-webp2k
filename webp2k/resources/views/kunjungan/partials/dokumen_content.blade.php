@@ -65,4 +65,9 @@
             @endforelse
         </tbody>
     </table>
+
+<div style="margin-top: 20px; display: flex; justify-content: center;">
+    {{ $dokumen->links('pagination::bootstrap-4') }}
+</div>
+
 </div>

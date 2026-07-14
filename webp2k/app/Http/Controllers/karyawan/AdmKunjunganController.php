@@ -319,11 +319,11 @@ public function detail($kode_ao)
                 'nasabahs.alamat as alamat_master'
             );
 
-        $data_detail = $data_adm->union($data_mandiri)
+        $data_detail_collection = $data_adm->union($data_mandiri)
             ->orderByRaw('CASE WHEN status_kunjungan IS NULL THEN 1 ELSE 0 END ASC')
             ->get();
 
-        foreach ($data_detail as $item) {
+        foreach ($data_detail_collection as $item) {
             // 1. Logika Fallback Nama & Alamat (Tetap)
             $item->nama_nasabah = $item->nama_nasabah_asli ?? ($item->nama_nasabah ?? 'Nama Tidak Ada');
             $item->alamat_nasabah = $item->alamat_master ?? ($item->alamat_nasabah ?? 'Alamat Tidak Ada');
@@ -351,8 +351,20 @@ public function detail($kode_ao)
             }
         }
 
-        // 3. PENTING: Sediakan variabel $nasabah 'global' untuk Header agar Blade tidak error
-        $nasabah = $data_detail->first() ?? (object) ['no_angsuran' => null, 'nasabah' => ''];
+        // 3. Pagination
+        $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
+        $perPage = 15;
+        $currentItems = $data_detail_collection->slice(($currentPage - 1) * $perPage, $perPage)->values();
+        $data_detail = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentItems,
+            $data_detail_collection->count(),
+            $perPage,
+            $currentPage,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+        );
+
+        // 4. PENTING: Sediakan variabel $nasabah 'global' untuk Header agar Blade tidak error
+        $nasabah = $data_detail_collection->first() ?? (object) ['no_angsuran' => null, 'nasabah' => ''];
         $kode_ao = $kode_ao_clean;
 
         if (request()->ajax()) {

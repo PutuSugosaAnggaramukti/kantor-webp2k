@@ -129,5 +129,9 @@
         </tbody>
     </table>
 
+    <div style="margin-top: 20px; display: flex; justify-content: center;">
+        {{ $data_detail->links() }}
+    </div>
+
     @include('admin.partials.modals')
 </div>

@@ -88,6 +88,10 @@
     </table>
 </div>
 
+<div style="margin-top: 20px; display: flex; justify-content: center;">
+    {{ $laporan->links('pagination::bootstrap-4') }}
+</div>
+
 <script>
 function filterTable() {
     // Ambil input dan filter

@@ -46,7 +46,8 @@ class PelaporanController extends Controller
         })
         ->with(['laporanSelesai.karyawan']) 
         ->orderBy('nasabah', 'asc')
-        ->get(); // Baris 46
+        ->paginate(10)
+        ->withQueryString();
 
         if ($request->ajax()) {
             return view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
@@ -67,7 +68,8 @@ class PelaporanController extends Controller
         $histori_ao = DataKunjunganAdm::where('karyawan_id', $id_ao)
             ->orWhere('kode_ao', $id_ao)
             ->orderBy('tanggal', 'desc')
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         $ao = Karyawan::where('id', $id_ao)
             ->orWhere('kode_ao', $id_ao)

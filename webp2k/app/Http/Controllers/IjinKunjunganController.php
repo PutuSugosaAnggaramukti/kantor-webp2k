@@ -65,7 +65,27 @@ class IjinKunjunganController extends Controller
         }
     }
 
-        // 1. Menampilkan semua pengajuan ijin ke dashboard Admin
+        public function indexAdmin()
+    {
+        $ijinList = IjinKunjungan::with('karyawan')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
+
+        if (request()->ajax()) {
+            return view('admin.partials.ijin_list', compact('ijinList'))->render();
+        }
+
+        $dashboard = new \App\Http\Controllers\dashboard\DashboardAdminController();
+        $data = $dashboard->getDashboardData();
+        $data['content'] = view('admin.partials.ijin_list', compact('ijinList'))->render();
+        $data['page'] = 'ijin';
+        $data['title'] = 'Pengajuan Ijin Kunjungan';
+
+        return view('admin.datakaryawan', $data);
+    }
+
+    // 1. Menampilkan semua pengajuan ijin ke dashboard Admin
   public function updateStatus(Request $request, $id)
 {
     try {
