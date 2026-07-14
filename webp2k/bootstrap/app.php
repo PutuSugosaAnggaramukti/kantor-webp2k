@@ -14,6 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            '/user/kunjungan/store',
+            '/user/kunjungan/tambah-jadwal',
+            '/user/kunjungan/update-jadwal-global',
+            '/admin/datakunjungan/store',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
