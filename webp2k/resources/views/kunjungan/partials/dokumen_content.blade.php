@@ -25,7 +25,7 @@
         <tbody id="documentTable">
             @forelse($dokumen as $index => $item)
             <tr style="text-align: center; border-bottom: 1px solid #ddd;">
-                <td style="padding: 12px; border: 1px solid #333;">{{ $index + 1 }}</td>
+                <td style="padding: 12px; border: 1px solid #333;">{{ $dokumen->firstItem() + $index }}</td>
                 <td style="padding: 12px; border: 1px solid #333;">{{ $item->kode_ao }}</td>
                 <td style="padding: 12px; border: 1px solid #333; text-align: left;">{{ strtoupper($item->nama_nasabah) }}</td>
                 <td style="padding: 12px; border: 1px solid #333;">{{ $item->kol }}</td>

@@ -59,7 +59,7 @@
                 <tbody>
             @forelse($data_detail as $item)
                 <tr style="border-bottom: 2px solid #000; text-align: center;">
-                    <td style="padding: 10px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
+                    <td style="padding: 10px; border-right: 2px solid #000;">{{ $data_detail->firstItem() + $loop->index }}</td>
                     <td style="padding: 10px; border-right: 2px solid #000;">
                         {{-- Prioritas tgl realisasi (dari AO), fallback ke tgl rencana (dari Admin) --}}
                         {{ \Carbon\Carbon::parse($item->tgl_realisasi ?? ($item->tanggal ?? $item->created_at))->format('d-m-Y') }}

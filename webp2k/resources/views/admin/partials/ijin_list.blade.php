@@ -23,7 +23,7 @@
         <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
             @forelse($ijinList as $index => $ijin)
             <tr style="border-bottom: 2px solid #000;">
-                <td style="padding: 12px; border-right: 2px solid #000;">{{ $loop->iteration }}</td>
+                <td style="padding: 12px; border-right: 2px solid #000;">{{ $ijinList->firstItem() + $loop->index }}</td>
                 <td style="padding: 12px; border-right: 2px solid #000;">
                     {{ \Carbon\Carbon::parse($ijin->tanggal)->format('d-m-Y') }}
                 </td>

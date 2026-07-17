@@ -30,7 +30,7 @@
         <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
             @forelse($histori_ao as $index => $item)
             <tr style="border-bottom: 2px solid #000;">
-                <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                <td style="padding: 12px; border-right: 2px solid #000;">{{ $histori_ao->firstItem() + $index }}</td>
                 <td style="padding: 12px; border-right: 2px solid #000;">
                     {{ $item->tanggal ? \Carbon\Carbon::parse($item->tanggal)->format('Y-m-d') : '-' }}
                 </td>

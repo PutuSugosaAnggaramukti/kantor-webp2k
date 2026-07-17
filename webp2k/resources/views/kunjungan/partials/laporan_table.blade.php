@@ -37,7 +37,7 @@
         <tbody>
             @forelse($laporan as $index => $item)
             <tr style="text-align: center; border-bottom: 1px solid #333;">
-                <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $index + 1 }}</td>
+                <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $laporan->firstItem() + $index }}</td>
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700;">{{ $item->kode_ao }}</td>
                 <td style="border: 1px solid #333; padding: 15px; font-weight: 700; text-align: left; padding-left: 20px;">
                     {{ strtoupper($item->nama_nasabah) }}

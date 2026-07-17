@@ -81,7 +81,7 @@
             <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
                 @forelse($nasabah_terkunjungi as $index => $nasabah)
                 <tr style="border-bottom: 2px solid #000;">
-                    <td style="padding: 12px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                    <td style="padding: 12px; border-right: 2px solid #000;">{{ $nasabah_terkunjungi->firstItem() + $index }}</td>
                     <td style="padding: 12px; border-right: 2px solid #000;">{{ $nasabah->no_angsuran }}</td>
                     <td style="padding: 12px; border-right: 2px solid #000; text-align: left; padding-left: 20px; text-transform: uppercase;">
                         {{ $nasabah->nasabah }}

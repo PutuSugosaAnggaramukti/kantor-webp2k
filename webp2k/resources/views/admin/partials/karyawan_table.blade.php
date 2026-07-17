@@ -27,7 +27,7 @@
         <tbody style="font-weight: 800; font-size: 16px; color: #000;">
             @foreach($karyawan as $index => $item)
             <tr style="border-bottom: 2px solid #000; text-align: center;">
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                <td style="padding: 15px; border-right: 2px solid #000;">{{ $karyawan->firstItem() + $index }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ $item->kode_ao }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000; text-align: left; padding-left: 20px;">{{ $item->nama }}</td>
                 <td style="padding: 15px; border-right: 2px solid #000;">{{ strtoupper($item->status) }}</td>
