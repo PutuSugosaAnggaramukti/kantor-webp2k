@@ -331,98 +331,98 @@ class KunjunganController extends Controller
 
    public function store(Request $request)
     {
-        $karyawan = Auth::guard('karyawan')->user();
+        try {
 
-        // VALIDASI
-        $request->validate([
-            'no_nasabah'           => 'required',
-            'nama_nasabah'         => 'required',
-            'ada_di_lokasi'        => 'required',
-            'foto_kunjungan'       => 'required',
-            'foto_kunjungan.*'     => 'image|mimes:jpg,jpeg|max:5120',
-            'bukti_transfer'       => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
-            'tgl_janji_bayar'      => 'nullable|date',
-            'nominal_janji_bayar'  => 'nullable',
-        ]);
+            $karyawan = Auth::guard('karyawan')->user();
 
-        // Bersihkan input No Nasabah
-        $noNasabahInput = trim($request->no_nasabah);
+            // VALIDASI
+            $request->validate([
+                'no_nasabah'           => 'required',
+                'nama_nasabah'         => 'required',
+                'ada_di_lokasi'        => 'required',
+                'foto_kunjungan'       => 'required',
+                'foto_kunjungan.*'     => 'image|mimes:jpg,jpeg|max:5120',
+                'bukti_transfer'       => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+                'tgl_janji_bayar'      => 'nullable|date',
+                'nominal_janji_bayar'  => 'nullable',
+            ]);
 
-        // Cari Data Nasabah
-        $nasabahMaster = \DB::table('nasabahs')
-            ->where('no_angsuran', $noNasabahInput)
-            ->first();
+            // Bersihkan input No Nasabah
+            $noNasabahInput = trim($request->no_nasabah);
 
-        if (!$nasabahMaster) {
-            $nasabahMaster = \DB::table('data_kunjungan_adms')
+            // Cari Data Nasabah
+            $nasabahMaster = \DB::table('nasabahs')
                 ->where('no_angsuran', $noNasabahInput)
                 ->first();
-        }
 
-        // =========================
-        // PROSES FOTO KUNJUNGAN
-        // =========================
-        $daftar_nama_foto = [];
-
-        if ($request->hasFile('foto_kunjungan')) {
-
-            foreach ($request->file('foto_kunjungan') as $file) {
-
-                $extension = strtolower($file->getClientOriginalExtension());
-
-                // VALIDASI EXIF GPS
-                $exif = @exif_read_data($file->getRealPath());
-
-                if (
-                    !$exif ||
-                    !isset($exif['GPSLatitude']) ||
-                    !isset($exif['GPSLongitude'])
-                ) {
-                    return response()->json([
-                        'error' => 'Foto "' . $file->getClientOriginalName() . '" tidak memiliki data GPS.'
-                    ], 422);
-                }
-
-                // VALIDASI WAKTU FOTO
-                if (!isset($exif['DateTimeOriginal'])) {
-                    return response()->json([
-                        'error' => 'Foto "' . $file->getClientOriginalName() . '" tidak memiliki data waktu asli.'
-                    ], 422);
-                }
-
-                // SIMPAN FILE
-                $nama_unik = time() . '_' . uniqid() . '.' . $extension;
-
-                $file->move(
-                    public_path('uploads/kunjungan'),
-                    $nama_unik
-                );
-
-                $daftar_nama_foto[] = $nama_unik;
+            if (!$nasabahMaster) {
+                $nasabahMaster = \DB::table('data_kunjungan_adms')
+                    ->where('no_angsuran', $noNasabahInput)
+                    ->first();
             }
-        }
 
-        // =========================
-        // PROSES BUKTI TRANSFER
-        // =========================
-        $nama_bukti_transfer = null;
+            // =========================
+            // PROSES FOTO KUNJUNGAN
+            // =========================
+            $daftar_nama_foto = [];
 
-        if ($request->hasFile('bukti_transfer')) {
+            if ($request->hasFile('foto_kunjungan')) {
 
-            $fileTf = $request->file('bukti_transfer');
+                foreach ($request->file('foto_kunjungan') as $file) {
 
-            $extTf = strtolower($fileTf->getClientOriginalExtension());
+                    $extension = strtolower($file->getClientOriginalExtension());
 
-            $nama_bukti_transfer =
-                'TF_' . time() . '_' . uniqid() . '.' . $extTf;
+                    // VALIDASI EXIF GPS
+                    $exif = @exif_read_data($file->getRealPath());
 
-            $fileTf->move(
-                public_path('uploads/kunjungan'),
-                $nama_bukti_transfer
-            );
-        }
+                    if (
+                        !$exif ||
+                        !isset($exif['GPSLatitude']) ||
+                        !isset($exif['GPSLongitude'])
+                    ) {
+                        return response()->json([
+                            'error' => 'Foto "' . $file->getClientOriginalName() . '" tidak memiliki data GPS.'
+                        ], 422);
+                    }
 
-        try {
+                    // VALIDASI WAKTU FOTO
+                    if (!isset($exif['DateTimeOriginal'])) {
+                        return response()->json([
+                            'error' => 'Foto "' . $file->getClientOriginalName() . '" tidak memiliki data waktu asli.'
+                        ], 422);
+                    }
+
+                    // SIMPAN FILE
+                    $nama_unik = time() . '_' . uniqid() . '.' . $extension;
+
+                    $file->move(
+                        public_path('uploads/kunjungan'),
+                        $nama_unik
+                    );
+
+                    $daftar_nama_foto[] = $nama_unik;
+                }
+            }
+
+            // =========================
+            // PROSES BUKTI TRANSFER
+            // =========================
+            $nama_bukti_transfer = null;
+
+            if ($request->hasFile('bukti_transfer')) {
+
+                $fileTf = $request->file('bukti_transfer');
+
+                $extTf = strtolower($fileTf->getClientOriginalExtension());
+
+                $nama_bukti_transfer =
+                    'TF_' . time() . '_' . uniqid() . '.' . $extTf;
+
+                $fileTf->move(
+                    public_path('uploads/kunjungan'),
+                    $nama_bukti_transfer
+                );
+            }
 
             \DB::table('kunjungans')->insert([
                 'jadwal_id' => $request->jadwal_id,
@@ -452,7 +452,6 @@ class KunjunganController extends Controller
 
                 'foto_kunjungan' => json_encode($daftar_nama_foto),
 
-                // FIELD BARU
                 'bukti_transfer' => $nama_bukti_transfer,
 
                 'koordinat' => $request->koordinat,
@@ -468,9 +467,8 @@ class KunjunganController extends Controller
             ]);
 
         } catch (\Exception $e) {
-
             return response()->json([
-                'error' => 'Terjadi kesalahan database: ' . $e->getMessage()
+                'error' => 'Terjadi kesalahan server: ' . $e->getMessage()
             ], 500);
         }
     }
