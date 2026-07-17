@@ -66,7 +66,7 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
             'tanggal pinjam', 'tanggal jt', 'nominal', 'sisa pokok', 'pokok/bulan', 
             'bunga/bulan', 'tunggakan pokok', 'tunggakan bunga', 'denda', 
             'total tunggakan', 'agunan', 'ikatan', 'kode ao', 'nama ao', 
-            'tanggal kunjungan', 'keterangan', 'status/jb'
+            'tanggal kunjungan', 'keterangan', 'nominal kesanggupan bayar', 'status/jb'
         ];
     }
 
@@ -114,6 +114,7 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
                 ? \Carbon\Carbon::parse($row->tgl_input_riil)->format('d/m/Y H:i') 
                 : \Carbon\Carbon::parse($row->tgl_rencana)->format('d/m/Y') . ' (Jadwal)',
             $row->catatan ?? '-',
+            (float)($row->nominal_janji_bayar ?? 0),
             $statusJB
         ];
     }
@@ -123,18 +124,19 @@ class KunjunganExport implements FromCollection, WithHeadings, WithMapping, With
         return [
             'D' => \PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_TEXT, 
             'I' => '#,##0', 'J' => '#,##0', 'K' => '#,##0', 'L' => '#,##0', 
-            'M' => '#,##0', 'N' => '#,##0', 'O' => '#,##0', 'P' => '#,##0', 
+            'M' => '#,##0', 'N' => '#,##0', 'O' => '#,##0', 'P' => '#,##0',
+            'W' => '#,##0',
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        foreach (range('A', 'W') as $columnID) {
+        foreach (range('A', 'X') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
 
         $highestRow = $sheet->getHighestRow();
-        $range = 'A1:W' . $highestRow;
+        $range = 'A1:X' . $highestRow;
 
         return [
             1 => [
