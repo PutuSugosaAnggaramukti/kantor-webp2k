@@ -1,10 +1,10 @@
 <table>
     <thead>
         <tr>
-            <th colspan="15" style="text-align: center; font-weight: bold; font-size: 14px;">REKAPITULASI KUNJUNGAN PER AO</th>
+            <th colspan="16" style="text-align: center; font-weight: bold; font-size: 14px;">REKAPITULASI KUNJUNGAN PER AO</th>
         </tr>
         <tr>
-            <th colspan="15" style="text-align: center;">
+            <th colspan="16" style="text-align: center;">
                 Periode: 
                 {{ \Carbon\Carbon::parse($tglAwal)->locale('id')->translatedFormat('d F') }} 
                 - 
@@ -28,6 +28,7 @@
             <th style="border: 1px solid #000; width: 180px;">Nama AO</th>
             <th style="border: 1px solid #000; width: 100px;">Tanggal</th>
             <th style="border: 1px solid #000; width: 300px;">Catatan Lapangan</th>
+            <th style="border: 1px solid #000; width: 130px;">Tgl Janji Bayar</th>
         </tr>
     </thead>
     <tbody>
@@ -90,6 +91,10 @@
 
                 <td style="border: 1px solid #000; vertical-align: top;">
                     {{ $kunj->catatan ?? '-' }}
+                </td>
+
+                <td style="border: 1px solid #000; text-align: center;">
+                    {{ $kunj->tgl_janji_bayar ? \Carbon\Carbon::parse($kunj->tgl_janji_bayar)->format('d-m-Y') : '-' }}
                 </td>
             </tr>
         @endforeach
