@@ -365,10 +365,11 @@ class KunjunganController extends Controller
             // PROSES FOTO KUNJUNGAN
             // =========================
             $daftar_nama_foto = [];
+            $exifKoordinat = null;
 
             if ($request->hasFile('foto_kunjungan')) {
 
-                foreach ($request->file('foto_kunjungan') as $file) {
+                foreach ($request->file('foto_kunjungan') as $i => $file) {
 
                     $extension = strtolower($file->getClientOriginalExtension());
 
@@ -385,11 +386,11 @@ class KunjunganController extends Controller
                         ], 422);
                     }
 
-                    // VALIDASI WAKTU FOTO
-                    if (!isset($exif['DateTimeOriginal'])) {
-                        return response()->json([
-                            'error' => 'Foto "' . $file->getClientOriginalName() . '" tidak memiliki data waktu asli.'
-                        ], 422);
+                    // EKSTRAK KOORDINAT DARI EXIF FOTO PERTAMA (fallback jika browser gagal)
+                    if ($i === 0) {
+                        $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
+                        $lon = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
+                        $exifKoordinat = number_format($lat, 6, '.', '') . ', ' . number_format($lon, 6, '.', '');
                     }
 
                     // SIMPAN FILE
@@ -454,7 +455,7 @@ class KunjunganController extends Controller
 
                 'bukti_transfer' => $nama_bukti_transfer,
 
-                'koordinat' => $request->koordinat,
+                'koordinat' => $request->koordinat ?: $exifKoordinat,
 
                 'created_at' => now(),
             ]);
