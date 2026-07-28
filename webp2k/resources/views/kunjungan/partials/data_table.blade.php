@@ -68,6 +68,19 @@
         <span>Ubah Jadwal Kunjungan</span>
     </button>
 
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <label for="filter-bulan" style="font-weight: 600; font-size: 14px;">Bulan:</label>
+        <select id="filter-bulan" onchange="filterByBulan(this.value)" style="padding: 8px 12px; border-radius: 20px; border: 1px solid #ddd; outline: none; background-color: #f9f9f9; height: 40px; font-size: 14px; min-width: 160px;">
+            <option value="">Semua Bulan</option>
+            @foreach($daftarBulan as $bulan)
+                @php
+                    $label = \Carbon\Carbon::parse($bulan . '-01')->translatedFormat('F Y');
+                @endphp
+                <option value="{{ $bulan }}" {{ request('bulan') == $bulan ? 'selected' : '' }}>{{ $label }}</option>
+            @endforeach
+        </select>
+    </div>
+
     <div class="search-wrapper">
         <input type="text" 
                id="searchNasabah"
@@ -78,6 +91,14 @@
     </div>
 
 </div>
+
+<script>
+function filterByBulan(bulan) {
+    let url = '/user/data-kunjungan-content';
+    if (bulan) url += '?bulan=' + bulan;
+    loadContent(url);
+}
+</script>
 
 @if(session('success'))
     <div style="padding: 15px; background-color: #d1edda; color: #155724; border-radius: 10px; margin-bottom: 20px;">

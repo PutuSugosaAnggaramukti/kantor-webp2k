@@ -44,7 +44,9 @@ class KunjunganController extends Controller
         if (!$karyawan) return redirect()->back();
 
         $myCode = strtoupper(trim($karyawan->kode_ao));
-        
+
+        // --- FILTER BULAN ---
+        $bulanFilter = request('bulan'); // format Y-m, cth: 2026-07
         
         // 1. QUERY DENGAN FILTER KETAT
        $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)
@@ -56,13 +58,19 @@ class KunjunganController extends Controller
         ->get();
         
         // 2. Ambil Jadwal
-        $jadwal = \App\Models\DataKunjunganAdm::where('karyawan_id', $karyawan->id)->get();
+        $jadwalQuery = \App\Models\DataKunjunganAdm::where('karyawan_id', $karyawan->id);
+        if ($bulanFilter) {
+            $jadwalQuery->where('bulan', $bulanFilter);
+        }
+        $jadwal = $jadwalQuery->get();
 
         // 3. Ambil Realisasi
-        $realisasi = \DB::table('kunjungans')
-            ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $realisasiQuery = \DB::table('kunjungans')
+            ->where('kode_ao', 'LIKE', '%' . $myCode . '%');
+        if ($bulanFilter) {
+            $realisasiQuery->whereRaw("DATE_FORMAT(created_at, '%Y-%m') = ?", [$bulanFilter]);
+        }
+        $realisasi = $realisasiQuery->orderBy('created_at', 'desc')->get();
 
         // 4. Mapping untuk pencarian No Angsuran otomatis
         $mapNasabah = $daftar_nasabah->mapWithKeys(function ($item) {
@@ -149,6 +157,24 @@ class KunjunganController extends Controller
             }
         }
 
+        // --- SORT: terbaru di atas ---
+        $dataFinal = $dataFinal->sortByDesc(function ($item) {
+            return $item->tanggal ?? '0000-00-00';
+        })->values();
+
+        // --- DAFTAR BULAN untuk dropdown filter ---
+        $jadwalBulan = \App\Models\DataKunjunganAdm::where('karyawan_id', $karyawan->id)
+            ->whereNotNull('bulan')
+            ->select('bulan')->distinct()->pluck('bulan');
+
+        $realisasiBulan = \DB::table('kunjungans')
+            ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
+            ->whereNotNull('created_at')
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as bulan")
+            ->distinct()->pluck('bulan');
+
+        $daftarBulan = $jadwalBulan->merge($realisasiBulan)->unique()->sort()->values();
+
         // --- PAGINATION ---
         $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
         $perPage = 10; 
@@ -163,13 +189,14 @@ class KunjunganController extends Controller
         );
 
         if (request()->ajax()) {
-            return view('kunjungan.partials.data_table', compact('data'))->render();
+            return view('kunjungan.partials.data_table', compact('data', 'daftarBulan'))->render();
         }
 
         return view('kunjungan.datakunjungan', [
             'data' => $data,
             'daftar_nasabah' => $daftar_nasabah,
-            'daftar_jadwal_ao' => $jadwal 
+            'daftar_jadwal_ao' => $jadwal,
+            'daftarBulan' => $daftarBulan
         ]);
     }
 
