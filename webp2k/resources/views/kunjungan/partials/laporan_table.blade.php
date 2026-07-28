@@ -6,12 +6,26 @@
     </div>
 </div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
     <a href="{{ route('export.excel') }}" 
     class="btn-excel" 
     style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center;">
         <i class="fa-solid fa-file-excel" style="margin-right: 8px;"></i> Excel
     </a>
+
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <label for="filter-bulan-laporan" style="font-weight: 600; font-size: 14px;">Bulan:</label>
+        <select id="filter-bulan-laporan" onchange="filterLaporanByBulan(this.value)" style="padding: 8px 12px; border-radius: 20px; border: 1px solid #ddd; outline: none; background-color: #f9f9f9; height: 40px; font-size: 14px; min-width: 160px;">
+            <option value="">Semua Bulan</option>
+            @foreach($daftarBulan as $bulan)
+                @php
+                    $label = \Carbon\Carbon::parse($bulan . '-01')->translatedFormat('F Y');
+                @endphp
+                <option value="{{ $bulan }}" {{ request('bulan') == $bulan ? 'selected' : '' }}>{{ $label }}</option>
+            @endforeach
+        </select>
+    </div>
+
     <div style="position: relative;">
         <input type="text" id="searchInput" 
        onkeyup="let f=this.value.toUpperCase(); let rows=document.querySelectorAll('#laporanTable tbody tr'); rows.forEach(r => { let t=r.innerText.toUpperCase(); r.style.display=t.includes(f)?'':'none'; })" 
@@ -20,6 +34,14 @@
         <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 10px; top: 10px; color: #ccc;"></i>
     </div>
 </div>
+
+<script>
+function filterLaporanByBulan(bulan) {
+    let url = '/user/laporan-kunjungan-content';
+    if (bulan) url += '?bulan=' + bulan;
+    loadContent(url);
+}
+</script>
 
 <div class="table-responsive" style="width: 100%; overflow-x: auto;">
     <table id="laporanTable" style="width: 100%; border-collapse: collapse; background: white; border: 2px solid #333;">

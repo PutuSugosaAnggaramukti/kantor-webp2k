@@ -250,6 +250,9 @@ class KunjunganController extends Controller
 
         $myCode = strtoupper(trim($user->kode_ao));
 
+        // --- FILTER BULAN ---
+        $bulanFilter = request('bulan');
+
         $laporanQuery = \DB::table('kunjungans')
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->where('kunjungans.kode_ao', 'LIKE', '%' . $myCode . '%')
@@ -265,6 +268,10 @@ class KunjunganController extends Controller
             ->distinct() 
             ->orderBy('kunjungans.created_at', 'desc');
 
+        if ($bulanFilter) {
+            $laporanQuery->whereRaw("DATE_FORMAT(kunjungans.created_at, '%Y-%m') = ?", [$bulanFilter]);
+        }
+
         $laporan = $laporanQuery->paginate(10)->withQueryString()->through(function($item) {
             return (object)[
                 'id_kunjungan' => $item->id_kunjungan,
@@ -276,7 +283,16 @@ class KunjunganController extends Controller
             ];
         });
 
-        return view('kunjungan.partials.laporan_table', ['laporan' => $laporan]);
+        // --- DAFTAR BULAN untuk dropdown ---
+        $daftarBulan = \DB::table('kunjungans')
+            ->where('kode_ao', 'LIKE', '%' . $myCode . '%')
+            ->whereNotNull('created_at')
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as bulan")
+            ->distinct()
+            ->orderBy('bulan', 'desc')
+            ->pluck('bulan');
+
+        return view('kunjungan.partials.laporan_table', compact('laporan', 'daftarBulan'));
     }
 
     public function detailPelaporan(Request $request)
