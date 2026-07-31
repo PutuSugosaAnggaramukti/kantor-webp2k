@@ -385,7 +385,7 @@ class KunjunganController extends Controller
                 'ada_di_lokasi'        => 'required',
                 'foto_kunjungan'       => 'required',
                 'foto_kunjungan.*'     => 'image|mimes:jpg,jpeg|max:5120',
-                'bukti_transfer'       => 'nullable|image|mimes:jpg,jpeg,png|max:5120',
+                'bukti_transfer'       => 'nullable|file|mimes:jpg,jpeg,png,webp,heic,heif|max:10240',
                 'tgl_janji_bayar'      => 'nullable|date',
                 'nominal_janji_bayar'  => 'nullable',
             ]);

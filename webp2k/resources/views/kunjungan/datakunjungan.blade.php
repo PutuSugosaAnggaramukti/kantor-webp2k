@@ -472,11 +472,15 @@
                     btn.disabled = false;
                     btn.innerHTML = 'Ya, Simpan!';
 
-                    // 6. Notifikasi Gagal
+                    // 6. Notifikasi Gagal (Tampilkan pesan validasi jika ada)
+                    let msg = data.error || 'Terjadi kesalahan saat menyimpan.';
+                    if (data.errors) {
+                        msg = Object.values(data.errors).flat().join('<br>');
+                    }
                     Swal.fire({
                         icon: 'error',
                         title: 'Gagal!',
-                        text: data.error || 'Terjadi kesalahan saat menyimpan.',
+                        html: msg,
                     });
                 }
             })
@@ -572,10 +576,14 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
             });
         } else {
             // 5. Jika Gagal (Error Validasi EXIF, dsb)
+            let msg = data.error || 'Terjadi kesalahan sistem.';
+            if (data.errors) {
+                msg = Object.values(data.errors).flat().join('<br>');
+            }
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal Simpan',
-                text: data.error || 'Terjadi kesalahan sistem.'
+                html: msg
             });
         }
     })
