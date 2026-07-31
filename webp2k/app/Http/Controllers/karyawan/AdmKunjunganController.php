@@ -300,9 +300,9 @@ public function detail($kode_ao)
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->where('kunjungans.kode_ao', $kode_ao_clean)
             ->whereNull('data_kunjungan_adms.no_angsuran')
-            // KUNCI DI SINI: Batasi hanya bulan ini
-            ->whereRaw('MONTH(kunjungans.created_at) = ?', [date('m')])
-            ->whereRaw('YEAR(kunjungans.created_at) = ?', [date('Y')])
+            // Batasi sesuai filter bulan/tahun yang dipilih di dropdown
+            ->whereRaw('MONTH(kunjungans.created_at) = ?', [$bulanFilter])
+            ->whereRaw('YEAR(kunjungans.created_at) = ?', [$tahunFilter])
             ->select(
                 'kunjungans.no_nasabah as no_angsuran',
                 'kunjungans.nama_nasabah as nama_nasabah',
@@ -320,7 +320,7 @@ public function detail($kode_ao)
             );
 
         $data_detail_collection = $data_adm->union($data_mandiri)
-            ->orderByRaw('CASE WHEN status_kunjungan IS NULL THEN 1 ELSE 0 END ASC')
+            ->orderByRaw('CASE WHEN status_kunjungan IS NULL THEN 1 ELSE 0 END ASC, COALESCE(tgl_realisasi, created_at) DESC')
             ->get();
 
         foreach ($data_detail_collection as $item) {
