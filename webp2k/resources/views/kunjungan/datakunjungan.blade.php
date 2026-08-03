@@ -101,6 +101,7 @@
   <script>
     // --- State Global ---
     let fileSiapUpload = null;
+    let lastKnownCoordinate = null;
     const formatRp = new Intl.NumberFormat('id-ID');
 
     // --- Fungsi Navigasi & Load Halaman ---
@@ -204,13 +205,29 @@
    function updateGPSLocation(inputId, statusId) {
         const input = document.getElementById(inputId);
         const status = document.getElementById(statusId);
-        
+
         if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari lokasi (Pastikan GPS HP Aktif)...';
 
-        if (navigator.geolocation) {
+        // Jika lokasi sudah pernah didapat di sesi ini, langsung pakai (tidak perlu request ulang)
+        if (typeof lastKnownCoordinate === 'string' && lastKnownCoordinate) {
+            if (input) input.value = lastKnownCoordinate;
+            if (status) status.innerHTML = '<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci (dari sesi)</span>';
+            return;
+        }
+
+        if (!navigator.geolocation) {
+            if (status) status.innerHTML = "Browser tidak mendukung GPS";
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        const doGetLocation = (highAccuracy) => {
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                    lastKnownCoordinate = loc;
                     if (input) input.value = loc;
                     if (status) {
                         const akurasi = Math.round(pos.coords.accuracy);
@@ -218,45 +235,57 @@
                     }
                 },
                 (error) => {
-                    let pesanError = "GPS Error";
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            pesanError = "Izin Lokasi Ditolak Browser!";
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            pesanError = "Sinyal GPS Tidak Tersedia";
-                            break;
-                        case error.TIMEOUT:
-                            pesanError = "Waktu Tunggu Habis (Sinyal Lemah)";
-                            break;
+                    attempts++;
+                    // Retry otomatis sebelum menyerah (kecuali izin ditolak)
+                    if (attempts < maxAttempts && error.code !== error.PERMISSION_DENIED) {
+                        if (status) status.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Percobaan ulang lokasi (${attempts}/${maxAttempts - 1})...`;
+                        // Percobaan terakhir pakai akurasi rendah (WiFi/seluler) - jauh lebih cepat & sering berhasil di dalam ruangan
+                        doGetLocation(attempts < 2);
+                    } else {
+                        showGeoError(error, status);
                     }
-
-                    // --- NOTIFIKASI PETUNJUK BARU ---
-                    Swal.fire({
-                        title: 'GPS Tidak Terkunci',
-                        html: `<p>${pesanError}</p>
-                            <hr>
-                            <p style="font-size: 14px; text-align: left;">
-                                <b>Petunjuk:</b><br>
-                                1. Pastikan GPS HP Aktif.<br>
-                                2. Jika masih gagal, <b>mohon cantumkan link Share Location</b> dari Google Maps pada kolom <b>Hasil Kunjungan</b>.<br>
-                                3. Pastikan foto yang diupload diambil langsung dari lokasi (EXIF akan dicek sistem).
-                            </p>`,
-                        icon: 'warning',
-                        confirmButtonText: 'Saya Mengerti'
-                    });
-
-                    if (status) status.innerHTML = `<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> ${pesanError}</span>`;
                 },
-                { 
-                    enableHighAccuracy: true, 
-                    timeout: 15000, 
-                    maximumAge: 0 
+                {
+                    enableHighAccuracy: highAccuracy,
+                    timeout: highAccuracy ? 12000 : 8000,
+                    maximumAge: 60000
                 }
             );
-        } else {
-            if (status) status.innerHTML = "Browser tidak mendukung GPS";
+        };
+
+        // Mulai dengan akurasi tinggi, otomatis turun ke akurasi rendah jika gagal
+        doGetLocation(true);
+    }
+
+    function showGeoError(error, status) {
+        let pesanError = "GPS Error";
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                pesanError = "Izin Lokasi Ditolak Browser!";
+                break;
+            case error.POSITION_UNAVAILABLE:
+                pesanError = "Sinyal GPS Tidak Tersedia";
+                break;
+            case error.TIMEOUT:
+                pesanError = "Waktu Tunggu Habis (Sinyal Lemah)";
+                break;
         }
+
+        Swal.fire({
+            title: 'GPS Tidak Terkunci',
+            html: `<p>${pesanError}</p>
+                <hr>
+                <p style="font-size: 14px; text-align: left;">
+                    <b>Petunjuk:</b><br>
+                    1. Pastikan GPS HP Aktif dan izin lokasi diberikan.<br>
+                    2. Jika masih gagal, <b>mohon cantumkan link Share Location</b> dari Google Maps pada kolom <b>Hasil Kunjungan</b>.<br>
+                    3. Foto yang diupload tetap akan diverifikasi via data GPS (EXIF) foto.
+                </p>`,
+            icon: 'warning',
+            confirmButtonText: 'Saya Mengerti'
+        });
+
+        if (status) status.innerHTML = `<span style="color: #dc3545;"><i class="fas fa-times-circle"></i> ${pesanError}</span>`;
     }
 
     function confirmDeleteJadwal(id, nama, noAngsuran) { 
