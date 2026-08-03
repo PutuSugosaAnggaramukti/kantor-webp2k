@@ -409,6 +409,11 @@ class KunjunganController extends Controller
             // =========================
             $daftar_nama_foto = [];
             $exifKoordinat = null;
+            $jumlahFotoValidGps = 0;
+
+            // Koordinat dari browser geolocation (navigator.geolocation saat modal dibuka)
+            $browserKoordinat = trim((string) $request->koordinat);
+            $browserKoordinatValid = $this->isValidCoordinate($browserKoordinat);
 
             if ($request->hasFile('foto_kunjungan')) {
 
@@ -416,24 +421,21 @@ class KunjunganController extends Controller
 
                     $extension = strtolower($file->getClientOriginalExtension());
 
-                    // VALIDASI EXIF GPS
+                    // BACA EXIF GPS (tidak lagi menolak langsung jika tidak ada)
                     $exif = @exif_read_data($file->getRealPath());
+                    $hasExifGps = $exif
+                        && isset($exif['GPSLatitude'])
+                        && isset($exif['GPSLongitude']);
 
-                    if (
-                        !$exif ||
-                        !isset($exif['GPSLatitude']) ||
-                        !isset($exif['GPSLongitude'])
-                    ) {
-                        return response()->json([
-                            'error' => 'Foto "' . $file->getClientOriginalName() . '" tidak memiliki data GPS.'
-                        ], 422);
-                    }
+                    if ($hasExifGps) {
+                        $jumlahFotoValidGps++;
 
-                    // EKSTRAK KOORDINAT DARI EXIF FOTO PERTAMA (fallback jika browser gagal)
-                    if ($i === 0) {
-                        $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
-                        $lon = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
-                        $exifKoordinat = number_format($lat, 6, '.', '') . ', ' . number_format($lon, 6, '.', '');
+                        // EKSTRAK KOORDINAT DARI FOTO PERTAMA YANG PUNYA GPS
+                        if ($exifKoordinat === null) {
+                            $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
+                            $lon = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
+                            $exifKoordinat = number_format($lat, 6, '.', '') . ', ' . number_format($lon, 6, '.', '');
+                        }
                     }
 
                     // SIMPAN FILE
@@ -447,6 +449,17 @@ class KunjunganController extends Controller
                     $daftar_nama_foto[] = $nama_unik;
                 }
             }
+
+            // VALIDASI GPS: butuh minimal SATU sumber lokasi
+            // (foto ber-EXIF GPS ATAU koordinat browser geolocation aktif)
+            if ($jumlahFotoValidGps === 0 && !$browserKoordinatValid) {
+                return response()->json([
+                    'error' => 'Foto tidak memiliki data GPS dan lokasi perangkat tidak terdeteksi. Pastikan GPS HP menyala dan izin lokasi diberikan saat mengisi laporan.'
+                ], 422);
+            }
+
+            // Koordinat akhir: utamakan EXIF foto (lokasi asli), fallback ke browser geolocation
+            $koordinatAkhir = $exifKoordinat ?: $browserKoordinat;
 
             // =========================
             // PROSES BUKTI TRANSFER
@@ -498,7 +511,7 @@ class KunjunganController extends Controller
 
                 'bukti_transfer' => $nama_bukti_transfer,
 
-                'koordinat' => $request->koordinat ?: $exifKoordinat,
+                'koordinat' => $koordinatAkhir,
 
                 'created_at' => now(),
             ]);
@@ -506,8 +519,9 @@ class KunjunganController extends Controller
             return response()->json([
                 'success' =>
                     'Laporan berhasil disimpan! '
-                    . count($daftar_nama_foto)
-                    . ' foto tervalidasi GPS.'
+                    . ($jumlahFotoValidGps > 0
+                        ? $jumlahFotoValidGps . ' foto tervalidasi GPS.'
+                        : 'Lokasi terverifikasi dari GPS perangkat.')
             ]);
 
         } catch (\Exception $e) {
@@ -612,6 +626,22 @@ class KunjunganController extends Controller
         if (count($parts) < 2) return floatval($fraction);
         if (floatval($parts[1]) == 0) return 0;
         return floatval($parts[0]) / floatval($parts[1]);
+    }
+
+    private function isValidCoordinate($coord)
+    {
+        if (empty(trim((string) $coord))) return false;
+
+        $parts = explode(',', $coord);
+        if (count($parts) < 2) return false;
+
+        $lat = trim($parts[0]);
+        $lon = trim($parts[1]);
+
+        if (!is_numeric($lat) || !is_numeric($lon)) return false;
+
+        // Lat/Lon 0,0 menandakan GPS gagal terkunci
+        return !(floatval($lat) == 0 && floatval($lon) == 0);
     }
 
     public function exportPDF($id)
