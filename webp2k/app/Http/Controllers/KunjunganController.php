@@ -48,13 +48,8 @@ class KunjunganController extends Controller
         // --- FILTER BULAN ---
         $bulanFilter = request('bulan'); // format Y-m, cth: 2026-07
         
-        // 1. QUERY DENGAN FILTER KETAT
-       $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)
-        ->where(function($query) {
-            $query->where('kode', 'LIKE', 'PU.8%') 
-                ->orWhere('kode', 'LIKE', 'PG.8%');
-        })
-        ->orderBy('nasabah', 'asc')
+        // 1. Ambil semua nasabah untuk dropdown pilihan (tanpa filter kode lama yang terlalu ketat)
+       $daftar_nasabah = \App\Models\Nasabah::orderBy('nasabah', 'asc')
         ->get();
         
         // 2. Ambil Jadwal
