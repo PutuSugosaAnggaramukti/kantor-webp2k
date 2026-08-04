@@ -44,14 +44,9 @@ class NasabahImport implements ToModel, WithMultipleSheets
         $valAJ = isset($row[35]) ? trim($row[35]) : '';
         $valAK = isset($row[36]) ? trim($row[36]) : '';
 
-        // Deteksi Kode AO: Prioritaskan kolom yang berisi teks (seperti C-011) 
-        // dan bukan angka '0' atau kosong.
-        $aoNasabahAsli = '-';
-        if ($valAJ !== '' && $valAJ !== '0' && $valAJ !== '-') {
-            $aoNasabahAsli = $valAJ;
-        } elseif ($valAK !== '' && $valAK !== '0' && $valAK !== '-') {
-            $aoNasabahAsli = $valAK;
-        }
+        // Deteksi Kode AO: Prioritaskan kode C-xxx (cocok dengan kode login AO),
+        // jika tidak ada baru pakai kolom berisi teks lain yang valid.
+        $aoNasabahAsli = $this->detectKodeAo($valAJ, $valAK);
 
         // Gunakan logika serupa untuk Ikatan jika kolom AA (26) bergeser ke AB (27)
         $valAA = isset($row[26]) ? trim($row[26]) : '';
@@ -91,6 +86,28 @@ class NasabahImport implements ToModel, WithMultipleSheets
                 'bulan'           => $this->labelBulan,
             ]
         );
+    }
+
+    private function detectKodeAo($valAJ, $valAK)
+    {
+        // Kumpulkan semua kandidat kode AO yang valid (bukan kosong/0/-)
+        $kandidat = [];
+        foreach ([$valAJ, $valAK] as $val) {
+            if ($val !== '' && $val !== '0' && $val !== '-') {
+                $kandidat[] = $val;
+            }
+        }
+        if (empty($kandidat)) return '-';
+
+        // Prioritas 1: kode C-xxx (cocok dengan kode login AO)
+        foreach ($kandidat as $val) {
+            if (preg_match('/^C-\d+$/i', trim($val))) {
+                return strtoupper(trim($val));
+            }
+        }
+
+        // Prioritas 2: kode lain (AO-xxx, dst) yang valid
+        return strtoupper(trim($kandidat[0]));
     }
 
     private function cleanNumber($value) {
