@@ -39,14 +39,12 @@ class NasabahImport implements ToModel, WithMultipleSheets
             return null;
         }
 
-        // 2. LOGIKA DINAMIS UNTUK KOLOM YANG BERGESER (AJ atau AK)
-        // Ambil nilai dari kolom AJ (indeks 35) dan AK (indeks 36)
-        $valAJ = isset($row[35]) ? trim($row[35]) : '';
-        $valAK = isset($row[36]) ? trim($row[36]) : '';
+        // 2. KOLOM "Kode AO" POSISINYA BERBEDA ANTAR SHEET:
+        //    - Sheet 1-4 (Lancar, DPK, Kurang Lancar, Diragukan): kolom AK (indeks 36)
+        //    - Sheet 5 (Macet): kolom AL (indeks 37)
+        $kodeAoIdx = ($this->currentKol == '5') ? 37 : 36;
 
-        // Deteksi Kode AO: Prioritaskan kode C-xxx (cocok dengan kode login AO),
-        // jika tidak ada baru pakai kolom berisi teks lain yang valid.
-        $aoNasabahAsli = $this->detectKodeAo($valAJ, $valAK);
+        $aoNasabahAsli = $this->detectKodeAo($row, $kodeAoIdx);
 
         // Gunakan logika serupa untuk Ikatan jika kolom AA (26) bergeser ke AB (27)
         $valAA = isset($row[26]) ? trim($row[26]) : '';
@@ -88,26 +86,32 @@ class NasabahImport implements ToModel, WithMultipleSheets
         );
     }
 
-    private function detectKodeAo($valAJ, $valAK)
+    private function detectKodeAo($row, $primaryIdx)
     {
-        // Kumpulkan semua kandidat kode AO yang valid (bukan kosong/0/-)
+        // Kumpulkan kandidat dari kolom di sekitar posisi "Kode AO"
         $kandidat = [];
-        foreach ([$valAJ, $valAK] as $val) {
-            if ($val !== '' && $val !== '0' && $val !== '-') {
-                $kandidat[] = $val;
+        $start = max(34, $primaryIdx - 1);
+        $end   = min(38, $primaryIdx + 1);
+        for ($i = $start; $i <= $end; $i++) {
+            if (!isset($row[$i])) continue;
+            $v = strtoupper(trim((string)$row[$i]));
+            if ($v === '' || $v === '0' || $v === '-' || $v === 'NONE' || $v === 'NULL') continue;
+            // Hanya terima nilai yang menyerupai kode AO: C-009, AO-022, FO-001, dst
+            if (preg_match('/^[A-Z]{1,4}-\d+$/', $v)) {
+                $kandidat[] = $v;
             }
         }
         if (empty($kandidat)) return '-';
 
         // Prioritas 1: kode C-xxx (cocok dengan kode login AO)
-        foreach ($kandidat as $val) {
-            if (preg_match('/^C-\d+$/i', trim($val))) {
-                return strtoupper(trim($val));
+        foreach ($kandidat as $v) {
+            if (preg_match('/^C-\d+$/', $v)) {
+                return $v;
             }
         }
 
         // Prioritas 2: kode lain (AO-xxx, dst) yang valid
-        return strtoupper(trim($kandidat[0]));
+        return $kandidat[0];
     }
 
     private function cleanNumber($value) {
