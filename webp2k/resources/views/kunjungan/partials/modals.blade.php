@@ -216,7 +216,7 @@
                                 data-rekening="{{ $n->rekening_kredit }}"
                                 data-alamat="{{ $n->alamat }}" 
                                 data-kol="{{ $n->kol }}">
-                            {{ $n->no_angsuran }} - {{ $n->nasabah }}
+                            {{ $n->kode }} - {{ $n->no_angsuran }} - {{ $n->nasabah }}
                         </option>
                     @endforeach
                 </select>
