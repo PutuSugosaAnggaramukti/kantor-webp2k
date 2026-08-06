@@ -230,6 +230,19 @@
         return false;
     }
 
+    /**
+     * Cek apakah string koordinat valid (bukan kosong, bukan 0,0 dalam format apapun).
+     */
+    function isKoordValid(val) {
+        if (!val) return false;
+        const parts = String(val).split(',');
+        if (parts.length < 2) return false;
+        const lat = parseFloat(parts[0]);
+        const lon = parseFloat(parts[1]);
+        if (isNaN(lat) || isNaN(lon)) return false;
+        return !(lat === 0 && lon === 0);
+    }
+
     function bacaGpsDariFotoDipilih(fileInput) {
         const form = fileInput.closest('form');
         const isManual = form && form.id === 'formKunjunganMandiri';
@@ -347,11 +360,12 @@
 
         if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari lokasi (Pastikan GPS HP Aktif)...';
 
-        // Jika lokasi sudah pernah didapat di sesi ini, langsung pakai (tidak perlu request ulang)
+        // Prefill cepat dari cache sesi jika ada (field tidak pernah kosong),
+        // TAPI tetap jalankan watchPosition agar koordinat disegarkan ke lokasi terkini.
+        // (Jangan return di sini: bila hanya pakai cache, koordinat bisa stale atau kosong
+        //  jika kunjungan sebelumnya gagal terkunci.)
         if (typeof lastKnownCoordinate === 'string' && lastKnownCoordinate) {
             if (input) input.value = lastKnownCoordinate;
-            if (status) status.innerHTML = '<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci (dari sesi)</span>';
-            return;
         }
 
         if (!navigator.geolocation) {
@@ -651,8 +665,8 @@
     function lockCoordinateBeforeSave(inputId) {
         return new Promise((resolve) => {
             const input = document.getElementById(inputId);
-            // Sudah ada & valid? langsung selesai
-            if (input && input.value !== '' && input.value !== '0, 0' && input.value !== '0,0') {
+            // Sudah ada & valid (bukan 0,0 dalam format apapun)? langsung selesai
+            if (input && isKoordValid(input.value)) {
                 resolve();
                 return;
             }
@@ -668,29 +682,61 @@
                 kunciKoordinatDariFoto(fileInput, inputId, isManual ? 'manual-location-status' : 'location-status')
                     .then((ok) => {
                         if (ok) { resolve(); return; }
-                        fallbackGeolocation(input, resolve);
+                        tungguFixGps(input, resolve);
                     });
                 return;
             }
 
-            fallbackGeolocation(input, resolve);
+            tungguFixGps(input, resolve);
         });
     }
 
-    function fallbackGeolocation(input, resolve) {
+    // Menunggu fix GPS dengan sabar (hingga ~20 detik) sebelum menyimpan.
+    // Memakai watchPosition (lebih andal daripada getCurrentPosition sekali jalan)
+    // yang gagal di banyak HP karena sinyal GPS butuh waktu lebih lama dari timeout.
+    function tungguFixGps(input, resolve) {
         if (!navigator.geolocation) { resolve(); return; }
 
+        let watchId = null;
+        let settled = false;
+
+        const selesai = (loc) => {
+            if (settled) return;
+            settled = true;
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            if (loc) {
+                lastKnownCoordinate = loc;
+                if (input) input.value = loc;
+            }
+            resolve();
+        };
+
+        const timeoutId = setTimeout(() => selesai(null), 20000);
+
+        watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                if (pos.coords.latitude === 0 && pos.coords.longitude === 0) return;
+                clearTimeout(timeoutId);
+                const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                selesai(loc);
+            },
+            () => { /* tetap menunggu */ },
+            { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+        );
+
+        // Juga coba jalur cepat via WiFi/seluler (akurasi rendah)
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                if (pos.coords.latitude !== 0 && pos.coords.longitude !== 0) {
-                    const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-                    lastKnownCoordinate = loc;
-                    if (input) input.value = loc;
-                }
-                resolve();
+                if (pos.coords.latitude === 0 && pos.coords.longitude === 0) return;
+                clearTimeout(timeoutId);
+                const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                selesai(loc);
             },
-            () => resolve(),
-            { enableHighAccuracy: false, timeout: 7000, maximumAge: 0 }
+            () => { /* biarkan watchPosition lanjut */ },
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }
         );
     }
 
