@@ -335,17 +335,24 @@ public function detail($kode_ao)
                 'nama' => $item->nama_nasabah
             ];
 
-            // Proses EXIF tetap sama
+            // Proses EXIF tetap sama (telusuri SEMUA foto, bukan hanya foto pertama)
             if ($item->id_kunjungan && $item->foto_kunjungan) {
                 $fotos = json_decode($item->foto_kunjungan, true);
-                $namaFoto = (is_array($fotos) && count($fotos) > 0) ? $fotos[0] : $item->foto_kunjungan;
-                $path = public_path('uploads/kunjungan/' . $namaFoto);
-                if ($namaFoto && file_exists($path)) {
+                if (!is_array($fotos) || count($fotos) === 0) {
+                    $fotos = [$item->foto_kunjungan];
+                }
+                foreach ($fotos as $namaFoto) {
+                    $path = public_path('uploads/kunjungan/' . $namaFoto);
+                    if (!$namaFoto || !file_exists($path)) continue;
                     $exif = @exif_read_data($path);
                     if ($exif && isset($exif['GPSLatitude'])) {
                         $lat = $this->convertFractionToDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
                         $log = $this->convertFractionToDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
-                        $item->koordinat = $lat . ',' . $log;
+                        // Hindari 0,0 yang menandakan GPS tak terkunci
+                        if ($lat != 0 || $log != 0) {
+                            $item->koordinat = $lat . ',' . $log;
+                            break;
+                        }
                     }
                 }
             }

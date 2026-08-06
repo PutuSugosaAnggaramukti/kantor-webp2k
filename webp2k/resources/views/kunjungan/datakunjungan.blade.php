@@ -102,6 +102,7 @@
     // --- State Global ---
     let fileSiapUpload = null;
     let lastKnownCoordinate = null;
+    let gpsWatchId = null;
     const formatRp = new Intl.NumberFormat('id-ID');
 
     // --- Fungsi Navigasi & Load Halaman ---
@@ -197,6 +198,11 @@
                 if (form) form.reset();
             }
         });
+        // Hentikan watchPosition agar tidak membuang baterai & tidak menimpa sesi
+        if (gpsWatchId !== null) {
+            navigator.geolocation.clearWatch(gpsWatchId);
+            gpsWatchId = null;
+        }
         const statusText = document.getElementById('location-status');
         if (statusText) statusText.innerHTML = '';
         fileSiapUpload = null;
@@ -220,41 +226,67 @@
             return;
         }
 
-        let attempts = 0;
-        const maxAttempts = 3;
+        // Hentikan watch lama (jika masih berjalan) agar tidak dobel
+        if (gpsWatchId !== null) {
+            navigator.geolocation.clearWatch(gpsWatchId);
+            gpsWatchId = null;
+        }
 
-        const doGetLocation = (highAccuracy) => {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-                    lastKnownCoordinate = loc;
-                    if (input) input.value = loc;
-                    if (status) {
-                        const akurasi = Math.round(pos.coords.accuracy);
-                        status.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci (Akurasi: ${akurasi}m)</span>`;
+        // METODE UTAMA: watchPosition (terus-menerus mencari fix hingga dapat lokasi).
+        // getCurrentPosition hanya request sekali dan sering gagal di HP non-Xiaomi
+        // karena sinyal GPS butuh waktu > timeout. watchPosition jauh lebih andal.
+        gpsWatchId = navigator.geolocation.watchPosition(
+            (pos) => {
+                // Jangan kunci 0,0 (GPS belum fix)
+                if (pos.coords.latitude === 0 && pos.coords.longitude === 0) return;
+                const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                lastKnownCoordinate = loc;
+                if (input) input.value = loc;
+                if (status) {
+                    const akurasi = Math.round(pos.coords.accuracy);
+                    // Stop watch jika akurasi sudah cukup bagus (< 100m)
+                    if (pos.coords.accuracy <= 100 && gpsWatchId !== null) {
+                        navigator.geolocation.clearWatch(gpsWatchId);
+                        gpsWatchId = null;
                     }
-                },
-                (error) => {
-                    attempts++;
-                    // Retry otomatis sebelum menyerah (kecuali izin ditolak)
-                    if (attempts < maxAttempts && error.code !== error.PERMISSION_DENIED) {
-                        if (status) status.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Percobaan ulang lokasi (${attempts}/${maxAttempts - 1})...`;
-                        // Percobaan terakhir pakai akurasi rendah (WiFi/seluler) - jauh lebih cepat & sering berhasil di dalam ruangan
-                        doGetLocation(attempts < 2);
-                    } else {
-                        showGeoError(error, status);
-                    }
-                },
-                {
-                    enableHighAccuracy: highAccuracy,
-                    timeout: highAccuracy ? 12000 : 8000,
-                    maximumAge: 60000
+                    status.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci (Akurasi: ${akurasi}m)</span>`;
                 }
-            );
-        };
+            },
+            (error) => {
+                // Watch gagal sesaat: jangan langsung menyerah, coba sekali lagi
+                if (status && error.code !== error.PERMISSION_DENIED) {
+                    status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sinyal GPS dicari...';
+                }
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 30000,      // lebih panjang karena watch menunggu fix satelit
+                maximumAge: 0
+            }
+        );
 
-        // Mulai dengan akurasi tinggi, otomatis turun ke akurasi rendah jika gagal
-        doGetLocation(true);
+        // FALLBACK: coba sekali getCurrentPosition dgn akurasi rendah (WiFi/seluler) agar cepat
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                if (pos.coords.latitude === 0 && pos.coords.longitude === 0) return;
+                const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                lastKnownCoordinate = loc;
+                if (input) input.value = loc;
+                if (status) {
+                    const akurasi = Math.round(pos.coords.accuracy);
+                    status.innerHTML = `<span style="color: #28a745;"><i class="fas fa-check-circle"></i> Lokasi Terkunci (Akurasi: ${akurasi}m)</span>`;
+                }
+            },
+            (error) => {
+                // Tidak menyerah: biarkan watchPosition terus mencoba
+                if (status) status.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memperkuat sinyal GPS...';
+            },
+            {
+                enableHighAccuracy: false,  // akurasi rendah = fix cepat lewat WiFi/seluler
+                timeout: 8000,
+                maximumAge: 0
+            }
+        );
     }
 
     function showGeoError(error, status) {
@@ -441,7 +473,6 @@
 
     const btn = this; // Simpan referensi tombol
     const form = btn.closest('form');
-    const formData = new FormData(form);
 
     // 1. Cek jika sedang loading (mencegah double click)
     if (btn.disabled) return;
@@ -473,6 +504,43 @@
                 }
             });
 
+            // 3b. KUNCI ULANG KOORDINAT saat menyimpan: pastikan field koordinat terisi
+            // (kalau tadi modal cepat dibuka sebelum GPS fix, ini kesempatan terakhir)
+            lockCoordinateBeforeSave('form-koordinat').then(() => {
+                // Bangun ulang FormData setelah koordinat terakhir diperbarui
+                const formData = new FormData(form);
+                submitKunjungan(form, formData, btn);
+            });
+        }
+    });
+    });
+
+    function lockCoordinateBeforeSave(inputId) {
+        return new Promise((resolve) => {
+            const input = document.getElementById(inputId);
+            // Sudah ada & valid? langsung selesai
+            if (input && input.value !== '' && input.value !== '0, 0' && input.value !== '0,0') {
+                resolve();
+                return;
+            }
+            if (!navigator.geolocation) { resolve(); return; }
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    if (pos.coords.latitude !== 0 && pos.coords.longitude !== 0) {
+                        const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                        lastKnownCoordinate = loc;
+                        if (input) input.value = loc;
+                    }
+                    resolve();
+                },
+                () => resolve(),
+                { enableHighAccuracy: false, timeout: 7000, maximumAge: 0 }
+            );
+        });
+    }
+
+    function submitKunjungan(form, formData, btn) {
             // 4. Kirim data menggunakan Fetch API
             fetch(form.action, {
                 method: 'POST',
@@ -521,9 +589,7 @@
                 console.error('Error:', error);
                 Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
             });
-        }
-    });
-});
+    }
 
     // --- Handler Pagination AJAX ---
 $(document).on('click', '.pagination a', function(e) {
@@ -567,6 +633,11 @@ function openManualModal() {
 document.getElementById('formKunjunganMandiri').addEventListener('submit', function(e) {
     e.preventDefault(); // Mencegah browser pindah halaman
 
+    const formManual = this;
+
+    // Kunci ulang koordinat sebelum simpan (pastikan manual-koordinat terisi)
+    lockCoordinateBeforeSave('manual-koordinat').then(() => {
+
     // 1. Tampilkan Loading (Penting karena proses validasi GPS foto cukup berat)
     Swal.fire({
         title: 'Sedang Menyimpan...',
@@ -577,11 +648,11 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
         }
     });
 
-    // 2. Ambil data dari form
-    const formData = new FormData(this);
+    // 2. Ambil data dari form (setelah koordinat terakhir diperbarui)
+    const formData = new FormData(formManual);
 
     // 3. Kirim via Fetch API (AJAX)
-    fetch(this.action, {
+    fetch(formManual.action, {
         method: 'POST',
         body: formData,
         headers: {
@@ -619,6 +690,7 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
     .catch(error => {
         console.error('Error:', error);
         Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+    });
     });
 });
 

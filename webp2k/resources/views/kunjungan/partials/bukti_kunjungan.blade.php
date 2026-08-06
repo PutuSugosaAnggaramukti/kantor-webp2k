@@ -39,7 +39,7 @@
         $fotos = $detail->foto_kunjungan ? [$detail->foto_kunjungan] : [];
     }
     
-    // Ambil foto pertama untuk EXIF
+    // Ambil foto pertama untuk EXIF (waktu)
     $namaFotoUtama = count($fotos) > 0 ? $fotos[0] : null;
     
     $pathFoto = $namaFotoUtama ? public_path('uploads/kunjungan/' . $namaFotoUtama) : null;
@@ -63,9 +63,21 @@
                     ]);
                 }
             }
-            if (isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
-                $lat = getGpsDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef']);
-                $lon = getGpsDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef']);
+        }
+    }
+
+    // TELUSURI SEMUA FOTO untuk mencari koordinat EXIF GPS.
+    // Sebelumnya hanya foto pertama yang dibaca -> padahal lokasi bisa ada di foto ke-2/3/dst.
+    foreach ($fotos as $foto) {
+        if ($koordinatExif !== null) break;
+        $pathCek = public_path('uploads/kunjungan/' . $foto);
+        if (!file_exists($pathCek)) continue;
+        $exifCek = @exif_read_data($pathCek);
+        if ($exifCek && isset($exifCek['GPSLatitude']) && isset($exifCek['GPSLongitude'])) {
+            $lat = getGpsDecimal($exifCek['GPSLatitude'], $exifCek['GPSLatitudeRef']);
+            $lon = getGpsDecimal($exifCek['GPSLongitude'], $exifCek['GPSLongitudeRef']);
+            // Hindari 0,0 yang menandakan GPS tak terkunci
+            if ($lat != 0 || $lon != 0) {
                 $koordinatExif = $lat . ',' . $lon;
             }
         }
