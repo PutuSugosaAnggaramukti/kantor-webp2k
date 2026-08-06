@@ -518,7 +518,7 @@ class KunjunganController extends Controller
 
                 'koordinat' => $koordinatAkhir,
 
-                'created_at' => now(),
+                'created_at' => $this->resolveWaktuLaporan($request),
             ]);
 
             return response()->json([
@@ -647,6 +647,31 @@ class KunjunganController extends Controller
 
         // Lat/Lon 0,0 menandakan GPS gagal terkunci
         return !(floatval($lat) == 0 && floatval($lon) == 0);
+    }
+
+    /**
+     * Tentukan waktu laporan.
+     * Prioritas: jam REAL dari HP user (kiriman waktu_laporan) agar jam laporan
+     * sesuai dengan jam di HP saat mengumpulkan laporan.
+     * Fallback ke waktu server jika tidak dikirim / format tidak valid.
+     */
+    private function resolveWaktuLaporan($request)
+    {
+        $waktuHp = trim((string) $request->input('waktu_laporan'));
+
+        if ($waktuHp !== '') {
+            try {
+                $parsed = \Carbon\Carbon::parse($waktuHp);
+                // Jangan terima tanggal yang absurd/masa depan jauh (> 24 jam)
+                if (!$parsed->isFuture() || $parsed->diffInMinutes(now()) <= 1440) {
+                    return $parsed->format('Y-m-d H:i:s');
+                }
+            } catch (\Exception $e) {
+                // Abaikan, lanjut ke fallback
+            }
+        }
+
+        return now();
     }
 
     public function exportPDF($id)

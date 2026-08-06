@@ -251,6 +251,19 @@
         kunciKoordinatDariFoto(fileInput, koordinatId, statusId);
     }
 
+    /**
+     * Isi field waktu_laporan dengan jam REAL dari HP user (bukan jam server).
+     * Format: YYYY-MM-DD HH:MM:SS (zona waktu lokal perangkat).
+     */
+    function setWaktuLaporanHp(inputId) {
+        const el = document.getElementById(inputId);
+        if (!el) return;
+        const d = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        el.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ` +
+                   `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+    }
+
     // --- Fungsi Navigasi & Load Halaman ---
     function loadPage(pageName) {
         const contentArea = document.getElementById('konten-utama');
@@ -654,6 +667,8 @@
             // 3b. KUNCI ULANG KOORDINAT saat menyimpan: pastikan field koordinat terisi
             // (kalau tadi modal cepat dibuka sebelum GPS fix, ini kesempatan terakhir)
             lockCoordinateBeforeSave('form-koordinat').then(() => {
+                // Kunci juga jam REAL dari HP user
+                setWaktuLaporanHp('form-waktu-laporan');
                 // Bangun ulang FormData setelah koordinat terakhir diperbarui
                 const formData = new FormData(form);
                 submitKunjungan(form, formData, btn);
@@ -837,6 +852,9 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
 
     // Kunci ulang koordinat sebelum simpan (pastikan manual-koordinat terisi)
     lockCoordinateBeforeSave('manual-koordinat').then(() => {
+
+    // Kunci jam REAL dari HP user
+    setWaktuLaporanHp('manual-waktu-laporan');
 
     // 1. Tampilkan Loading (Penting karena proses validasi GPS foto cukup berat)
     Swal.fire({

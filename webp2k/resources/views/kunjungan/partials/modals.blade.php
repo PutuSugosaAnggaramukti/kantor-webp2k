@@ -80,6 +80,7 @@
                 </div>
 
                 <input type="hidden" name="koordinat" id="form-koordinat">
+                <input type="hidden" name="waktu_laporan" id="form-waktu-laporan">
                 <p id="location-status" style="font-size: 11px; color: #888;">
                     <i class="fas fa-spinner fa-spin"></i> Mendeteksi lokasi GPS...
                 </p>
@@ -156,6 +157,7 @@
             </div>
 
             <input type="hidden" name="koordinat" id="manual-koordinat">
+            <input type="hidden" name="waktu_laporan" id="manual-waktu-laporan">
             <p id="manual-location-status" style="font-size: 11px; color: #888;">
                 <i class="fas fa-spinner fa-spin"></i> Mendeteksi lokasi GPS...
             </p>
