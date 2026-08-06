@@ -63,7 +63,43 @@
             </tr>
             <tr style="border: none;">
                 <td style="border: none; text-align: left;"><strong>Koordinat Lokasi</strong></td>
-                <td style="border: none; text-align: left;">: {{ $detail->koordinat }}</td>
+                <td style="border: none; text-align: left;">: @php
+                    // Perangi koordinat 0,0: coba pulihkan dari EXIF GPS foto yang sudah terupload
+                    $pdfCoord = trim((string)($detail->koordinat ?? ''));
+                    $pdfParts = explode(',', $pdfCoord);
+                    $pdfIsZero = (count($pdfParts) >= 2 && (float)trim($pdfParts[0]) == 0 && (float)trim($pdfParts[1]) == 0);
+                    $pdfFix = (empty($pdfCoord) || $pdfCoord === '-') ? null : (!$pdfIsZero ? $pdfCoord : null);
+
+                    if ($pdfFix === null && !empty($detail->foto_kunjungan)) {
+                        $pdfFotoList = json_decode($detail->foto_kunjungan, true);
+                        if (!is_array($pdfFotoList) || count($pdfFotoList) === 0) {
+                            $pdfFotoList = [$detail->foto_kunjungan];
+                        }
+                        foreach ($pdfFotoList as $pdfFoto) {
+                            $pdfPath = public_path('uploads/kunjungan/' . $pdfFoto);
+                            if (!file_exists($pdfPath)) continue;
+                            $pdfExif = @exif_read_data($pdfPath);
+                            if ($pdfExif && isset($pdfExif['GPSLatitude']) && isset($pdfExif['GPSLongitude'])) {
+                                $conv = function($v) {
+                                    if (is_string($v) && strpos($v, '/') !== false) {
+                                        $p = explode('/', $v);
+                                        return ((float)$p[1] > 0) ? ((float)$p[0] / (float)$p[1]) : 0;
+                                    }
+                                    return (float)$v;
+                                };
+                                $lat = $conv($pdfExif['GPSLatitude'][0]) + ($conv($pdfExif['GPSLatitude'][1]) / 60) + ($conv($pdfExif['GPSLatitude'][2]) / 3600);
+                                $lon = $conv($pdfExif['GPSLongitude'][0]) + ($conv($pdfExif['GPSLongitude'][1]) / 60) + ($conv($pdfExif['GPSLongitude'][2]) / 3600);
+                                $lat = ($pdfExif['GPSLatitudeRef'] == 'S' ? -1 : 1) * $lat;
+                                $lon = ($pdfExif['GPSLongitudeRef'] == 'W' ? -1 : 1) * $lon;
+                                if ($lat != 0 || $lon != 0) {
+                                    $pdfFix = number_format($lat, 6, '.', '') . ', ' . number_format($lon, 6, '.', '');
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                @endphp
+                {{ $pdfFix ?? '- (GPS tidak tercatat)' }}</td>
             </tr>
             <tr style="border: none;">
                 <td style="border: none; text-align: left;"><strong>Catatan AO</strong></td>
