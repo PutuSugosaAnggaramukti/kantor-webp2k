@@ -60,7 +60,8 @@
                     <label style="font-weight: 600;">Foto Kunjungan (Wajib GPS Nyala)</label>
                     <input type="file" name="foto_kunjungan[]" class="form-control" multiple 
                         accept="image/jpeg, image/jpg" required 
-                        style="border: 1px solid #ddd; padding: 8px;">
+                        style="border: 1px solid #ddd; padding: 8px;"
+                        onchange="bacaGpsDariFotoDipilih(this)">
                     
                     <div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 10px; margin-top: 10px; border-radius: 4px;">
                         <p style="font-size: 11px; color: #856404; margin: 0; line-height: 1.4;">
@@ -143,7 +144,7 @@
 
             <div class="form-group mb-3">
                 <label style="font-weight: 600;">Foto Kunjungan (Wajib GPS)</label>
-                <input type="file" name="foto_kunjungan[]" class="form-control" multiple accept=".jpg,.jpeg" required>
+                <input type="file" name="foto_kunjungan[]" class="form-control" multiple accept=".jpg,.jpeg" required onchange="bacaGpsDariFotoDipilih(this)">
             </div>
 
             <div class="form-group mb-3">

@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class BackfillKoordinatKunjungan extends Command
 {
-    protected $signature = 'kunjungan:backfill-koordinat';
+    protected $signature = 'kunjungan:backfill-koordinat {--dry-run : Hanya analisis, tidak menulis perubahan}';
 
     protected $description = 'Perbaiki koordinat 0,0 pada kunjungan dari EXIF GPS foto yang sudah terupload';
 
@@ -27,6 +27,11 @@ class BackfillKoordinatKunjungan extends Command
         $this->info('Menemukan ' . $rows->count() . ' kunjungan dengan koordinat kosong/0,0.');
 
         $fixed = 0;
+        $noFile = 0;
+        $noExif = 0;
+        $zeroGps = 0;
+        $dryRun = $this->option('dry-run');
+
         foreach ($rows as $row) {
             $fotos = json_decode($row->foto_kunjungan ?? '', true);
             if (!is_array($fotos) || count($fotos) === 0) {
@@ -34,18 +39,52 @@ class BackfillKoordinatKunjungan extends Command
                     $fotos = [$row->foto_kunjungan];
                 }
             }
-            if (empty($fotos)) continue;
+            if (empty($fotos)) { $noFile++; continue; }
+
+            // cek ketersediaan file
+            $fileExists = false;
+            foreach ($fotos as $foto) {
+                if (file_exists(public_path('uploads/kunjungan/' . $foto))) { $fileExists = true; break; }
+            }
+            if (!$fileExists) { $noFile++; continue; }
 
             $koordinat = $this->extractKoordinatDariFoto($fotos);
             if ($koordinat) {
-                DB::table('kunjungans')->where('id', $row->id)->update(['koordinat' => $koordinat]);
+                if (!$dryRun) {
+                    DB::table('kunjungans')->where('id', $row->id)->update(['koordinat' => $koordinat]);
+                }
                 $fixed++;
                 $this->line("  #{$row->id}: {$koordinat}");
+            } elseif ($this->hasZeroGps($fotos)) {
+                $zeroGps++;
+            } else {
+                $noExif++;
             }
         }
 
-        $this->info("Selesai. {$fixed} kunjungan berhasil diperbaiki.");
+        $this->info("Selesai.");
+        $this->info("  Dapat diperbaiki      : {$fixed}");
+        $this->info("  File foto tidak ada    : {$noFile}");
+        $this->info("  Tidak punya EXIF GPS   : {$noExif}");
+        $this->info("  EXIF GPS = 0,0         : {$zeroGps}");
+        if ($dryRun) {
+            $this->warn('Mode DRY-RUN: tidak ada data yang diubah.');
+        }
         return 0;
+    }
+
+    private function hasZeroGps($fotos)
+    {
+        foreach ($fotos as $foto) {
+            $path = public_path('uploads/kunjungan/' . $foto);
+            if (!file_exists($path)) continue;
+            $exif = @exif_read_data($path);
+            if (!$exif || !isset($exif['GPSLatitude']) || !isset($exif['GPSLongitude'])) continue;
+            $lat = $this->gpsDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
+            $lon = $this->gpsDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
+            if ($lat == 0 && $lon == 0) return true;
+        }
+        return false;
     }
 
     private function extractKoordinatDariFoto($fotos)

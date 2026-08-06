@@ -103,7 +103,140 @@
     let fileSiapUpload = null;
     let lastKnownCoordinate = null;
     let gpsWatchId = null;
+    let koordinatDariFotoExif = null;
     const formatRp = new Intl.NumberFormat('id-ID');
+
+    /**
+     * Parser EXIF GPS murni JavaScript (tanpa library).
+     * Membaca koordinat langsung dari file foto (JPG/JPEG) yang dipilih user,
+     * sehingga tetap berfungsi di HP yang API geolocation-nya gagal (mis. VIVO).
+     */
+    function bacaExifGpsDariFile(file) {
+        return new Promise((resolve) => {
+            if (!file) { resolve(null); return; }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    resolve(ekstrakGpsExif(e.target.result));
+                } catch (err) {
+                    resolve(null);
+                }
+            };
+            reader.onerror = () => resolve(null);
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    function ekstrakGpsExif(buffer) {
+        const dv = new DataView(buffer);
+        if (dv.getUint8(0) !== 0xFF || dv.getUint8(1) !== 0xD8) return null;
+
+        // Cari segmen APP1 yang berisi "Exif\0\0"
+        let offset = 2;
+        let tiffStart = -1;
+        while (offset + 4 < buffer.byteLength) {
+            if (dv.getUint8(offset) !== 0xFF) { offset++; continue; }
+            const marker = dv.getUint8(offset + 1);
+            if (marker === 0xE1) {
+                const length = dv.getUint16(offset + 2);
+                if (dv.getUint32(offset + 4) === 0x45786966 && dv.getUint16(offset + 8) === 0) {
+                    tiffStart = offset + 10;
+                    break;
+                }
+            }
+            if (marker >= 0xD0 && marker <= 0xD7) { offset += 2; continue; }
+            if (marker === 0xD8 || marker === 0xD9) { offset += 1; continue; }
+            offset += 2 + dv.getUint16(offset + 2);
+        }
+        if (tiffStart < 0) return null;
+
+        const le = dv.getUint16(tiffStart) === 0x4949; // II = little endian
+        const u16 = (off) => dv.getUint16(off, le);
+        const u32 = (off) => dv.getUint32(off, le);
+        const b = (off) => dv.getUint8(off);
+
+        if (u16(tiffStart + 2) !== 42) return null;
+
+        const ifd0 = tiffStart + u32(tiffStart + 4);
+        const nEntries = u16(ifd0);
+        let gpsIfdOffset = -1;
+        for (let i = 0; i < nEntries; i++) {
+            const entry = ifd0 + 2 + i * 12;
+            if (u16(entry) === 0x8825) gpsIfdOffset = u32(entry + 8); // GPSInfo
+        }
+        if (gpsIfdOffset < 0) return null;
+
+        const gpsIfd = tiffStart + gpsIfdOffset;
+        const gpsNum = u16(gpsIfd);
+
+        const readRational = (off) => {
+            const num = u32(off);
+            const den = u32(off + 4);
+            return den !== 0 ? num / den : 0;
+        };
+
+        let latRef = 'N', lonRef = 'E', latArr = null, lonArr = null;
+        for (let i = 0; i < gpsNum; i++) {
+            const entry = gpsIfd + 2 + i * 12;
+            const tag = u16(entry);
+            const type = u16(entry + 2);
+            const valueOffset = entry + 8;
+            switch (tag) {
+                case 0x0001: latRef = String.fromCharCode(b(valueOffset)); break;
+                case 0x0002: {
+                    const off = type === 5 ? tiffStart + u32(valueOffset) : valueOffset;
+                    latArr = [readRational(off), readRational(off + 8), readRational(off + 16)];
+                    break;
+                }
+                case 0x0003: lonRef = String.fromCharCode(b(valueOffset)); break;
+                case 0x0004: {
+                    const off = type === 5 ? tiffStart + u32(valueOffset) : valueOffset;
+                    lonArr = [readRational(off), readRational(off + 8), readRational(off + 16)];
+                    break;
+                }
+            }
+        }
+        if (!latArr || !lonArr) return null;
+
+        let lat = latArr[0] + latArr[1] / 60 + latArr[2] / 3600;
+        let lon = lonArr[0] + lonArr[1] / 60 + lonArr[2] / 3600;
+        if (latRef === 'S') lat = -lat;
+        if (lonRef === 'W') lon = -lon;
+        if (lat === 0 && lon === 0) return null; // GPS tidak terkunci
+        return { lat, lon };
+    }
+
+    /**
+     * Kunci koordinat dari EXIF GPS foto yang dipilih user.
+     * Prioritas utama (mengalahkan geolocation) karena koordinat EXIF = lokasi asli foto.
+     */
+    async function kunciKoordinatDariFoto(fileInput, koordinatId, statusId) {
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) return false;
+        const input = document.getElementById(koordinatId);
+        const status = document.getElementById(statusId);
+
+        for (let i = 0; i < fileInput.files.length; i++) {
+            const gps = await bacaExifGpsDariFile(fileInput.files[i]);
+            if (!gps) continue;
+            const loc = gps.lat.toFixed(6) + ', ' + gps.lon.toFixed(6);
+            koordinatDariFotoExif = loc;
+            lastKnownCoordinate = loc;
+            if (input) input.value = loc;
+            if (status) {
+                status.innerHTML = '<span style="color: #27ae60;"><i class="fas fa-check-circle"></i> Koordinat dari foto (EXIF) terkunci.</span>';
+            }
+            return true;
+        }
+        return false;
+    }
+
+    function bacaGpsDariFotoDipilih(fileInput) {
+        const form = fileInput.closest('form');
+        const isManual = form && form.id === 'formKunjunganMandiri';
+        const koordinatId = isManual ? 'manual-koordinat' : 'form-koordinat';
+        const statusId = isManual ? 'manual-location-status' : 'location-status';
+        kunciKoordinatDariFoto(fileInput, koordinatId, statusId);
+    }
 
     // --- Fungsi Navigasi & Load Halaman ---
     function loadPage(pageName) {
@@ -523,21 +656,42 @@
                 resolve();
                 return;
             }
-            if (!navigator.geolocation) { resolve(); return; }
 
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    if (pos.coords.latitude !== 0 && pos.coords.longitude !== 0) {
-                        const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-                        lastKnownCoordinate = loc;
-                        if (input) input.value = loc;
-                    }
-                    resolve();
-                },
-                () => resolve(),
-                { enableHighAccuracy: false, timeout: 7000, maximumAge: 0 }
-            );
+            // Prioritas 1: baca koordinat dari EXIF foto yang dipilih
+            // (solusi HP VIVO / foto galeri yang API geolocation-nya gagal)
+            const isManual = inputId === 'manual-koordinat';
+            const fileInput = isManual
+                ? document.querySelector('#modalManual input[name="foto_kunjungan[]"]')
+                : document.querySelector('#visitModal input[name="foto_kunjungan[]"]');
+
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                kunciKoordinatDariFoto(fileInput, inputId, isManual ? 'manual-location-status' : 'location-status')
+                    .then((ok) => {
+                        if (ok) { resolve(); return; }
+                        fallbackGeolocation(input, resolve);
+                    });
+                return;
+            }
+
+            fallbackGeolocation(input, resolve);
         });
+    }
+
+    function fallbackGeolocation(input, resolve) {
+        if (!navigator.geolocation) { resolve(); return; }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                if (pos.coords.latitude !== 0 && pos.coords.longitude !== 0) {
+                    const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                    lastKnownCoordinate = loc;
+                    if (input) input.value = loc;
+                }
+                resolve();
+            },
+            () => resolve(),
+            { enableHighAccuracy: false, timeout: 7000, maximumAge: 0 }
+        );
     }
 
     function submitKunjungan(form, formData, btn) {
