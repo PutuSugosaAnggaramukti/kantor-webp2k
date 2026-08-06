@@ -428,13 +428,18 @@ class KunjunganController extends Controller
                         && isset($exif['GPSLongitude']);
 
                     if ($hasExifGps) {
-                        $jumlahFotoValidGps++;
+                        $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
+                        $lon = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
 
-                        // EKSTRAK KOORDINAT DARI FOTO PERTAMA YANG PUNYA GPS
-                        if ($exifKoordinat === null) {
-                            $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
-                            $lon = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
-                            $exifKoordinat = number_format($lat, 6, '.', '') . ', ' . number_format($lon, 6, '.', '');
+                        // HANYA anggap valid jika koordinat bukan 0,0
+                        // (error umum saat foto diambil/galeri: tag GPS ada tapi bernilai 0)
+                        if ($lat != 0 || $lon != 0) {
+                            $jumlahFotoValidGps++;
+
+                            // EKSTRAK KOORDINAT DARI FOTO PERTAMA YANG PUNYA GPS NYATA
+                            if ($exifKoordinat === null) {
+                                $exifKoordinat = number_format($lat, 6, '.', '') . ', ' . number_format($lon, 6, '.', '');
+                            }
                         }
                     }
 

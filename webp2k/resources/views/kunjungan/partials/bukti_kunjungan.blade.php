@@ -245,8 +245,16 @@
                 {{-- Gabungkan koordinat dari EXIF atau Database --}}
                 @php 
                     $fixCoord = $koordinatExif ?? $detail->koordinat; 
-                    // Cek apakah koordinatnya cuma 0,0 atau 0.0,0.0
-                    $isInvalidCoord = ($fixCoord == '0,0' || $fixCoord == '0, 0' || $fixCoord == '0.0,0.0' || $fixCoord == '0.0, 0.0');
+                    // Cek apakah koordinatnya cuma 0,0 atau 0.0,0.0 dalam berbagai format
+                    $isInvalidCoord = false;
+                    if ($fixCoord && $fixCoord !== '-') {
+                        $partsCoord = explode(',', $fixCoord);
+                        if (count($partsCoord) >= 2) {
+                            $latN = (float) trim($partsCoord[0]);
+                            $lonN = (float) trim($partsCoord[1]);
+                            if ($latN == 0 && $lonN == 0) $isInvalidCoord = true;
+                        }
+                    }
                 @endphp
 
                 {{-- Tampilkan link hanya jika koordinat valid (bukan strip dan bukan 0,0) --}}
