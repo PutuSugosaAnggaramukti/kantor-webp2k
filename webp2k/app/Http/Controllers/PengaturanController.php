@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use App\Models\Karyawan; 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 
 class PengaturanController extends Controller
 {
@@ -65,19 +64,42 @@ class PengaturanController extends Controller
         ]);
 
         if ($request->hasFile('avatar')) {
-            // Hapus foto lama
-            if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
-                Storage::disk('public')->delete($user->avatar);
+            // Hapus foto lama (jika disimpan di folder uploads/avatars)
+            if ($user->avatar && $user->avatar !== 'assets/avatar.png') {
+                $pathAvatarLama = public_path($user->avatar);
+                if (file_exists($pathAvatarLama) && is_file($pathAvatarLama)) {
+                    @unlink($pathAvatarLama);
+                }
             }
 
-            $path = $request->file('avatar')->store('avatars', 'public');
-            
+            // Simpan langsung ke public/uploads/avatars (bukan Storage disk).
+            // Hindari Storage::disk('public')->store() yang memakai file_put_contents
+            // dan butuh symlink public/storage + storage/app/public yang sering
+            // belum disiapkan di server -> menyebabkan error file_put_contents.
+            $dirAvatar = public_path('uploads/avatars');
+            if (!is_dir($dirAvatar)) {
+                @mkdir($dirAvatar, 0775, true);
+            }
+
+            if (!is_writable($dirAvatar)) {
+                return response()->json([
+                    'error' => 'Folder upload tidak dapat ditulis. Periksa permission direktori uploads/avatars.'
+                ], 500);
+            }
+
+            $extAvatar = strtolower($request->file('avatar')->getClientOriginalExtension());
+            $namaAvatar = 'avatar_' . time() . '_' . uniqid() . '.' . $extAvatar;
+
+            $request->file('avatar')->move($dirAvatar, $namaAvatar);
+
+            $path = 'uploads/avatars/' . $namaAvatar;
+
             // Update DB
             $user->update(['avatar' => $path]);
 
             return response()->json([
-                'success' => 'Avatar berhasil diperbarui!', // Tambahkan ini
-                'url' => asset('storage/' . $path)
+                'success' => 'Avatar berhasil diperbarui!',
+                'url' => asset($path)
             ]);
         }
     }

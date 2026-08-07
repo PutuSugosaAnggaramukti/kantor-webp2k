@@ -446,8 +446,13 @@ class KunjunganController extends Controller
                     // SIMPAN FILE
                     $nama_unik = time() . '_' . uniqid() . '.' . $extension;
 
+                    $dirUpload = public_path('uploads/kunjungan');
+                    if (!is_dir($dirUpload)) {
+                        @mkdir($dirUpload, 0775, true);
+                    }
+
                     $file->move(
-                        public_path('uploads/kunjungan'),
+                        $dirUpload,
                         $nama_unik
                     );
 
@@ -480,8 +485,13 @@ class KunjunganController extends Controller
                 $nama_bukti_transfer =
                     'TF_' . time() . '_' . uniqid() . '.' . $extTf;
 
+                $dirUploadTf = public_path('uploads/kunjungan');
+                if (!is_dir($dirUploadTf)) {
+                    @mkdir($dirUploadTf, 0775, true);
+                }
+
                 $fileTf->move(
-                    public_path('uploads/kunjungan'),
+                    $dirUploadTf,
                     $nama_bukti_transfer
                 );
             }
