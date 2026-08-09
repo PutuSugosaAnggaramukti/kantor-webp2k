@@ -60,6 +60,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/kunjungan/get-daftar-ao-hapus',[AdmKunjunganController::class, 'getDaftarAoHapus'])->name('kunjungan.getDaftarAOHapus');
     Route::delete('/hapus-jadwal/{id}', [AdmKunjunganController::class, 'hapusJadwalSingle'])->name('admin.hapusJadwalSingle');
     Route::get('/admin/export-ao/{kode_ao}', [AdmKunjunganController::class, 'exportDetailAO'])->name('admin.export.ao');
+    Route::get('/kunjungan-download-foto/{kode_ao}', [AdmKunjunganController::class, 'downloadFotoKunjungan'])->name('admin.kunjungan.download-foto')->where('kode_ao', '.*');
     Route::get('/export-jadwal', [AdmKunjunganController::class, 'exportJadwalExcel'])->name('admin.jadwal.export');
 
     // 4. DATA NASABAH 

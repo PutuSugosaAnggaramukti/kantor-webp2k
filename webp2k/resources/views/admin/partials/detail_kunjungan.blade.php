@@ -37,8 +37,43 @@
             <i class="fas fa-file-excel fa-sm text-white" style="margin-right: 8px !important;"></i> 
             <strong>Export Data AO</strong>
         </button>
+
+        <!-- Tombol Download Foto (pilih format) -->
+        <button type="button" onclick="pilihFormatDownloadFoto()" class="btn btn-primary btn-sm shadow-sm" 
+            style="background-color: #3b82f6 !important; color: white !important; padding: 6px 15px; border-radius: 4px; display: inline-flex; align-items: center; border: none;">
+            <i class="fas fa-download fa-sm text-white" style="margin-right: 8px !important;"></i> 
+            <strong>Download Foto</strong>
+        </button>
     </form>
 </div>
+
+<script>
+function pilihFormatDownloadFoto() {
+    const kodeAo = "{{ request()->route('kode_ao') }}";
+    const bulan = document.querySelector('select[name="bulan"]')?.value || '';
+    const tahun = document.querySelector('select[name="tahun"]')?.value || '';
+
+    Swal.fire({
+        title: 'Download Foto Kunjungan',
+        html: 'Pilih format arsip foto kunjungan untuk AO ini.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-file-archive"></i> .tar.gz (Linux)',
+        cancelButtonText: '<i class="fas fa-file-zipper"></i> .zip',
+        reverseButtons: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#6c757d'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const url = `{{ route('admin.kunjungan.download-foto', ':kode_ao') }}?format=tar.gz&bulan=${bulan}&tahun=${tahun}`.replace(':kode_ao', encodeURIComponent(kodeAo));
+            window.location.href = url;
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            const url = `{{ route('admin.kunjungan.download-foto', ':kode_ao') }}?format=zip&bulan=${bulan}&tahun=${tahun}`.replace(':kode_ao', encodeURIComponent(kodeAo));
+            window.location.href = url;
+        }
+    });
+}
+</script>
 
 <div class="table-responsive">
    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">

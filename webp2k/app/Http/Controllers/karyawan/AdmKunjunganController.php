@@ -436,6 +436,172 @@ public function detail($kode_ao)
         return (float) $fraction;
     }
 
+    /**
+     * Unduh SEMUA foto kunjungan milik seorang AO, dikemas dalam folder per AO.
+     * Format didukung: .zip (ZipArchive) dan .tar.gz (PharData) - keduanya murni PHP.
+     * Parameter query: ?format=zip | tar.gz | tar  (default zip), &bulan=, &tahun=.
+     */
+    public function downloadFotoKunjungan($kode_ao)
+    {
+        $kode_ao_clean = str_replace('-content', '', $kode_ao);
+
+        $format = strtolower(request()->get('format', 'zip'));
+        $bulanFilter = request()->get('bulan', date('m'));
+        $tahunFilter = request()->get('tahun', date('Y'));
+
+        // Data AO
+        $ao = \DB::table('karyawans')->where('kode_ao', $kode_ao_clean)->first();
+        if (!$ao) {
+            return redirect()->back()->with('error', 'AO tidak ditemukan.');
+        }
+
+        // Kumpulkan semua kunjungan AO pada bulan/tahun terpilih
+        $kunjungans = \DB::table('kunjungans')
+            ->where('kode_ao', $kode_ao_clean)
+            ->whereRaw('MONTH(created_at) = ?', [$bulanFilter])
+            ->whereRaw('YEAR(created_at) = ?', [$tahunFilter])
+            ->orderBy('created_at')
+            ->get(['id', 'nama_nasabah', 'no_nasabah', 'foto_kunjungan', 'bukti_transfer', 'created_at']);
+
+        if ($kunjungans->isEmpty()) {
+            return redirect()->back()->with('error', 'Tidak ada data kunjungan pada periode terpilih.');
+        }
+
+        // Bangun daftar file: ['path_fisik' => 'path_dalam_arsip']
+        $files = [];
+        $namaAoSlug = $this->slugify($ao->nama);
+        $rootDir = $kode_ao_clean . ' - ' . $namaAoSlug;
+
+        foreach ($kunjungans as $kunjungan) {
+            $tgl = \Carbon\Carbon::parse($kunjungan->created_at)->format('Y-m-d');
+            $namaNasabahSlug = $this->slugify($kunjungan->nama_nasabah ?: 'TanpaNama');
+            $folderNasabah = $rootDir . '/' . $tgl . ' - ' . ($kunjungan->no_nasabah ?: 'X') . ' - ' . $namaNasabahSlug;
+
+            // Foto kunjungan (bisa JSON array)
+            $fotos = json_decode($kunjungan->foto_kunjungan ?? '', true);
+            if (!is_array($fotos) || count($fotos) === 0) {
+                if (is_string($kunjungan->foto_kunjungan) && $kunjungan->foto_kunjungan !== '') {
+                    $fotos = [$kunjungan->foto_kunjungan];
+                }
+            }
+
+            if (is_array($fotos)) {
+                foreach ($fotos as $idx => $foto) {
+                    $pathFisik = public_path('uploads/kunjungan/' . $foto);
+                    if (!$foto || !file_exists($pathFisik)) continue;
+                    $files[$pathFisik] = $folderNasabah . '/' . str_pad($idx + 1, 2, '0', STR_PAD_LEFT) . '_' . basename($foto);
+                }
+            }
+
+            // Bukti transfer (jika ada)
+            if (!empty($kunjungan->bukti_transfer)) {
+                $pathTf = public_path('uploads/kunjungan/' . $kunjungan->bukti_transfer);
+                if (file_exists($pathTf)) {
+                    $files[$pathTf] = $folderNasabah . '/BUKTI_TRANSFER_' . basename($kunjungan->bukti_transfer);
+                }
+            }
+        }
+
+        if (count($files) === 0) {
+            return redirect()->back()->with('error', 'Tidak ada file foto yang ditemukan di server.');
+        }
+
+        $periodeLabel = $tahunFilter . '-' . str_pad($bulanFilter, 2, '0', STR_PAD_LEFT);
+        $baseName = 'Foto_Kunjungan_' . $rootDir . '_' . $periodeLabel;
+
+        try {
+            $filePath = $this->buildArchive($files, $baseName, $format);
+            if (!$filePath || !file_exists($filePath)) {
+                throw new \Exception("Gagal membuat arsip format {$format}.");
+            }
+            return response()->download($filePath, basename($filePath))->deleteFileAfterSend(true);
+        } catch (\Throwable $e) {
+            \Log::error("Download Foto Kunjungan: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal membuat arsip: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Membuat file arsip (zip / tar.gz / tar) dari daftar file.
+     */
+    private function buildArchive(array $files, string $baseName, string $format)
+    {
+        $tmpDir = storage_path('app/private/downloads');
+        if (!is_dir($tmpDir)) {
+            @mkdir($tmpDir, 0775, true);
+        }
+
+        $archivePath = null;
+
+        if ($format === 'zip' || $format === 'zipx') {
+            $archivePath = $tmpDir . '/' . $baseName . '.zip';
+            if (class_exists('ZipArchive')) {
+                $zip = new \ZipArchive();
+                if ($zip->open($archivePath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                    return null;
+                }
+                foreach ($files as $pathFisik => $pathArsip) {
+                    $zip->addFile($pathFisik, ltrim($pathArsip, '/'));
+                }
+                $zip->close();
+                return $archivePath;
+            }
+            return null;
+        }
+
+        if ($format === 'tar.gz' || $format === 'tgz' || $format === 'tar') {
+            $isGz = in_array($format, ['tar.gz', 'tgz'], true);
+
+            // PharData memerlukan ekstensi Phar; zip via tar lalu gzip manual bila perlu
+            $tarPath = $tmpDir . '/' . $baseName . '.tar';
+            $phar = new \PharData($tarPath);
+
+            foreach ($files as $pathFisik => $pathArsip) {
+                $phar->addFile($pathFisik, ltrim($pathArsip, '/'));
+            }
+            unset($phar);
+
+            if (!$isGz) {
+                $archivePath = $tarPath;
+                return $archivePath;
+            }
+
+            // Kompres tar -> tar.gz
+            $gzPath = $tmpDir . '/' . $baseName . '.tar.gz';
+            if (!function_exists('gzopen')) {
+                return $tarPath; // zlib tidak tersedia -> fallback ke .tar
+            }
+            $in = fopen($tarPath, 'rb');
+            $out = gzopen($gzPath, 'wb9');
+            if (!$in || !$out) {
+                if ($in) fclose($in);
+                return $tarPath;
+            }
+            while (!feof($in)) {
+                gzwrite($out, fread($in, 8192));
+            }
+            fclose($in);
+            gzclose($out);
+            @unlink($tarPath);
+            $archivePath = $gzPath;
+            return $archivePath;
+        }
+
+        return null;
+    }
+
+    /**
+     * Bersihkan nama file/folder dari karakter aneh.
+     */
+    private function slugify($text)
+    {
+        $text = trim((string) $text);
+        $text = preg_replace('/[^A-Za-z0-9 _\-.,()]/u', '', $text);
+        $text = preg_replace('/\s+/', ' ', $text);
+        $text = str_replace(' ', '_', $text);
+        return $text ?: 'AO';
+    }
+
 public function getDaftarNoAnggota(Request $request)
 {
     $search = $request->q;
