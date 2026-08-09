@@ -437,11 +437,12 @@ public function detail($kode_ao)
     }
 
     /**
-     * Unduh SEMUA foto kunjungan milik seorang AO, dikemas dalam folder per AO.
+     * Unduh foto kunjungan AO, dikemas dalam folder per AO.
+     * - Jika $kode_ao diisi ('all'/'*'/'') maka unduh SEMUA AO aktif (C-%).
      * Format didukung: .zip (ZipArchive) dan .tar.gz (PharData) - keduanya murni PHP.
      * Parameter query: ?format=zip | tar.gz | tar  (default zip), &bulan=, &tahun=.
      */
-    public function downloadFotoKunjungan($kode_ao)
+    public function downloadFotoKunjungan($kode_ao = 'all')
     {
         $kode_ao_clean = str_replace('-content', '', $kode_ao);
 
@@ -449,65 +450,85 @@ public function detail($kode_ao)
         $bulanFilter = request()->get('bulan', date('m'));
         $tahunFilter = request()->get('tahun', date('Y'));
 
-        // Data AO
-        $ao = \DB::table('karyawans')->where('kode_ao', $kode_ao_clean)->first();
-        if (!$ao) {
-            return redirect()->back()->with('error', 'AO tidak ditemukan.');
+        // Tentukan daftar AO
+        if (in_array($kode_ao_clean, ['', 'all', '*'], true)) {
+            $aos = \DB::table('karyawans')
+                ->where('status', 'aktif')
+                ->where('kode_ao', 'LIKE', 'C-%')
+                ->orderBy('nama', 'asc')
+                ->get(['kode_ao', 'nama']);
+        } else {
+            $aos = \DB::table('karyawans')
+                ->where('kode_ao', $kode_ao_clean)
+                ->get(['kode_ao', 'nama']);
         }
 
-        // Kumpulkan semua kunjungan AO pada bulan/tahun terpilih
-        $kunjungans = \DB::table('kunjungans')
-            ->where('kode_ao', $kode_ao_clean)
-            ->whereRaw('MONTH(created_at) = ?', [$bulanFilter])
-            ->whereRaw('YEAR(created_at) = ?', [$tahunFilter])
-            ->orderBy('created_at')
-            ->get(['id', 'nama_nasabah', 'no_nasabah', 'foto_kunjungan', 'bukti_transfer', 'created_at']);
-
-        if ($kunjungans->isEmpty()) {
-            return redirect()->back()->with('error', 'Tidak ada data kunjungan pada periode terpilih.');
+        if ($aos->isEmpty()) {
+            return redirect()->back()->with('error', 'AO tidak ditemukan.');
         }
 
         // Bangun daftar file: ['path_fisik' => 'path_dalam_arsip']
         $files = [];
-        $namaAoSlug = $this->slugify($ao->nama);
-        $rootDir = $kode_ao_clean . ' - ' . $namaAoSlug;
+        $singleRootDir = null;
 
-        foreach ($kunjungans as $kunjungan) {
-            $tgl = \Carbon\Carbon::parse($kunjungan->created_at)->format('Y-m-d');
-            $namaNasabahSlug = $this->slugify($kunjungan->nama_nasabah ?: 'TanpaNama');
-            $folderNasabah = $rootDir . '/' . $tgl . ' - ' . ($kunjungan->no_nasabah ?: 'X') . ' - ' . $namaNasabahSlug;
+        foreach ($aos as $ao) {
+            // Kumpulkan semua kunjungan AO pada bulan/tahun terpilih
+            $kunjungans = \DB::table('kunjungans')
+                ->where('kode_ao', $ao->kode_ao)
+                ->whereRaw('MONTH(created_at) = ?', [$bulanFilter])
+                ->whereRaw('YEAR(created_at) = ?', [$tahunFilter])
+                ->orderBy('created_at')
+                ->get(['id', 'nama_nasabah', 'no_nasabah', 'foto_kunjungan', 'bukti_transfer', 'created_at']);
 
-            // Foto kunjungan (bisa JSON array)
-            $fotos = json_decode($kunjungan->foto_kunjungan ?? '', true);
-            if (!is_array($fotos) || count($fotos) === 0) {
-                if (is_string($kunjungan->foto_kunjungan) && $kunjungan->foto_kunjungan !== '') {
-                    $fotos = [$kunjungan->foto_kunjungan];
-                }
+            if ($kunjungans->isEmpty()) {
+                continue;
             }
 
-            if (is_array($fotos)) {
-                foreach ($fotos as $idx => $foto) {
-                    $pathFisik = public_path('uploads/kunjungan/' . $foto);
-                    if (!$foto || !file_exists($pathFisik)) continue;
-                    $files[$pathFisik] = $folderNasabah . '/' . str_pad($idx + 1, 2, '0', STR_PAD_LEFT) . '_' . basename($foto);
-                }
+            $namaAoSlug = $this->slugify($ao->nama);
+            $rootDir = $ao->kode_ao . ' - ' . $namaAoSlug;
+            if ($singleRootDir === null) {
+                $singleRootDir = $rootDir;
             }
 
-            // Bukti transfer (jika ada)
-            if (!empty($kunjungan->bukti_transfer)) {
-                $pathTf = public_path('uploads/kunjungan/' . $kunjungan->bukti_transfer);
-                if (file_exists($pathTf)) {
-                    $files[$pathTf] = $folderNasabah . '/BUKTI_TRANSFER_' . basename($kunjungan->bukti_transfer);
+            foreach ($kunjungans as $kunjungan) {
+                $tgl = \Carbon\Carbon::parse($kunjungan->created_at)->format('Y-m-d');
+                $namaNasabahSlug = $this->slugify($kunjungan->nama_nasabah ?: 'TanpaNama');
+                $folderNasabah = $rootDir . '/' . $tgl . ' - ' . ($kunjungan->no_nasabah ?: 'X') . ' - ' . $namaNasabahSlug;
+
+                // Foto kunjungan (bisa JSON array)
+                $fotos = json_decode($kunjungan->foto_kunjungan ?? '', true);
+                if (!is_array($fotos) || count($fotos) === 0) {
+                    if (is_string($kunjungan->foto_kunjungan) && $kunjungan->foto_kunjungan !== '') {
+                        $fotos = [$kunjungan->foto_kunjungan];
+                    }
+                }
+
+                if (is_array($fotos)) {
+                    foreach ($fotos as $idx => $foto) {
+                        $pathFisik = public_path('uploads/kunjungan/' . $foto);
+                        if (!$foto || !file_exists($pathFisik)) continue;
+                        $files[$pathFisik] = $folderNasabah . '/' . str_pad($idx + 1, 2, '0', STR_PAD_LEFT) . '_' . basename($foto);
+                    }
+                }
+
+                // Bukti transfer (jika ada)
+                if (!empty($kunjungan->bukti_transfer)) {
+                    $pathTf = public_path('uploads/kunjungan/' . $kunjungan->bukti_transfer);
+                    if (file_exists($pathTf)) {
+                        $files[$pathTf] = $folderNasabah . '/BUKTI_TRANSFER_' . basename($kunjungan->bukti_transfer);
+                    }
                 }
             }
         }
 
         if (count($files) === 0) {
-            return redirect()->back()->with('error', 'Tidak ada file foto yang ditemukan di server.');
+            return redirect()->back()->with('error', 'Tidak ada file foto yang ditemukan di server pada periode terpilih.');
         }
 
         $periodeLabel = $tahunFilter . '-' . str_pad($bulanFilter, 2, '0', STR_PAD_LEFT);
-        $baseName = 'Foto_Kunjungan_' . $rootDir . '_' . $periodeLabel;
+        $baseName = ($aos->count() === 1)
+            ? 'Foto_Kunjungan_' . $singleRootDir . '_' . $periodeLabel
+            : 'Foto_Kunjungan_SEMUA_AO_' . $periodeLabel;
 
         try {
             $filePath = $this->buildArchive($files, $baseName, $format);

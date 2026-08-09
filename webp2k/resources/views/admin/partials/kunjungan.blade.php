@@ -37,6 +37,14 @@
             </span> 
             Export
         </button>
+
+        <!-- Tombol Download Foto (pilih format, semua AO pada bulan/tahun terpilih) -->
+        <button type="button" onclick="pilihFormatDownloadFoto()" class="btn-export-excel" style="border: none; cursor: pointer; display: flex; align-items: center; padding: 8px 15px; background-color: #3b82f6 !important; color: white !important;">
+            <span style="margin-right: 8px;">
+                <i class="fa-solid fa-download"></i>
+            </span> 
+            Download Foto
+        </button>
     </form>
         
     <!-- Input Pencarian -->
@@ -82,8 +90,34 @@
     </table>
 </div>
 
-<div id="modalTambahNasabah" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
+<script>
+function pilihFormatDownloadFoto() {
+    const bulan = document.querySelector('select[name="bulan"]')?.value || '';
+    const tahun = document.querySelector('select[name="tahun"]')?.value || '';
+
+    Swal.fire({
+        title: 'Download Foto Kunjungan',
+        html: 'Pilih format arsip foto kunjungan untuk periode yang dipilih.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-file-archive"></i> .tar.gz (Linux)',
+        cancelButtonText: '<i class="fas fa-file-zipper"></i> .zip',
+        reverseButtons: true,
+        confirmButtonColor: '#3b82f6',
+        cancelButtonColor: '#6c757d'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const url = `{{ route('admin.kunjungan.download-foto') }}?format=tar.gz&bulan=${bulan}&tahun=${tahun}`;
+            window.location.href = url;
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+            const url = `{{ route('admin.kunjungan.download-foto') }}?format=zip&bulan=${bulan}&tahun=${tahun}`;
+            window.location.href = url;
+        }
+    });
+}
+</script>
     
+<div id="modalTambahNasabah" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center;">
     <div class="modal-dialog modal-dialog-centered" role="document" style="width: 100%; max-width: 500px;"> 
         <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
             
