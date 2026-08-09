@@ -257,6 +257,7 @@ public function detail($kode_ao)
                 'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
                 'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
                 'kunjungans.foto_kunjungan',
+                'kunjungans.koordinat',
                 'kunjungans.created_at as tgl_realisasi',
                 'nasabahs.nasabah as nama_nasabah_asli',
                 'nasabahs.alamat as alamat_master'
@@ -284,6 +285,7 @@ public function detail($kode_ao)
                 'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
                 'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
                 'kunjungans.foto_kunjungan',
+                'kunjungans.koordinat as koordinat_db',
                 'kunjungans.created_at as tgl_realisasi',
                 'nasabahs.nasabah as nama_nasabah_asli',
                 'nasabahs.alamat as alamat_master'
@@ -314,6 +316,7 @@ public function detail($kode_ao)
                 'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
                 'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
                 'kunjungans.foto_kunjungan', 
+                'kunjungans.koordinat as koordinat_db',
                 'kunjungans.created_at as tgl_realisasi',
                 'nasabahs.nasabah as nama_nasabah_asli',
                 'nasabahs.alamat as alamat_master'
@@ -336,6 +339,8 @@ public function detail($kode_ao)
             ];
 
             // Proses EXIF tetap sama (telusuri SEMUA foto, bukan hanya foto pertama)
+            // Prioritas: koordinat EXIF foto (akurat) -> fallback koordinat dari DB
+            $item->koordinat = null;
             if ($item->id_kunjungan && $item->foto_kunjungan) {
                 $fotos = json_decode($item->foto_kunjungan, true);
                 if (!is_array($fotos) || count($fotos) === 0) {
@@ -350,8 +355,24 @@ public function detail($kode_ao)
                         $log = $this->convertFractionToDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
                         // Hindari 0,0 yang menandakan GPS tak terkunci
                         if ($lat != 0 || $log != 0) {
-                            $item->koordinat = $lat . ',' . $log;
+                            $item->koordinat = number_format($lat, 6, '.', '') . ',' . number_format($log, 6, '.', '');
                             break;
+                        }
+                    }
+                }
+            }
+
+            // Fallback: jika EXIF foto tidak ditemukan/tidak valid, pakai koordinat dari DB
+            // (hanya bila bukan nilai kosong/`-`/0,0 dalam format apapun)
+            if (empty($item->koordinat)) {
+                $dbCoord = trim((string) ($item->koordinat_db ?? $item->koordinat ?? ''));
+                if ($dbCoord !== '' && $dbCoord !== '-') {
+                    $partsCoord = explode(',', $dbCoord);
+                    if (count($partsCoord) >= 2) {
+                        $latDb = (float) trim($partsCoord[0]);
+                        $lonDb = (float) trim($partsCoord[1]);
+                        if (!($latDb == 0 && $lonDb == 0)) {
+                            $item->koordinat = $dbCoord;
                         }
                     }
                 }
