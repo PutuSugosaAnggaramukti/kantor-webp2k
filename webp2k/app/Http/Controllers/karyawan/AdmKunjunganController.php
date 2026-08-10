@@ -257,7 +257,7 @@ public function detail($kode_ao)
                 'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
                 'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
                 'kunjungans.foto_kunjungan',
-                'kunjungans.koordinat',
+                'kunjungans.koordinat as koordinat_db',
                 'kunjungans.created_at as tgl_realisasi',
                 'nasabahs.nasabah as nama_nasabah_asli',
                 'nasabahs.alamat as alamat_master'
@@ -341,6 +341,7 @@ public function detail($kode_ao)
             // Proses EXIF tetap sama (telusuri SEMUA foto, bukan hanya foto pertama)
             // Prioritas: koordinat EXIF foto (akurat) -> fallback koordinat dari DB
             $item->koordinat = null;
+            $item->foto_jam = null;
             if ($item->id_kunjungan && $item->foto_kunjungan) {
                 $fotos = json_decode($item->foto_kunjungan, true);
                 if (!is_array($fotos) || count($fotos) === 0) {
@@ -350,13 +351,27 @@ public function detail($kode_ao)
                     $path = public_path('uploads/kunjungan/' . $namaFoto);
                     if (!$namaFoto || !file_exists($path)) continue;
                     $exif = @exif_read_data($path);
-                    if ($exif && isset($exif['GPSLatitude'])) {
-                        $lat = $this->convertFractionToDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
-                        $log = $this->convertFractionToDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
-                        // Hindari 0,0 yang menandakan GPS tak terkunci
-                        if ($lat != 0 || $log != 0) {
-                            $item->koordinat = number_format($lat, 6, '.', '') . ',' . number_format($log, 6, '.', '');
-                            break;
+                    if ($exif) {
+                        // Jam pengambilan foto dari EXIF (DateTimeOriginal)
+                        if (empty($item->foto_jam)) {
+                            $exifWaktu = $exif['DateTimeOriginal'] ?? $exif['DateTimeDigitized'] ?? $exif['DateTime'] ?? null;
+                            if ($exifWaktu) {
+                                try {
+                                    $item->foto_jam = \Carbon\Carbon::parse($exifWaktu)->format('Y-m-d H:i:s');
+                                } catch (\Exception $e) {
+                                    // Abaikan format EXIF aneh
+                                }
+                            }
+                        }
+                        // Koordinat GPS dari EXIF
+                        if (isset($exif['GPSLatitude'])) {
+                            $lat = $this->convertFractionToDecimal($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
+                            $log = $this->convertFractionToDecimal($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
+                            // Hindari 0,0 yang menandakan GPS tak terkunci
+                            if ($lat != 0 || $log != 0) {
+                                $item->koordinat = number_format($lat, 6, '.', '') . ',' . number_format($log, 6, '.', '');
+                                break;
+                            }
                         }
                     }
                 }

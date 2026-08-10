@@ -1054,8 +1054,17 @@ window.showVisitDetail = function(data) {
     }
     document.getElementById('view-foto').src = fotoSource;
 
-    // --- 2. JAM ---
-    let jam = data.created_at ? data.created_at.split(' ')[1].substring(0, 5) : '--:--';
+    // --- 2. JAM (prioritas: waktu EXIF foto -> waktu realisasi kunjungan -> created_at) ---
+    const jamSource = (data.foto_jam || data.tgl_realisasi || data.created_at || '');
+    let jam = '--:--';
+    if (jamSource) {
+        const parts = jamSource.split(' ');
+        if (parts.length >= 2 && parts[1]) {
+            jam = parts[1].substring(0, 5);
+        } else if (/^\d{1,2}:\d{2}/.test(jamSource)) {
+            jam = jamSource.substring(0, 5);
+        }
+    }
     document.getElementById('view-jam').innerText = `Foto diambil pada jam: ${jam} WIB`;
 
    // --- 3. KOORDINAT ---
