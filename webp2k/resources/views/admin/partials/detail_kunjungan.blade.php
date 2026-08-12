@@ -14,7 +14,7 @@
     <form action="{{ url('admin/kunjungan-detail/' . request()->route('kode_ao')) }}" method="GET" class="d-flex align-items-center gap-2">
         
         <!-- Dropdown Pilih Bulan -->
-        <select name="bulan" onchange="this.form.submit()" class="form-select form-select-sm" style="width: 130px; border-radius: 4px; border: 1px solid #28a745;">
+        <select name="bulan" onchange="reloadDetailKunjungan()" class="form-select form-select-sm" style="width: 130px; border-radius: 4px; border: 1px solid #28a745;">
             @foreach(range(1, 12) as $m)
                 @php $mVal = sprintf('%02d', $m); @endphp
                 <option value="{{ $mVal }}" {{ (request('bulan', date('m'))) == $mVal ? 'selected' : '' }}>
@@ -24,7 +24,7 @@
         </select>
 
         <!-- Dropdown Pilih Tahun -->
-        <select name="tahun" onchange="this.form.submit()" class="form-select form-select-sm" style="width: 90px; border-radius: 4px; border: 1px solid #28a745;">
+        <select name="tahun" onchange="reloadDetailKunjungan()" class="form-select form-select-sm" style="width: 90px; border-radius: 4px; border: 1px solid #28a745;">
             @foreach(range(date('Y')-2, date('Y')+1) as $y)
                 <option value="{{ $y }}" {{ (request('tahun', date('Y'))) == $y ? 'selected' : '' }}>{{ $y }}</option>
             @endforeach
@@ -47,6 +47,21 @@
         </button>
     </form>
 </div>
+
+<script>
+// Muat ulang detail kunjungan via AJAX perubahan filter bulan/tahun (hindari full-page submit)
+window.reloadDetailKunjungan = function () {
+    const bulan = document.querySelector('select[name="bulan"]') ? document.querySelector('select[name="bulan"]').value : '';
+    const tahun = document.querySelector('select[name="tahun"]') ? document.querySelector('select[name="tahun"]').value : '';
+    // Baca kode AO dari URL /admin/kunjungan-detail/{kode_ao}
+    const pathParts = window.location.pathname.split('/');
+    const rawKode = (pathParts.length > 1) ? pathParts[pathParts.length - 1] : '';
+    const kodeAo = rawKode.replace('-content', '');
+    if (typeof window.showDetailKunjungan === 'function') {
+        window.showDetailKunjungan(kodeAo, bulan, tahun);
+    }
+};
+</script>
 
 <div class="table-responsive">
    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
