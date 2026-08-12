@@ -394,7 +394,7 @@ public function detail($kode_ao)
             }
         }
 
-        // 3. Pagination
+        // 3. Pagination (pertahankan parameter bulan/tahun di URL paginasi)
         $currentPage = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
         $perPage = 15;
         $currentItems = $data_detail_collection->slice(($currentPage - 1) * $perPage, $perPage)->values();
@@ -403,7 +403,10 @@ public function detail($kode_ao)
             $data_detail_collection->count(),
             $perPage,
             $currentPage,
-            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath()]
+            [
+                'path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(),
+                'query' => request()->query(),
+            ]
         );
 
         // 4. PENTING: Sediakan variabel $nasabah 'global' untuk Header agar Blade tidak error
@@ -414,8 +417,14 @@ public function detail($kode_ao)
             return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao', 'nasabah'));
         }
 
-        $karyawans = \DB::table('karyawans')->get(); 
-        return view('admin.datakaryawan', compact('data_detail', 'kode_ao', 'karyawans', 'nasabah'));
+        // 5. Saat full-page GET (mis. submit filter bulan/tahun): render partial detail ke $content
+        //    agar halaman Detail Kunjungan tetap tampil (bukan fallback ke tabel karyawan).
+        $karyawans = \DB::table('karyawans')->get();
+        $data['content'] = view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao', 'nasabah'))->render();
+        $data['page'] = 'detail-kunjungan';
+        $data['title'] = 'Detail Kunjungan';
+        $data['karyawans'] = $karyawans;
+        return view('admin.datakaryawan', $data);
 
     } catch (\Exception $e) {
         \Log::error("Error Detail Kunjungan: " . $e->getMessage());
