@@ -48,21 +48,6 @@
     </form>
 </div>
 
-<script>
-// Muat ulang detail kunjungan via AJAX perubahan filter bulan/tahun (hindari full-page submit)
-window.reloadDetailKunjungan = function () {
-    const bulan = document.querySelector('select[name="bulan"]') ? document.querySelector('select[name="bulan"]').value : '';
-    const tahun = document.querySelector('select[name="tahun"]') ? document.querySelector('select[name="tahun"]').value : '';
-    // Baca kode AO dari URL /admin/kunjungan-detail/{kode_ao}
-    const pathParts = window.location.pathname.split('/');
-    const rawKode = (pathParts.length > 1) ? pathParts[pathParts.length - 1] : '';
-    const kodeAo = rawKode.replace('-content', '');
-    if (typeof window.showDetailKunjungan === 'function') {
-        window.showDetailKunjungan(kodeAo, bulan, tahun);
-    }
-};
-</script>
-
 <div class="table-responsive">
    <table style="width: 100%; border-collapse: collapse; border: 2px solid #000;">
         <thead>

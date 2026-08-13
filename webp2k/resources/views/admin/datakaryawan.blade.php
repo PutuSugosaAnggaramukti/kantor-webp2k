@@ -1117,6 +1117,26 @@ window.closeVisitDetail = function() {
     }
 };
 
+// Muat ulang halaman Detail Kunjungan via AJAX perubahan filter bulan/tahun.
+// didefinisikan GLOBAL sehingga selalu tersedia walaupun partial di-inject via AJAX
+// (showDetailKunjungan tidak mengeksekusi ulang <script> pada konten yang disuntikkan).
+window.reloadDetailKunjungan = function () {
+    const bulanEl = document.querySelector('select[name="bulan"]');
+    const tahunEl = document.querySelector('select[name="tahun"]');
+    const bulan = bulanEl ? bulanEl.value : '';
+    const tahun = tahunEl ? tahunEl.value : '';
+    // Baca kode AO dari URL /admin/kunjungan-detail/{kode_ao}
+    const pathParts = window.location.pathname.split('/');
+    const rawKode = (pathParts.length > 1) ? pathParts[pathParts.length - 1] : '';
+    const kodeAo = rawKode.replace('-content', '');
+    if (typeof window.showDetailKunjungan === 'function') {
+        window.showDetailKunjungan(kodeAo, bulan, tahun);
+    } else if (typeof window.loadAdminPage === 'function') {
+        // Jika belum berada di halaman detail, arahkan ke sana
+        window.loadAdminPage('kunjungan-detail/' + encodeURIComponent(kodeAo));
+    }
+};
+
 // Opsional: Menutup modal jika user klik di luar area putih modal
 window.onclick = function(event) {
     const modal = document.getElementById('modalDetailKunjungan');
