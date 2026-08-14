@@ -875,7 +875,7 @@ $(document).on('click', '.pagination a', function(e) {
 });
 
 
-function showDetailKunjungan(kode_ao, bulan = null, tahun = null) {
+function showDetailKunjungan(kode_ao, bulan = null, tahun = null, nama = null) {
     const contentArea = document.getElementById('main-content-area');
     if (!contentArea) return;
 
@@ -883,10 +883,16 @@ function showDetailKunjungan(kode_ao, bulan = null, tahun = null) {
     const urlParams = new URLSearchParams(window.location.search);
     const bulanFinal = bulan || urlParams.get('bulan') || new Date().getMonth() + 1;
     const tahunFinal = tahun || urlParams.get('tahun') || new Date().getFullYear();
+    const namaFinal = nama !== null ? nama : urlParams.get('nama');
 
     contentArea.style.opacity = '0.3';
 
-    fetch(`/admin/kunjungan-detail/${kode_ao}?bulan=${bulanFinal}&tahun=${tahunFinal}`, {
+    let url = `/admin/kunjungan-detail/${kode_ao}?bulan=${bulanFinal}&tahun=${tahunFinal}`;
+    if (namaFinal && String(namaFinal).trim() !== '') {
+        url += `&nama=${encodeURIComponent(String(namaFinal).trim())}`;
+    }
+
+    fetch(url, {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest',
@@ -897,7 +903,7 @@ function showDetailKunjungan(kode_ao, bulan = null, tahun = null) {
     .then(html => {
         contentArea.innerHTML = html;
         contentArea.style.opacity = '1';
-        history.pushState({page: 'detail-kunjungan'}, "", `/admin/kunjungan-detail/${kode_ao}?bulan=${bulanFinal}&tahun=${tahunFinal}`);
+        history.pushState({page: 'detail-kunjungan'}, "", url);
     })
     .catch(err => {
         console.error("Gagal memuat detail:", err);
@@ -1123,30 +1129,45 @@ window.closeVisitDetail = function() {
 window.reloadDetailKunjungan = function () {
     const bulanEl = document.querySelector('select[name="bulan"]');
     const tahunEl = document.querySelector('select[name="tahun"]');
+    const namaEl = document.querySelector('input[name="nama"]');
     const bulan = bulanEl ? bulanEl.value : '';
     const tahun = tahunEl ? tahunEl.value : '';
+    const nama = namaEl ? namaEl.value : '';
     // Baca kode AO dari URL /admin/kunjungan-detail/{kode_ao}
     const pathParts = window.location.pathname.split('/');
     const rawKode = (pathParts.length > 1) ? pathParts[pathParts.length - 1] : '';
     const kodeAo = rawKode.replace('-content', '');
     if (typeof window.showDetailKunjungan === 'function') {
-        window.showDetailKunjungan(kodeAo, bulan, tahun);
+        window.showDetailKunjungan(kodeAo, bulan, tahun, nama);
     } else if (typeof window.loadAdminPage === 'function') {
         // Jika belum berada di halaman detail, arahkan ke sana
         window.loadAdminPage('kunjungan-detail/' + encodeURIComponent(kodeAo));
     }
 };
 
-// Delegasi event: tombol filter bulan/tahun pada halaman Detail Kunjungan dipasang
+// Delegasi event: filter bulan/tahun & pencarian nama pada halaman Detail Kunjungan dipasang
 // secara global sehingga selalu berfungsi walaupun partial di-inject via AJAX
 // (menghindari ReferenceError dari onchange inline jika global tidak tersedia).
 document.addEventListener('change', function (e) {
-    const select = e.target;
-    if (select && select.matches && select.matches('select[name="bulan"], select[name="tahun"]')) {
-        const form = select.closest('form');
+    const target = e.target;
+    if (target && target.matches && target.matches('select[name="bulan"], select[name="tahun"], input[name="nama"]')) {
+        const form = target.closest('form');
         if (form && form.id === 'formFilterDetailKunjungan') {
             e.preventDefault();
             window.reloadDetailKunjungan();
+        }
+    }
+});
+
+// Pencarian nama nasabah otomatis saat mengetik (debounce 400ms)
+let namaSearchTimer = null;
+document.addEventListener('input', function (e) {
+    const target = e.target;
+    if (target && target.matches && target.matches('input[name="nama"]')) {
+        const form = target.closest('form');
+        if (form && form.id === 'formFilterDetailKunjungan') {
+            clearTimeout(namaSearchTimer);
+            namaSearchTimer = setTimeout(() => window.reloadDetailKunjungan(), 400);
         }
     }
 });

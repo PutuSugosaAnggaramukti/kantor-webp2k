@@ -30,6 +30,21 @@
             @endforeach
         </select>
 
+        <!-- Filter/Sort By Nama Nasabah (pencarian otomatis saat mengetik) -->
+        <input type="text" name="nama" value="{{ request('nama') }}" class="form-control form-control-sm"
+            style="width: 220px; border-radius: 4px; border: 1px solid #28a745;"
+            placeholder="🔍 Cari Nama Nasabah..." autocomplete="off">
+
+        @if(!empty($namaFilter))
+            <span class="badge" style="background-color: #17a2b8; color: white; padding: 6px 12px; border-radius: 12px; font-size: 12px;">
+                "{{ $namaFilter }}" dikunjungi <b>{{ $jumlahKunjungan }}</b> kali
+            </span>
+            <a href="{{ url('admin/kunjungan-detail/' . request()->route('kode_ao')) . '?bulan=' . request('bulan', date('m')) . '&tahun=' . request('tahun', date('Y')) }}" 
+               class="btn btn-sm btn-outline-secondary" style="border-radius: 4px;" title="Hapus filter nama">
+                <i class="fas fa-times"></i>
+            </a>
+        @endif
+
         <!-- Tombol Export (Gunakan formaction agar menembak route export excel) -->
         <button type="submit" formaction="{{ route('admin.kunjungan.export') }}" class="btn btn-success btn-sm shadow-sm" 
             style="background-color: #28a745 !important; color: white !important; padding: 6px 15px; border-radius: 4px; display: inline-flex; align-items: center; border: none;">

@@ -234,6 +234,7 @@ public function detail($kode_ao)
     // Tambahkan ini untuk tangkap parameter dari URL
     $bulanFilter = request()->get('bulan', date('m'));
     $tahunFilter = request()->get('tahun', date('Y'));
+    $namaFilter = trim(request()->get('nama', ''));
 
     try {
         $data_adm = \DB::table('data_kunjungan_adms')
@@ -244,6 +245,12 @@ public function detail($kode_ao)
             })
             ->leftJoin('nasabahs', 'data_kunjungan_adms.no_angsuran', '=', 'nasabahs.no_angsuran')
             ->where('data_kunjungan_adms.kode_ao', $kode_ao_clean)
+            ->when($namaFilter !== '', function ($q) use ($namaFilter) {
+                $q->where(function ($query) use ($namaFilter) {
+                    $query->where('data_kunjungan_adms.nama_nasabah', 'LIKE', '%' . $namaFilter . '%')
+                          ->orWhere('nasabahs.nasabah', 'LIKE', '%' . $namaFilter . '%');
+                });
+            })
             ->whereRaw('MONTH(data_kunjungan_adms.created_at) = ?', [$bulanFilter]) // ← dinamis
             ->whereRaw('YEAR(data_kunjungan_adms.created_at) = ?', [$tahunFilter])  // ← dinamis
             ->select(
@@ -302,6 +309,12 @@ public function detail($kode_ao)
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->where('kunjungans.kode_ao', $kode_ao_clean)
             ->whereNull('data_kunjungan_adms.no_angsuran')
+            ->when($namaFilter !== '', function ($q) use ($namaFilter) {
+                $q->where(function ($query) use ($namaFilter) {
+                    $query->where('kunjungans.nama_nasabah', 'LIKE', '%' . $namaFilter . '%')
+                          ->orWhere('nasabahs.nasabah', 'LIKE', '%' . $namaFilter . '%');
+                });
+            })
             // Batasi sesuai filter bulan/tahun yang dipilih di dropdown
             ->whereRaw('MONTH(kunjungans.created_at) = ?', [$bulanFilter])
             ->whereRaw('YEAR(kunjungans.created_at) = ?', [$tahunFilter])
@@ -413,14 +426,19 @@ public function detail($kode_ao)
         $nasabah = $data_detail_collection->first() ?? (object) ['no_angsuran' => null, 'nasabah' => ''];
         $kode_ao = $kode_ao_clean;
 
+        // Jumlah total kunjungan faktual (ada id_kunjungan) dari seluruh baris yang cocok dengan filter
+        $jumlahKunjungan = $data_detail_collection->filter(function ($item) {
+            return !empty($item->id_kunjungan);
+        })->count();
+
         if (request()->ajax()) {
-            return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao', 'nasabah'));
+            return view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao', 'nasabah', 'namaFilter', 'jumlahKunjungan'));
         }
 
         // 5. Saat full-page GET (mis. submit filter bulan/tahun): render partial detail ke $content
         //    agar halaman Detail Kunjungan tetap tampil (bukan fallback ke tabel karyawan).
         $karyawans = \DB::table('karyawans')->get();
-        $data['content'] = view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao', 'nasabah'))->render();
+        $data['content'] = view('admin.partials.detail_kunjungan', compact('data_detail', 'kode_ao', 'nasabah', 'namaFilter', 'jumlahKunjungan'))->render();
         $data['page'] = 'detail-kunjungan';
         $data['title'] = 'Detail Kunjungan';
         $data['karyawans'] = $karyawans;
