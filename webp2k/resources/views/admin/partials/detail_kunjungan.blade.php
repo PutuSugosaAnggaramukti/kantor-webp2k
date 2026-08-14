@@ -52,14 +52,6 @@
             <i class="fas fa-file-excel fa-sm text-white" style="margin-right: 8px !important;"></i> 
             <strong>Export Data AO</strong>
         </button>
-
-        <!-- Tombol Export (Gunakan formaction agar menembak route export excel) -->
-        <button type="submit" formaction="{{ route('admin.kunjungan.export') }}" class="btn btn-success btn-sm shadow-sm" 
-            style="background-color: #28a745 !important; color: white !important; padding: 6px 15px; border-radius: 4px; display: inline-flex; align-items: center; border: none;">
-            <input type="hidden" name="kode_ao" value="{{ request()->route('kode_ao') }}">
-            <i class="fas fa-file-excel fa-sm text-white" style="margin-right: 8px !important;"></i> 
-            <strong>Export Data AO</strong>
-        </button>
     </form>
 </div>
 
