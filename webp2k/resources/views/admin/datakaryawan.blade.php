@@ -1137,6 +1137,20 @@ window.reloadDetailKunjungan = function () {
     }
 };
 
+// Delegasi event: tombol filter bulan/tahun pada halaman Detail Kunjungan dipasang
+// secara global sehingga selalu berfungsi walaupun partial di-inject via AJAX
+// (menghindari ReferenceError dari onchange inline jika global tidak tersedia).
+document.addEventListener('change', function (e) {
+    const select = e.target;
+    if (select && select.matches && select.matches('select[name="bulan"], select[name="tahun"]')) {
+        const form = select.closest('form');
+        if (form && form.id === 'formFilterDetailKunjungan') {
+            e.preventDefault();
+            window.reloadDetailKunjungan();
+        }
+    }
+});
+
 // Opsional: Menutup modal jika user klik di luar area putih modal
 window.onclick = function(event) {
     const modal = document.getElementById('modalDetailKunjungan');

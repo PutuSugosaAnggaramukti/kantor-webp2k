@@ -11,10 +11,10 @@
 
 <div class="mb-4">
     <!-- Action mengarah ke halaman detail AO itu sendiri untuk memicu filter -->
-    <form action="{{ url('admin/kunjungan-detail/' . request()->route('kode_ao')) }}" method="GET" class="d-flex align-items-center gap-2">
+    <form action="{{ url('admin/kunjungan-detail/' . request()->route('kode_ao')) }}" method="GET" id="formFilterDetailKunjungan" class="d-flex align-items-center gap-2">
         
         <!-- Dropdown Pilih Bulan -->
-        <select name="bulan" onchange="reloadDetailKunjungan()" class="form-select form-select-sm" style="width: 130px; border-radius: 4px; border: 1px solid #28a745;">
+        <select name="bulan" class="form-select form-select-sm" style="width: 130px; border-radius: 4px; border: 1px solid #28a745;">
             @foreach(range(1, 12) as $m)
                 @php $mVal = sprintf('%02d', $m); @endphp
                 <option value="{{ $mVal }}" {{ (request('bulan', date('m'))) == $mVal ? 'selected' : '' }}>
@@ -24,7 +24,7 @@
         </select>
 
         <!-- Dropdown Pilih Tahun -->
-        <select name="tahun" onchange="reloadDetailKunjungan()" class="form-select form-select-sm" style="width: 90px; border-radius: 4px; border: 1px solid #28a745;">
+        <select name="tahun" class="form-select form-select-sm" style="width: 90px; border-radius: 4px; border: 1px solid #28a745;">
             @foreach(range(date('Y')-2, date('Y')+1) as $y)
                 <option value="{{ $y }}" {{ (request('tahun', date('Y'))) == $y ? 'selected' : '' }}>{{ $y }}</option>
             @endforeach
