@@ -363,7 +363,7 @@ public function detail($kode_ao)
                 foreach ($fotos as $namaFoto) {
                     $path = public_path('uploads/kunjungan/' . $namaFoto);
                     if (!$namaFoto || !file_exists($path)) continue;
-                    $exif = @exif_read_data($path);
+                    $exif = function_exists('exif_read_data') ? @exif_read_data($path) : false;
                     if ($exif) {
                         // Jam pengambilan foto dari EXIF (DateTimeOriginal)
                         if (empty($item->foto_jam)) {

@@ -419,7 +419,9 @@ class KunjunganController extends Controller
                     $extension = strtolower($file->getClientOriginalExtension());
 
                     // BACA EXIF GPS (tidak lagi menolak langsung jika tidak ada)
-                    $exif = @exif_read_data($file->getRealPath());
+                    $exif = function_exists('exif_read_data')
+                        ? @exif_read_data($file->getRealPath())
+                        : false;
                     $hasExifGps = $exif
                         && isset($exif['GPSLatitude'])
                         && isset($exif['GPSLongitude']);
@@ -536,7 +538,7 @@ class KunjunganController extends Controller
                         : 'Lokasi terverifikasi dari GPS perangkat.')
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'error' => 'Terjadi kesalahan server: ' . $e->getMessage()
             ], 500);

@@ -802,7 +802,15 @@
                 btn.innerHTML = 'Ya, Simpan!';
                 
                 console.error('Error:', error);
-                Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+                // Coba baca isi respons asli server (bisa berupa HTML error 500 / 419) 
+                // agar pesan error tidak generik "Gagal terhubung ke server"
+                let detailMsg = 'Gagal terhubung ke server. Coba periksa koneksi internet atau muat ulang halaman.';
+                if (error instanceof TypeError && error.message === 'Failed to fetch') {
+                    // Koneksi benar-benar gagal
+                } else if (error.message) {
+                    detailMsg = 'Respons server tidak valid: ' + error.message;
+                }
+                Swal.fire('Error', detailMsg, 'error');
             });
     }
 
@@ -907,7 +915,13 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
     })
     .catch(error => {
         console.error('Error:', error);
-        Swal.fire('Error', 'Gagal terhubung ke server.', 'error');
+        let detailMsg = 'Gagal terhubung ke server. Coba periksa koneksi internet atau muat ulang halaman.';
+        if (error instanceof TypeError && error.message === 'Failed to fetch') {
+            // Koneksi benar-benar gagal
+        } else if (error.message) {
+            detailMsg = 'Respons server tidak valid: ' + error.message;
+        }
+        Swal.fire('Error', detailMsg, 'error');
     });
     });
 });
