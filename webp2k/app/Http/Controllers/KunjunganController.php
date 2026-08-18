@@ -375,14 +375,14 @@ class KunjunganController extends Controller
 
             $karyawan = Auth::guard('karyawan')->user();
 
-            // VALIDASI
+            // VALIDASI (semua kolom non-inti OPSIONAL, tidak boleh menolak simpan)
             $request->validate([
                 'no_nasabah'           => 'required',
                 'nama_nasabah'         => 'required',
                 'ada_di_lokasi'        => 'required',
                 'foto_kunjungan'       => 'required',
                 'foto_kunjungan.*'     => 'image|mimes:jpg,jpeg|max:5120',
-                'bukti_transfer'       => 'nullable|file|mimes:jpg,jpeg,png,webp,heic,heif|max:10240',
+                'bukti_transfer'       => 'nullable|file|max:10240',
                 'tgl_janji_bayar'      => 'nullable|date',
                 'nominal_janji_bayar'  => 'nullable',
             ]);
@@ -514,7 +514,9 @@ class KunjunganController extends Controller
 
                 'catatan' => $request->catatan,
 
-                'tgl_janji_bayar' => $request->tgl_janji_bayar,
+                'tgl_janji_bayar' => $request->filled('tgl_janji_bayar')
+                    ? $request->tgl_janji_bayar
+                    : null,
 
                 'nominal_janji_bayar' =>
                     $request->filled('nominal_janji_bayar')
