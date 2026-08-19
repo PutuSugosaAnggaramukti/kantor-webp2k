@@ -456,13 +456,18 @@ class DashboardAdminController extends Controller
 
    public function exportStatistikBulanan($bulan = null)
     {
-        $fileName = $bulan
-            ? 'Statistik_Bulanan_' . $bulan . '.xlsx'
-            : 'Statistik_Bulanan_Riwayat.xlsx';
+        if ($bulan) {
+            // Per bulan: file detail nasabah (AO, Nama Nasabah, Tanggal, Status)
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\StatistikBulananDetailExport($bulan),
+                'Statistik_Bulanan_' . $bulan . '.xlsx'
+            );
+        }
 
+        // Semua bulan: rekap agregat per bulan
         return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\StatistikBulananExport($bulan),
-            $fileName
+            new \App\Exports\StatistikBulananExport(),
+            'Statistik_Bulanan_Riwayat.xlsx'
         );
     }
 
