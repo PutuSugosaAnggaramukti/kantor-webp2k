@@ -49,8 +49,13 @@ class KunjunganController extends Controller
         $bulanFilter = request('bulan'); // format Y-m, cth: 2026-07
         
         // 1. Ambil nasabah milik AO yang login, cocokkan lewat kode_ao_nasabah 
-        // (termasuk nasabah ber-kode seperti PU.026 yang bukan PU.8*/PG.8*)
+        // Hanya tampilkan nasabah berkode PU.8XX, PU.026, dan PG.8XX di dropdown
        $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)
+        ->where(function ($q) {
+            $q->where('kode', 'LIKE', 'PU.8%')
+              ->orWhere('kode', 'PU.026')
+              ->orWhere('kode', 'LIKE', 'PG.8%');
+        })
         ->orderBy('nasabah', 'asc')
         ->get();
         
