@@ -302,6 +302,7 @@ class DashboardAdminController extends Controller
                         'data_kunjungan_adms.nama_nasabah',
                         'data_kunjungan_adms.tanggal'
                     )
+                    ->orderByDesc('data_kunjungan_adms.tanggal')
                     ->get()->map(function($item) {
                         return [
                             'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
@@ -322,6 +323,7 @@ class DashboardAdminController extends Controller
                         'kunjungans.nama_nasabah', 
                         'kunjungans.created_at'
                     )
+                    ->orderByDesc('kunjungans.created_at')
                     ->get()->map(function($item) {
                         return [
                             'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
@@ -348,6 +350,7 @@ class DashboardAdminController extends Controller
                         'data_kunjungan_adms.nama_nasabah',
                         'data_kunjungan_adms.tanggal'
                     )
+                    ->orderByDesc('data_kunjungan_adms.tanggal')
                     ->get()->map(function($item) {
                         return [
                             'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
@@ -409,6 +412,7 @@ class DashboardAdminController extends Controller
                         'ao_lama.nama as nama_ao_lama',
                         'ao_baru.nama as nama_ao_baru'
                     )
+                    ->orderByDesc('ijin_kunjungans.tanggal')
                     ->get()
                     ->map(function($item) {
                         // Jika ao_pengganti ada isinya, gabungkan Kode - Nama
