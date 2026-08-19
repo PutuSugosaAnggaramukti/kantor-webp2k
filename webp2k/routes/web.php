@@ -31,6 +31,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     // 1. DASHBOARD
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-detail/{type}', [DashboardAdminController::class, 'getDetail'])->name('admin.dashboard.detail');
+    Route::get('/statistik-bulanan/export/{bulan?}', [DashboardAdminController::class, 'exportStatistikBulanan'])->name('admin.statistik-bulanan.export');
     Route::post('/admin/mark-ijin-as-read', [DashboardAdminController::class, 'markAsRead'])->name('admin.ijin.markAsRead');
     Route::post('/ijin-kunjungan/reassign', [DashboardAdminController::class, 'reassignJadwal'])->name('admin.ijin.reassign');
 

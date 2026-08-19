@@ -7,6 +7,7 @@ use App\Models\Karyawan;
 use App\Models\DataKunjunganAdm;
 use App\Models\IjinKunjungan;
 use App\Models\Kunjungan;
+use App\Models\StatistikBulanan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -23,8 +24,19 @@ class DashboardAdminController extends Controller
     
   public function getDashboardData()
 {
+    // --- SNAPSHOT OTOMATIS STATISTIK BULANAN (bulan-bulan lalu) ---
+    $this->pastikanSnapshotBulanan();
+
+    // --- STATISTIK KARTU: TAMPILKAN BULAN BERJALAN (reset 0 tiap awal bulan) ---
+    $bulanAktif = now()->format('Y-m');
+    $statBulanIni = $this->hitungStatistikBulan($bulanAktif);
+    $totalKunjungan = $statBulanIni['total_rencana'];
+    $totalSelesai = $statBulanIni['sudah_dikunjungi'];
+    $totalBelum = $statBulanIni['belum_dikunjungi'];
+    $total_gagal_global = $statBulanIni['total_gagal'];
+
     // --- 1. DATA DASAR ---
-    $totalKunjungan = \App\Models\DataKunjunganAdm::count(); 
+    $totalKunjunganAll = \App\Models\DataKunjunganAdm::count(); 
 
     // --- LOGIKA GAGAL KUNJUNGAN (IJIN DISETUJUI) ---
     $list_gagal_kunjungan_all = \App\Models\IjinKunjungan::with('karyawan')
@@ -32,7 +44,7 @@ class DashboardAdminController extends Controller
         ->orderBy('tanggal', 'desc')
         ->get();
 
-    $total_gagal_global = $list_gagal_kunjungan_all->count();
+    $total_gagal_all = $list_gagal_kunjungan_all->count();
     $user = Auth::user();
 
     $list_pengajuan = \App\Models\IjinKunjungan::with('karyawan')
@@ -128,12 +140,12 @@ class DashboardAdminController extends Controller
     });
 
     // --- 2. LOGIKA AGREGAT NASIONAL ---
-    $totalSelesai = $performaAO->sum('kunjungan_selesai');
-    $totalBelum = max(0, $totalKunjungan - $totalSelesai);
+    $totalSelesaiAll = $performaAO->sum('kunjungan_selesai');
+    $totalBelumAll = max(0, $totalKunjunganAll - $totalSelesaiAll);
     $aoSelesaiTarget = $performaAO->where('capai_target', true)->count();
 
     // Persentase Nasional (Dibatas 100% agar dashboard utama tidak aneh)
-    $kpi_target_nasional = $totalKunjungan > 0 ? min(round(($totalSelesai / $totalKunjungan) * 100), 100) : 0;
+    $kpi_target_nasional = $totalKunjunganAll > 0 ? min(round(($totalSelesaiAll / $totalKunjunganAll) * 100), 100) : 0;
 
     $target_kol5_nama = \DB::table('data_kunjungan_adms')->where('kol', 5)->pluck('nama_nasabah')->toArray();
     $mandiri_kol5_nama = \DB::table('kunjungans')->where('kol', 5)->whereNotIn('nama_nasabah', $target_kol5_nama)->pluck('nama_nasabah')->toArray();
@@ -156,10 +168,15 @@ class DashboardAdminController extends Controller
         ->get()
         ->groupBy('kode_ao');
 
+    // --- RIWAYAT STATISTIK BULANAN (arsip bulan lalu yang bisa di-download) ---
+    $riwayatStatistik = StatistikBulanan::orderBy('bulan', 'desc')->get();
+
     return [
         'totalKunjungan' => $totalKunjungan,
         'totalSelesai' => $totalSelesai,
         'totalBelum' => $totalBelum,
+        'bulanAktif' => $bulanAktif,
+        'riwayatStatistik' => $riwayatStatistik,
         'aoSelesaiTarget' => $aoSelesaiTarget,
         'labels' => $labels,
         'counts' => $counts,
@@ -174,14 +191,106 @@ class DashboardAdminController extends Controller
     ];
 }
 
-   public function getDetail($type)
+   public function hitungStatistikBulan($bulan)
+    {
+        [$tahun, $bulanAngka] = array_pad(explode('-', $bulan), 2, null);
+        $tahun = (int) $tahun;
+        $bulanAngka = (int) $bulanAngka;
+
+        // 1. Total Rencana: jadwal kunjungan pada bulan tersebut
+        $totalRencana = \DB::table('data_kunjungan_adms')
+            ->where('bulan', $bulan)
+            ->distinct()
+            ->count('no_angsuran');
+
+        // 2. Sudah Dikunjungi: realisasi kunjungan unik nasabah pada bulan tersebut
+        $sudahDikunjungi = \DB::table('kunjungans')
+            ->whereYear('created_at', $tahun)
+            ->whereMonth('created_at', $bulanAngka)
+            ->distinct()
+            ->count('no_nasabah');
+
+        // 3. Belum Dikunjungi
+        $belumDikunjungi = max(0, $totalRencana - $sudahDikunjungi);
+
+        // 4. Total Gagal Kunjungan: ijin AO disetujui pada bulan tersebut
+        $totalGagal = \DB::table('ijin_kunjungans')
+            ->whereIn('status', ['disetujui', 'DISETUJUI'])
+            ->whereYear('tanggal', $tahun)
+            ->whereMonth('tanggal', $bulanAngka)
+            ->count();
+
+        return [
+            'total_rencana' => $totalRencana,
+            'sudah_dikunjungi' => $sudahDikunjungi,
+            'belum_dikunjungi' => $belumDikunjungi,
+            'total_gagal' => $totalGagal,
+        ];
+    }
+
+   public function pastikanSnapshotBulanan()
+    {
+        $bulanIni = now()->format('Y-m');
+
+        // Kumpulkan bulan-bulan yang sudah memiliki data (jadwal / kunjungan / ijin)
+        $bulanData = collect();
+
+        $bulanData = $bulanData->merge(
+            \DB::table('data_kunjungan_adms')
+                ->whereNotNull('bulan')
+                ->where('bulan', '!=', '')
+                ->distinct()
+                ->pluck('bulan')
+        );
+
+        $bulanData = $bulanData->merge(
+            \DB::table('kunjungans')
+                ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as bulan")
+                ->distinct()
+                ->pluck('bulan')
+        );
+
+        $bulanData = $bulanData->merge(
+            \DB::table('ijin_kunjungans')
+                ->whereIn('status', ['disetujui', 'DISETUJUI'])
+                ->selectRaw("DATE_FORMAT(tanggal, '%Y-%m') as bulan")
+                ->distinct()
+                ->pluck('bulan')
+        );
+
+        $bulanSudahTersimpan = StatistikBulanan::pluck('bulan')->toArray();
+
+        // Snapshot semua bulan yang sudah lewat (kurang dari bulan berjalan) dan belum tersimpan
+        foreach ($bulanData->unique()->filter() as $bulan) {
+            if ($bulan >= $bulanIni) continue; // bulan berjalan/masa depan: jangan arsipkan
+            if (in_array($bulan, $bulanSudahTersimpan)) continue;
+
+            $stat = $this->hitungStatistikBulan($bulan);
+            StatistikBulanan::create([
+                'bulan' => $bulan,
+                'total_rencana' => $stat['total_rencana'],
+                'sudah_dikunjungi' => $stat['sudah_dikunjungi'],
+                'belum_dikunjungi' => $stat['belum_dikunjungi'],
+                'total_gagal' => $stat['total_gagal'],
+            ]);
+
+            $bulanSudahTersimpan[] = $bulan;
+        }
+    }
+
+   public function getDetail($type, Request $request)
     {
         try {
             $data = [];
+            $bulan = $request->query('bulan', now()->format('Y-m'));
+            [$tahun, $bulanAngka] = array_pad(explode('-', $bulan), 2, null);
+            $tahun = (int) $tahun;
+            $bulanAngka = (int) $bulanAngka;
 
             if ($type == 'rencana') {
                 $data = \DB::table('data_kunjungan_adms')
                     ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
+                    ->where('data_kunjungan_adms.bulan', $bulan)
                     ->select(
                         'data_kunjungan_adms.kode_ao',
                         'karyawans.nama as nama_ao',
@@ -200,6 +309,8 @@ class DashboardAdminController extends Controller
             } elseif ($type == 'selesai') {
                 $data = \DB::table('kunjungans')
                     ->join('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
+                    ->whereYear('kunjungans.created_at', $tahun)
+                    ->whereMonth('kunjungans.created_at', $bulanAngka)
                     ->select(
                         'kunjungans.kode_ao', 
                         'karyawans.nama as nama_ao', 
@@ -216,10 +327,15 @@ class DashboardAdminController extends Controller
                     });
 
             } elseif ($type == 'belum') {
-                $sudahKunjung = \DB::table('kunjungans')->pluck('nama_nasabah')->toArray();
+                $sudahKunjung = \DB::table('kunjungans')
+                    ->whereYear('created_at', $tahun)
+                    ->whereMonth('created_at', $bulanAngka)
+                    ->pluck('nama_nasabah')
+                    ->toArray();
                 
                 $data = \DB::table('data_kunjungan_adms')
                     ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
+                    ->where('data_kunjungan_adms.bulan', $bulan)
                     ->whereNotIn('data_kunjungan_adms.nama_nasabah', $sudahKunjung)
                     ->select(
                         'data_kunjungan_adms.kode_ao',
@@ -280,7 +396,9 @@ class DashboardAdminController extends Controller
                     ->leftJoin('karyawans as ao_lama', 'ijin_kunjungans.kode_ao', '=', 'ao_lama.kode_ao')
                     // Join kedua untuk ambil nama AO pengganti (baru) berdasarkan kolom ao_pengganti
                     ->leftJoin('karyawans as ao_baru', 'ijin_kunjungans.ao_pengganti', '=', 'ao_baru.kode_ao')
-                    ->where('ijin_kunjungans.status', 'disetujui')
+                    ->whereIn('ijin_kunjungans.status', ['disetujui', 'DISETUJUI'])
+                    ->whereYear('ijin_kunjungans.tanggal', $tahun)
+                    ->whereMonth('ijin_kunjungans.tanggal', $bulanAngka)
                     ->select(
                         'ijin_kunjungans.*',
                         'ao_lama.nama as nama_ao_lama',
@@ -334,6 +452,18 @@ class DashboardAdminController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+   public function exportStatistikBulanan($bulan = null)
+    {
+        $fileName = $bulan
+            ? 'Statistik_Bulanan_' . $bulan . '.xlsx'
+            : 'Statistik_Bulanan_Riwayat.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\StatistikBulananExport($bulan),
+            $fileName
+        );
     }
 
    public function reassignJadwal(Request $request) 

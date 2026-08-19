@@ -51,7 +51,7 @@
         <div id="main-content-area" style="transition: opacity 0.3s ease;">
             
             <div id="dashboard-default-view">
-               <h3 style="margin-bottom: 1.5rem;">Statistik Kinerja</h3>
+               <h3 style="margin-bottom: 1.5rem;">Statistik Kinerja <small style="font-size: 0.65rem; color: #999;">Periode {{ \Carbon\Carbon::createFromFormat('Y-m', $bulanAktif ?? now()->format('Y-m'))->translatedFormat('F Y') }} (reset setiap awal bulan)</small></h3>
                 
                 <div class="stats-grid">
                     <div class="stat-card bg-rencana" onclick="showDetail('rencana')">
@@ -78,6 +78,53 @@
                         <div class="kpi-note">*Berdasarkan ijin AO yang disetujui</div>
                         <i class="fa-solid fa-user-slash"></i>
                     </div>
+                </div>
+
+                {{-- RIWAYAT STATISTIK BULANAN (arsip bulan lalu, bisa di-download) --}}
+                <div style="margin-top: 2rem; background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+                        <h4 style="margin: 0; font-size: 1.05rem;">Riwayat Statistik Bulanan</h4>
+                        <a href="{{ route('admin.statistik-bulanan.export') }}" class="btn btn-primary btn-sm" style="text-decoration: none;">
+                            <i class="fa-solid fa-download"></i> Download Semua (.xlsx)
+                        </a>
+                    </div>
+
+                    @if(($riwayatStatistik ?? collect())->isEmpty())
+                        <p style="color: #999; font-size: 0.85rem; margin: 0;">
+                            Belum ada arsip. Riwayat otomatis tersimpan saat bulan berganti.
+                        </p>
+                    @else
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                                <thead>
+                                    <tr style="background: #f4f4f4;">
+                                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Bulan</th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Total Rencana</th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Sudah Dikunjungi</th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Belum Dikunjungi</th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Total Gagal</th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($riwayatStatistik as $riwayat)
+                                        <tr>
+                                            <td style="padding: 10px; border: 1px solid #ddd;">{{ $riwayat->bulan_label }}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ $riwayat->total_rencana }}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ $riwayat->sudah_dikunjungi }}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ $riwayat->belum_dikunjungi }}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ $riwayat->total_gagal }}</td>
+                                            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                                                <a href="{{ route('admin.statistik-bulanan.export', ['bulan' => $riwayat->bulan]) }}" class="btn btn-success btn-sm" style="text-decoration: none;">
+                                                    <i class="fa-solid fa-file-excel"></i> Download
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
                 </div>
 
                 <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Persentase Performa  <small style="font-size: 0.6rem; color: #999;">(Klik untuk detail AO)</small></h3>
@@ -384,7 +431,7 @@
         document.getElementById('modalTableContainer').innerHTML = '<div style="text-align:center; padding:20px;"><div class="spinner"></div><p>Sedang memuat...</p></div>';
         document.getElementById('statsModal').style.display = 'flex';
 
-        fetch(`/admin/dashboard-detail/${type}`)
+        fetch(`/admin/dashboard-detail/${type}?bulan={{ $bulanAktif ?? now()->format('Y-m') }}`)
             .then(response => response.json())
             .then(data => {
                 let table = `<table style="width:100%; border-collapse: collapse; margin-top:10px; font-size:13px;">
