@@ -257,14 +257,22 @@ class DashboardAdminController extends Controller
                 ->pluck('bulan')
         );
 
-        $bulanSudahTersimpan = StatistikBulanan::pluck('bulan')->toArray();
-
         // Snapshot semua bulan yang sudah lewat (kurang dari bulan berjalan) dan belum tersimpan
         foreach ($bulanData->unique()->filter() as $bulan) {
             if ($bulan >= $bulanIni) continue; // bulan berjalan/masa depan: jangan arsipkan
-            if (in_array($bulan, $bulanSudahTersimpan)) continue;
 
             $stat = $this->hitungStatistikBulan($bulan);
+            $snapshot = StatistikBulanan::where('bulan', $bulan)->first();
+            if ($snapshot) {
+                // Refresh snapshot yang sudah ada agar mengikuti logika hitung terbaru
+                $snapshot->total_rencana = $stat['total_rencana'];
+                $snapshot->sudah_dikunjungi = $stat['sudah_dikunjungi'];
+                $snapshot->belum_dikunjungi = $stat['belum_dikunjungi'];
+                $snapshot->total_gagal = $stat['total_gagal'];
+                $snapshot->save();
+                continue;
+            }
+
             StatistikBulanan::create([
                 'bulan' => $bulan,
                 'total_rencana' => $stat['total_rencana'],
@@ -272,8 +280,6 @@ class DashboardAdminController extends Controller
                 'belum_dikunjungi' => $stat['belum_dikunjungi'],
                 'total_gagal' => $stat['total_gagal'],
             ]);
-
-            $bulanSudahTersimpan[] = $bulan;
         }
     }
 
