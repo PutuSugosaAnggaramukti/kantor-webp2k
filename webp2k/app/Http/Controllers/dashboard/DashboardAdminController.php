@@ -200,8 +200,7 @@ class DashboardAdminController extends Controller
         // 1. Total Rencana: jadwal kunjungan pada bulan tersebut
         $totalRencana = \DB::table('data_kunjungan_adms')
             ->where('bulan', $bulan)
-            ->distinct()
-            ->count('no_angsuran');
+            ->count();
 
         // 2. Sudah Dikunjungi: realisasi kunjungan unik nasabah pada bulan tersebut
         $sudahDikunjungi = \DB::table('kunjungans')
