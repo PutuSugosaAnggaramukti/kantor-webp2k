@@ -108,6 +108,17 @@
 
                     <td style="padding: 10px; border-right: 2px solid #000;">
                         @if($item->id_kunjungan)
+                            @php
+                                $tglJanji = $item->tgl_janji_hasil ?? ($item->tgl_janji_bayar ?? null);
+                                $isBrokenPromise = ($item->status_kunjungan == 'Menunggu Pembayaran')
+                                    && !empty($tglJanji)
+                                    && \Carbon\Carbon::parse($tglJanji)->isPast();
+                            @endphp
+                            @if($isBrokenPromise)
+                                <span style="background-color: #343a40; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; display: inline-block;">
+                                    ❌ Broken Promise
+                                </span>
+                            @else
                             <select class="status-select" 
                                     data-id="{{ $item->id_kunjungan }}"
                                     data-kode-ao="{{ $kode_ao }}"
@@ -119,6 +130,7 @@
                                 <option value="Sudah Bayar" {{ $item->status_kunjungan == 'Sudah Bayar' ? 'selected' : '' }}>✅ Sudah Bayar</option>
                                 <option value="Gagal Bayar" {{ $item->status_kunjungan == 'Gagal Bayar' ? 'selected' : '' }}>❌ Gagal Bayar</option>
                             </select>
+                            @endif
                         @else
                             <span style="background-color: #e9ecef; color: #6c757d; padding: 5px 10px; border-radius: 5px; font-size: 10px; font-weight: bold; display: inline-block; border: 1px dashed #adb5bd;">
                                 Belum Kunjungan
