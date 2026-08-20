@@ -209,16 +209,16 @@ class DashboardAdminController extends Controller
             ->distinct()
             ->count('no_nasabah');
 
-        // 3. Belum Dikunjungi: baris jadwal bulan tsb yang nasabahnya belum tercatat kunjungan
-        $sudahKunjungNama = \DB::table('kunjungans')
+        // 3. Belum Dikunjungi: baris jadwal bulan tsb yang no_angsuran-nya belum tercatat kunjungan
+        $sudahKunjungNo = \DB::table('kunjungans')
             ->whereYear('created_at', $tahun)
             ->whereMonth('created_at', $bulanAngka)
-            ->pluck('nama_nasabah')
+            ->pluck('no_nasabah')
             ->toArray();
 
         $belumDikunjungi = \DB::table('data_kunjungan_adms')
             ->where('bulan', $bulan)
-            ->whereNotIn('nama_nasabah', $sudahKunjungNama)
+            ->whereNotIn('no_angsuran', $sudahKunjungNo)
             ->count();
 
         // 4. Total Gagal Kunjungan: ijin AO disetujui pada bulan tersebut
@@ -346,13 +346,13 @@ class DashboardAdminController extends Controller
                 $sudahKunjung = \DB::table('kunjungans')
                     ->whereYear('created_at', $tahun)
                     ->whereMonth('created_at', $bulanAngka)
-                    ->pluck('nama_nasabah')
+                    ->pluck('no_nasabah')
                     ->toArray();
                 
                 $data = \DB::table('data_kunjungan_adms')
                     ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
                     ->where('data_kunjungan_adms.bulan', $bulan)
-                    ->whereNotIn('data_kunjungan_adms.nama_nasabah', $sudahKunjung)
+                    ->whereNotIn('data_kunjungan_adms.no_angsuran', $sudahKunjung)
                     ->select(
                         'data_kunjungan_adms.kode_ao',
                         'karyawans.nama as nama_ao',

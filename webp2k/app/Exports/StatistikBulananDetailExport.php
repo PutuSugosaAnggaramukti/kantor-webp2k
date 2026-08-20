@@ -74,13 +74,13 @@ class StatistikBulananDetailExport implements FromCollection, WithHeadings, With
         $sudahKunjung = DB::table('kunjungans')
             ->whereYear('created_at', $tahun)
             ->whereMonth('created_at', $bulanAngka)
-            ->pluck('nama_nasabah')
+            ->pluck('no_nasabah')
             ->toArray();
 
         $belum = DB::table('data_kunjungan_adms')
             ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
             ->where('data_kunjungan_adms.bulan', $this->bulan)
-            ->whereNotIn('data_kunjungan_adms.nama_nasabah', $sudahKunjung)
+            ->whereNotIn('data_kunjungan_adms.no_angsuran', $sudahKunjung)
             ->select(
                 'data_kunjungan_adms.kode_ao',
                 'karyawans.nama as nama_ao',
