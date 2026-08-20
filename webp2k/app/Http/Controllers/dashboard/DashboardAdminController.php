@@ -223,17 +223,8 @@ class DashboardAdminController extends Controller
             ->distinct()
             ->count('no_nasabah');
 
-        // 3. Belum Dikunjungi: baris jadwal bulan tsb yang no_angsuran-nya belum tercatat kunjungan
-        $sudahKunjungNo = \DB::table('kunjungans')
-            ->whereYear('created_at', $tahun)
-            ->whereMonth('created_at', $bulanAngka)
-            ->pluck('no_nasabah')
-            ->toArray();
-
-        $belumDikunjungi = \DB::table('data_kunjungan_adms')
-            ->where('bulan', $bulan)
-            ->whereNotIn('no_angsuran', $sudahKunjungNo)
-            ->count();
+        // 3. Belum Dikunjungi: sisa jadwal yang belum direalisasikan (Total Rencana - Sudah)
+        $belumDikunjungi = max(0, $totalRencana - $sudahDikunjungi);
 
         // 4. Total Gagal Kunjungan: ijin AO disetujui pada bulan tersebut
         $totalGagal = \DB::table('ijin_kunjungans')
