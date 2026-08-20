@@ -426,6 +426,10 @@
         
         // Tambahkan header extra jika tipe-nya 'gagal'
         let extraHeader = (type === 'gagal') ? '<th style="padding:12px; border:1px solid #ddd;">Keterangan</th>' : '';
+        // Untuk 'rencana', tampilkan kolom Keterangan apakah sudah/belum dikunjungi
+        if (type === 'rencana') {
+            extraHeader = '<th style="padding:12px; border:1px solid #ddd;">Keterangan</th>';
+        }
 
         document.getElementById('modalTitle').innerText = titleMap[type];
         document.getElementById('modalTableContainer').innerHTML = '<div style="text-align:center; padding:20px;"><div class="spinner"></div><p>Sedang memuat...</p></div>';
@@ -474,6 +478,18 @@
                                 : '<span style="color: #999; font-style: italic;">Belum dioper</span>';
                             
                             extraCell = `<td style="padding:10px; border:1px solid #eee;">${ket}</td>`;
+                        } else if (type === 'rencana') {
+                            // Menampilkan apakah rencana sudah/belum dikunjungi
+                            let isSudah = item.keterangan === 'Sudah Dikunjungi';
+                            let ketBg = isSudah ? '#dcfce7' : '#fee2e2';
+                            let ketColor = isSudah ? '#166534' : '#991b1b';
+                            let ketLabel = isSudah ? 'Sudah Dikunjungi' : 'Belum Dikunjungi';
+
+                            extraCell = `<td style="padding:10px; border:1px solid #eee; text-align:center;">
+                                <span style="background:${ketBg}; color:${ketColor}; padding:4px 10px; border-radius:15px; font-size:11px; font-weight:bold;">
+                                    ${ketLabel}
+                                </span>
+                            </td>`;
                         }
 
                         table += `<tr>
@@ -490,8 +506,8 @@
                         </tr>`;
                     });
                 } else {
-                    // Sesuaikan colspan jika data kosong (6 kolom jika gagal, 5 jika lainnya)
-                    let colSpanCount = (type === 'gagal') ? 6 : 5;
+                    // Sesuaikan colspan jika data kosong (6 kolom jika gagal/rencana, 5 jika lainnya)
+                    let colSpanCount = (type === 'gagal' || type === 'rencana') ? 6 : 5;
                     table += `<tr><td colspan="${colSpanCount}" style="text-align:center; padding:20px;">Tidak ada data ditemukan.</td></tr>`;
                 }
 

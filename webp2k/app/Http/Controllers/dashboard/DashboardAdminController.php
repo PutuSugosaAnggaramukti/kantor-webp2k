@@ -316,6 +316,12 @@ class DashboardAdminController extends Controller
             $bulanAngka = (int) $bulanAngka;
 
             if ($type == 'rencana') {
+                $sudahKunjungNo = \DB::table('kunjungans')
+                    ->whereYear('created_at', $tahun)
+                    ->whereMonth('created_at', $bulanAngka)
+                    ->pluck('no_nasabah')
+                    ->toArray();
+
                 $data = \DB::table('data_kunjungan_adms')
                     ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
                     ->where('data_kunjungan_adms.bulan', $bulan)
@@ -323,15 +329,17 @@ class DashboardAdminController extends Controller
                         'data_kunjungan_adms.kode_ao',
                         'karyawans.nama as nama_ao',
                         'data_kunjungan_adms.nama_nasabah',
+                        'data_kunjungan_adms.no_angsuran',
                         'data_kunjungan_adms.tanggal'
                     )
                     ->orderByDesc('data_kunjungan_adms.tanggal')
-                    ->get()->map(function($item) {
+                    ->get()->map(function($item) use ($sudahKunjungNo) {
                         return [
                             'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
                             'info_2' => $item->nama_nasabah,
                             'info_3' => date('d-m-Y', strtotime($item->tanggal)),
-                            'status' => 'Rencana'
+                            'status' => 'Rencana',
+                            'keterangan' => in_array($item->no_angsuran, $sudahKunjungNo) ? 'Sudah Dikunjungi' : 'Belum Dikunjungi'
                         ];
                     });
 
