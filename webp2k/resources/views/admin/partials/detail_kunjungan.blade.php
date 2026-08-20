@@ -110,13 +110,22 @@
                         @if($item->id_kunjungan)
                             @php
                                 $tglJanji = $item->tgl_janji_hasil ?? ($item->tgl_janji_bayar ?? null);
-                                $isBrokenPromise = ($item->status_kunjungan == 'Menunggu Pembayaran')
+                                $adaBukti = !empty($item->bukti_transfer);
+                                $statusOtomatis = null;
+
+                                if ($adaBukti) {
+                                    // Ada unggahan bukti transfer -> anggap sudah bayar
+                                    $statusOtomatis = 'Sudah Bayar';
+                                } elseif ($item->status_kunjungan == 'Menunggu Pembayaran'
                                     && !empty($tglJanji)
-                                    && \Carbon\Carbon::parse($tglJanji)->isPast();
+                                    && \Carbon\Carbon::parse($tglJanji)->isPast()) {
+                                    // Janji bayar lewat & belum ada bukti -> broken promise
+                                    $statusOtomatis = 'Broken Promise';
+                                }
                             @endphp
-                            @if($isBrokenPromise)
-                                <span style="background-color: #343a40; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; display: inline-block;">
-                                    ❌ Broken Promise
+                            @if($statusOtomatis)
+                                <span style="background-color: {{ $statusOtomatis == 'Sudah Bayar' ? '#d4edda' : '#343a40' }}; color: {{ $statusOtomatis == 'Sudah Bayar' ? '#155724' : '#fff' }}; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; display: inline-block;">
+                                    @if($statusOtomatis == 'Sudah Bayar') ✅ @else ❌ @endif {{ $statusOtomatis }}
                                 </span>
                             @else
                             <select class="status-select" 
