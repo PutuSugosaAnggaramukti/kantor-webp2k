@@ -32,7 +32,7 @@ class StatistikBulananExport implements FromCollection, WithHeadings, WithMappin
     {
         return [
             'Bulan',
-            'Total Rencana',
+            'Total Kunjungan',
             'Sudah Dikunjungi',
             'Belum Dikunjungi',
             'Total Gagal Kunjungan',

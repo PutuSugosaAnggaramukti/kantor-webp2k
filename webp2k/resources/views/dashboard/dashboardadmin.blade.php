@@ -55,7 +55,7 @@
                 
                 <div class="stats-grid">
                     <div class="stat-card bg-rencana" onclick="showDetail('rencana')">
-                        <div class="stat-label">Total Rencana</div>
+                        <div class="stat-label">Total Kunjungan</div>
                         <div class="stat-value">{{ $totalKunjungan ?? 0 }}</div>
                         <i class="fa-solid fa-calendar-days"></i>
                     </div>
@@ -99,7 +99,7 @@
                                 <thead>
                                     <tr style="background: #f4f4f4;">
                                         <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Bulan</th>
-                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Total Rencana</th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Total Kunjungan</th>
                                         <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Sudah Dikunjungi</th>
                                         <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Belum Dikunjungi</th>
                                         <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Total Gagal</th>
@@ -414,7 +414,7 @@
 
     function showDetail(type) {
         const titleMap = {
-            'rencana': 'Detail Rencana Kunjungan',
+            'rencana': 'Detail Kunjungan',
             'selesai': 'Detail Kunjungan Selesai',
             'belum': 'Detail Kunjungan Belum Selesai',
             'target': 'Daftar Nasabah HB yang Sudah Ditangani AO',
