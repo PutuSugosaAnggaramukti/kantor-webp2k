@@ -21,6 +21,20 @@ class DashboardAdminController extends Controller
         return view('dashboard.dashboardadmin', $data);
         
     }
+
+    public function statsJson()
+    {
+        $bulanAktif = now()->format('Y-m');
+        $stat = $this->hitungStatistikBulan($bulanAktif);
+
+        return response()->json([
+            'bulan' => $bulanAktif,
+            'total_rencana' => $stat['total_rencana'],
+            'sudah_dikunjungi' => $stat['sudah_dikunjungi'],
+            'belum_dikunjungi' => $stat['belum_dikunjungi'],
+            'total_gagal' => $stat['total_gagal'],
+        ]);
+    }
     
   public function getDashboardData()
 {

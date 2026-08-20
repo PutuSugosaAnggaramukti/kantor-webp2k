@@ -722,6 +722,30 @@ function executeReassign(idIjin, aoBaru) {
     });
 
 }
+
+// --- POLLING REAL-TIME STATISTIK KINERJA (setiap 15 detik) ---
+function refreshStatistikKinerja() {
+    fetch(`{{ route('admin.dashboard.stats') }}`, {
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.querySelectorAll('.stat-card .stat-value').forEach(el => {
+            let key = null;
+            if (el.closest('.stat-card').classList.contains('bg-rencana')) key = 'total_rencana';
+            else if (el.closest('.stat-card').classList.contains('bg-selesai')) key = 'sudah_dikunjungi';
+            else if (el.closest('.stat-card').classList.contains('bg-belum')) key = 'belum_dikunjungi';
+            else if (el.id === 'total-gagal-count') key = 'total_gagal';
+            if (key && data[key] !== undefined) {
+                el.textContent = data[key];
+            }
+        });
+    })
+    .catch(err => console.error('Gagal refresh statistik:', err));
+}
+
+// Jalankan sekali saat halaman dibuka, lalu ulangi tiap 15 detik
+setInterval(refreshStatistikKinerja, 15000);
     </script>
 
 </body>
