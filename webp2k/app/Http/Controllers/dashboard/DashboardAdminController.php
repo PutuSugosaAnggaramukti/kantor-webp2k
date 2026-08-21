@@ -205,25 +205,30 @@ class DashboardAdminController extends Controller
     ];
 }
 
-   public function hitungStatistikBulan($bulan)
+    public function hitungStatistikBulan($bulan)
     {
         [$tahun, $bulanAngka] = array_pad(explode('-', $bulan), 2, null);
         $tahun = (int) $tahun;
         $bulanAngka = (int) $bulanAngka;
 
-        // 1. Total Rencana: jadwal kunjungan pada bulan tersebut
+        // 1. Total Kunjungan: semua baris jadwal pada bulan tersebut
         $totalRencana = \DB::table('data_kunjungan_adms')
             ->where('bulan', $bulan)
             ->count();
 
-        // 2. Sudah Dikunjungi: realisasi kunjungan unik nasabah pada bulan tersebut
-        $sudahDikunjungi = \DB::table('kunjungans')
+        // 2. Sudah Dikunjungi: jadwal yang no_angsuran-nya sudah ada di kunjungans bulan tsb
+        $sudahKunjungNo = \DB::table('kunjungans')
             ->whereYear('created_at', $tahun)
             ->whereMonth('created_at', $bulanAngka)
-            ->distinct()
-            ->count('no_nasabah');
+            ->pluck('no_nasabah')
+            ->toArray();
 
-        // 3. Belum Dikunjungi: sisa jadwal yang belum direalisasikan (Total Rencana - Sudah)
+        $sudahDikunjungi = \DB::table('data_kunjungan_adms')
+            ->where('bulan', $bulan)
+            ->whereIn('no_angsuran', $sudahKunjungNo)
+            ->count();
+
+        // 3. Belum Dikunjungi: jadwal yang no_angsuran-nya belum ada di kunjungans
         $belumDikunjungi = max(0, $totalRencana - $sudahDikunjungi);
 
         // 4. Total Gagal Kunjungan: ijin AO disetujui pada bulan tersebut
@@ -335,22 +340,28 @@ class DashboardAdminController extends Controller
                     });
 
             } elseif ($type == 'selesai') {
-                $data = \DB::table('kunjungans')
-                    ->join('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
-                    ->whereYear('kunjungans.created_at', $tahun)
-                    ->whereMonth('kunjungans.created_at', $bulanAngka)
+                $sudahKunjungNo = \DB::table('kunjungans')
+                    ->whereYear('created_at', $tahun)
+                    ->whereMonth('created_at', $bulanAngka)
+                    ->pluck('no_nasabah')
+                    ->toArray();
+
+                $data = \DB::table('data_kunjungan_adms')
+                    ->join('karyawans', 'data_kunjungan_adms.kode_ao', '=', 'karyawans.kode_ao')
+                    ->where('data_kunjungan_adms.bulan', $bulan)
+                    ->whereIn('data_kunjungan_adms.no_angsuran', $sudahKunjungNo)
                     ->select(
-                        'kunjungans.kode_ao', 
-                        'karyawans.nama as nama_ao', 
-                        'kunjungans.nama_nasabah', 
-                        'kunjungans.created_at'
+                        'data_kunjungan_adms.kode_ao',
+                        'karyawans.nama as nama_ao',
+                        'data_kunjungan_adms.nama_nasabah',
+                        'data_kunjungan_adms.tanggal'
                     )
-                    ->orderByDesc('kunjungans.created_at')
+                    ->orderByDesc('data_kunjungan_adms.tanggal')
                     ->get()->map(function($item) {
                         return [
                             'info_1' => $item->kode_ao . ' - ' . $item->nama_ao,
                             'info_2' => $item->nama_nasabah,
-                            'info_3' => date('d-m-Y', strtotime($item->created_at)),
+                            'info_3' => date('d-m-Y', strtotime($item->tanggal)),
                             'status' => 'Sudah Dikunjungi'
                         ];
                     });
