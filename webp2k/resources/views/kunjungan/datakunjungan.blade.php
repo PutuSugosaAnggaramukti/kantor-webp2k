@@ -110,6 +110,7 @@
      * Parser EXIF GPS murni JavaScript (tanpa library).
      * Membaca koordinat langsung dari file foto (JPG/JPEG) yang dipilih user,
      * sehingga tetap berfungsi di HP yang API geolocation-nya gagal (mis. VIVO).
+     * Mendukung: Samsung, iPhone, Xiaomi, OPPO, Vivo, Realme, dll.
      */
     function bacaExifGpsDariFile(file) {
         return new Promise((resolve) => {
@@ -150,7 +151,8 @@
         }
         if (tiffStart < 0) return null;
 
-        const le = dv.getUint16(tiffStart) === 0x4949; // II = little endian
+        // Support both II (little endian) dan MM (big endian) — iPhone pakai MM
+        const le = dv.getUint16(tiffStart) === 0x4949;
         const u16 = (off) => dv.getUint16(off, le);
         const u32 = (off) => dv.getUint32(off, le);
         const b = (off) => dv.getUint8(off);
@@ -175,6 +177,21 @@
             return den !== 0 ? num / den : 0;
         };
 
+        // Baca nilai GPS mentah (bisa array 1, 2, atau 3 elemen)
+        const readGpsValues = (off, type) => {
+            const realOff = type === 5 ? tiffStart + u32(off) : off;
+            // Baca semua komponen yang tersedia (1-3)
+            const vals = [];
+            for (let j = 0; j < 3; j++) {
+                try {
+                    const v = readRational(realOff + j * 8);
+                    if (isNaN(v) || !isFinite(v)) break;
+                    vals.push(v);
+                } catch(e) { break; }
+            }
+            return vals;
+        };
+
         let latRef = 'N', lonRef = 'E', latArr = null, lonArr = null;
         for (let i = 0; i < gpsNum; i++) {
             const entry = gpsIfd + 2 + i * 12;
@@ -183,26 +200,40 @@
             const valueOffset = entry + 8;
             switch (tag) {
                 case 0x0001: latRef = String.fromCharCode(b(valueOffset)); break;
-                case 0x0002: {
-                    const off = type === 5 ? tiffStart + u32(valueOffset) : valueOffset;
-                    latArr = [readRational(off), readRational(off + 8), readRational(off + 16)];
-                    break;
-                }
+                case 0x0002: latArr = readGpsValues(valueOffset, type); break;
                 case 0x0003: lonRef = String.fromCharCode(b(valueOffset)); break;
-                case 0x0004: {
-                    const off = type === 5 ? tiffStart + u32(valueOffset) : valueOffset;
-                    lonArr = [readRational(off), readRational(off + 8), readRational(off + 16)];
-                    break;
-                }
+                case 0x0004: lonArr = readGpsValues(valueOffset, type); break;
             }
         }
-        if (!latArr || !lonArr) return null;
+        if (!latArr || latArr.length < 2 || !lonArr || lonArr.length < 2) return null;
 
-        let lat = latArr[0] + latArr[1] / 60 + latArr[2] / 3600;
-        let lon = lonArr[0] + lonArr[1] / 60 + lonArr[2] / 3600;
+        // Konversi DMS ke desimal (handle 1, 2, atau 3 komponen)
+        let lat, lon;
+        if (latArr.length === 3) {
+            // DMS: derajat + menit/60 + detik/3600
+            lat = latArr[0] + latArr[1] / 60 + latArr[2] / 3600;
+        } else if (latArr.length === 2) {
+            // DM: derajat + menit desimal/60
+            lat = latArr[0] + latArr[1] / 60;
+        } else {
+            lat = latArr[0];
+        }
+
+        if (lonArr.length === 3) {
+            lon = lonArr[0] + lonArr[1] / 60 + lonArr[2] / 3600;
+        } else if (lonArr.length === 2) {
+            lon = lonArr[0] + lonArr[1] / 60;
+        } else {
+            lon = lonArr[0];
+        }
+
         if (latRef === 'S') lat = -lat;
         if (lonRef === 'W') lon = -lon;
-        if (lat === 0 && lon === 0) return null; // GPS tidak terkunci
+
+        // Validasi: harus dalam rentang dunia dan bukan 0,0
+        if (lat === 0 && lon === 0) return null;
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+
         return { lat, lon };
     }
 
@@ -231,7 +262,9 @@
     }
 
     /**
-     * Cek apakah string koordinat valid (bukan kosong, bukan 0,0 dalam format apapun).
+     * Cek apakah string koordinat valid.
+     * Valid = ada 2 angka, bukan 0,0, dan dalam rentang Indonesia.
+     * Rentang Indonesia: lat -11 s/d 8, lon 95 s/d 141.
      */
     function isKoordValid(val) {
         if (!val) return false;
@@ -240,7 +273,11 @@
         const lat = parseFloat(parts[0]);
         const lon = parseFloat(parts[1]);
         if (isNaN(lat) || isNaN(lon)) return false;
-        return !(lat === 0 && lon === 0);
+        if (lat === 0 && lon === 0) return false;
+        // Validasi rentang Indonesia (tolak koordinat aneh seperti "60")
+        if (lat < -11 || lat > 8) return false;
+        if (lon < 95 || lon > 141) return false;
+        return true;
     }
 
     function bacaGpsDariFotoDipilih(fileInput) {
@@ -377,7 +414,7 @@
         // TAPI tetap jalankan watchPosition agar koordinat disegarkan ke lokasi terkini.
         // (Jangan return di sini: bila hanya pakai cache, koordinat bisa stale atau kosong
         //  jika kunjungan sebelumnya gagal terkunci.)
-        if (typeof lastKnownCoordinate === 'string' && lastKnownCoordinate) {
+        if (typeof lastKnownCoordinate === 'string' && isKoordValid(lastKnownCoordinate)) {
             if (input) input.value = lastKnownCoordinate;
         }
 
@@ -400,6 +437,7 @@
                 // Jangan kunci 0,0 (GPS belum fix)
                 if (pos.coords.latitude === 0 && pos.coords.longitude === 0) return;
                 const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                if (!isKoordValid(loc)) return;
                 lastKnownCoordinate = loc;
                 if (input) input.value = loc;
                 if (status) {
@@ -430,6 +468,7 @@
             (pos) => {
                 if (pos.coords.latitude === 0 && pos.coords.longitude === 0) return;
                 const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                if (!isKoordValid(loc)) return;
                 lastKnownCoordinate = loc;
                 if (input) input.value = loc;
                 if (status) {
@@ -443,7 +482,7 @@
             },
             {
                 enableHighAccuracy: false,  // akurasi rendah = fix cepat lewat WiFi/seluler
-                timeout: 8000,
+                timeout: 10000,
                 maximumAge: 0
             }
         );
@@ -680,7 +719,7 @@
     function lockCoordinateBeforeSave(inputId) {
         return new Promise((resolve) => {
             const input = document.getElementById(inputId);
-            // Sudah ada & valid (bukan 0,0 dalam format apapun)? langsung selesai
+            // Sudah ada & valid (bukan 0,0 atau di luar Indonesia)? langsung selesai
             if (input && isKoordValid(input.value)) {
                 resolve();
                 return;
@@ -697,19 +736,21 @@
                 kunciKoordinatDariFoto(fileInput, inputId, isManual ? 'manual-location-status' : 'location-status')
                     .then((ok) => {
                         if (ok) { resolve(); return; }
-                        tungguFixGps(input, resolve);
+                        // EXIF kosong (galeri/foto tanpa GPS) → paksa geolocation
+                        tungguFixGps(input, resolve, true);
                     });
                 return;
             }
 
-            tungguFixGps(input, resolve);
+            tungguFixGps(input, resolve, false);
         });
     }
 
-    // Menunggu fix GPS dengan sabar (hingga ~20 detik) sebelum menyimpan.
+    // Menunggu fix GPS dengan sabar (hingga ~30 detik) sebelum menyimpan.
     // Memakai watchPosition (lebih andal daripada getCurrentPosition sekali jalan)
     // yang gagal di banyak HP karena sinyal GPS butuh waktu lebih lama dari timeout.
-    function tungguFixGps(input, resolve) {
+    // @param forceGeolocation = true → EXIF kosong (galeri), paksa GPS dari browser
+    function tungguFixGps(input, resolve, forceGeolocation) {
         if (!navigator.geolocation) { resolve(); return; }
 
         let watchId = null;
@@ -722,36 +763,40 @@
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
             }
-            if (loc) {
+            if (loc && isKoordValid(loc)) {
                 lastKnownCoordinate = loc;
                 if (input) input.value = loc;
             }
             resolve();
         };
 
-        const timeoutId = setTimeout(() => selesai(null), 20000);
+        // Waktu tunggu lebih lama jika EXIF kosong (butuh GPS satelit)
+        const timeoutMs = forceGeolocation ? 30000 : 20000;
+        const timeoutId = setTimeout(() => selesai(null), timeoutMs);
 
         watchId = navigator.geolocation.watchPosition(
             (pos) => {
                 if (pos.coords.latitude === 0 && pos.coords.longitude === 0) return;
-                clearTimeout(timeoutId);
                 const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                if (!isKoordValid(loc)) return;
+                clearTimeout(timeoutId);
                 selesai(loc);
             },
             () => { /* tetap menunggu */ },
-            { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 35000, maximumAge: 0 }
         );
 
         // Juga coba jalur cepat via WiFi/seluler (akurasi rendah)
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 if (pos.coords.latitude === 0 && pos.coords.longitude === 0) return;
-                clearTimeout(timeoutId);
                 const loc = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+                if (!isKoordValid(loc)) return;
+                clearTimeout(timeoutId);
                 selesai(loc);
             },
             () => { /* biarkan watchPosition lanjut */ },
-            { enableHighAccuracy: false, timeout: 8000, maximumAge: 0 }
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
         );
     }
 

@@ -633,17 +633,31 @@ class KunjunganController extends Controller
         
     private function getGps($exifCoord, $hemi) 
     {
+        if (!is_array($exifCoord)) return 0;
+
         $degrees = count($exifCoord) > 0 ? $this->getFraction($exifCoord[0]) : 0;
         $minutes = count($exifCoord) > 1 ? $this->getFraction($exifCoord[1]) : 0;
         $seconds = count($exifCoord) > 2 ? $this->getFraction($exifCoord[2]) : 0;
         
         $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
-        return $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
+        $result = $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
+
+        // Validasi rentang dunia
+        if ($result < -180 || $result > 180) return 0;
+        return $result;
     }
 
     private function getFraction($fraction) 
     {
-        $parts = explode('/', $fraction);
+        if (is_array($fraction)) {
+            // exif_read_data bisa mengembalikan array [numerator, denominator]
+            if (count($fraction) >= 2 && $fraction[1] != 0) {
+                return (float) $fraction[0] / (float) $fraction[1];
+            }
+            return (float) ($fraction[0] ?? 0);
+        }
+
+        $parts = explode('/', (string) $fraction);
         if (count($parts) < 2) return floatval($fraction);
         if (floatval($parts[1]) == 0) return 0;
         return floatval($parts[0]) / floatval($parts[1]);
@@ -661,8 +675,18 @@ class KunjunganController extends Controller
 
         if (!is_numeric($lat) || !is_numeric($lon)) return false;
 
+        $latF = (float) $lat;
+        $lonF = (float) $lon;
+
         // Lat/Lon 0,0 menandakan GPS gagal terkunci
-        return !(floatval($lat) == 0 && floatval($lon) == 0);
+        if ($latF == 0 && $lonF == 0) return false;
+
+        // Validasi rentang Indonesia: lat -11 s/d 8, lon 95 s/d 141
+        // (tolak koordinat aneh seperti "60, 60" dari EXIF yang rusak)
+        if ($latF < -11 || $latF > 8) return false;
+        if ($lonF < 95 || $lonF > 141) return false;
+
+        return true;
     }
 
     /**

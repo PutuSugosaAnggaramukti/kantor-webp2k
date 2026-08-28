@@ -460,19 +460,30 @@ public function detail($kode_ao)
         private function convertFractionToDecimal($exifCoord, $hemi)
     {
         // Cek jika data koordinat valid
-        if (!is_array($exifCoord) || count($exifCoord) < 3) return 0;
+        if (!is_array($exifCoord) || count($exifCoord) < 2) return 0;
 
         $degrees = $this->evalFraction($exifCoord[0]);
-        $minutes = $this->evalFraction($exifCoord[1]);
-        $seconds = $this->evalFraction($exifCoord[2]);
+        $minutes = count($exifCoord) > 1 ? $this->evalFraction($exifCoord[1]) : 0;
+        $seconds = count($exifCoord) > 2 ? $this->evalFraction($exifCoord[2]) : 0;
 
         $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
+        $result = $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
 
-        return $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
+        // Validasi rentang dunia
+        if ($result < -180 || $result > 180) return 0;
+        return $result;
     }
 
     private function evalFraction($fraction)
     {
+        // Handle array dari exif_read_data: [numerator, denominator]
+        if (is_array($fraction)) {
+            if (count($fraction) >= 2 && $fraction[1] != 0) {
+                return (float) $fraction[0] / (float) $fraction[1];
+            }
+            return (float) ($fraction[0] ?? 0);
+        }
+
         // Jika formatnya "7/1" atau "3600/100"
         if (is_string($fraction) && strpos($fraction, '/') !== false) {
             $parts = explode('/', $fraction);
