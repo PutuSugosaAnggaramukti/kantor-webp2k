@@ -1180,6 +1180,86 @@ window.onclick = function(event) {
     }
 }
 
+// === EDIT & DELETE KUNJUNGAN (Detail Kunjungan Admin) ===
+window.editKunjungan = function(id) {
+    $.ajax({
+        url: '/admin/kunjungan/' + id,
+        type: 'GET',
+        success: function(data) {
+            $('#editKunj_id').val(data.id);
+            $('#editKunj_status').val(data.status || 'Menunggu Pembayaran');
+            $('#editKunj_tgl_janji').val(data.tgl_janji_bayar || '');
+            $('#editKunj_nominal').val(data.nominal_janji_bayar || '');
+            $('#editKunj_catatan').val(data.catatan || '');
+            document.getElementById('modalEditKunjunganAdmin').style.display = 'flex';
+        },
+        error: function() {
+            Swal.fire('Error', 'Gagal memuat data kunjungan.', 'error');
+        }
+    });
+};
+
+window.closeModalEditKunjunganAdmin = function() {
+    document.getElementById('modalEditKunjunganAdmin').style.display = 'none';
+};
+
+$(document).on('submit', '#formEditKunjunganAdmin', function(e) {
+    e.preventDefault();
+    var id = $('#editKunj_id').val();
+    var token = $('meta[name="csrf-token"]').attr('content');
+
+    $.ajax({
+        url: '/admin/kunjungan/' + id,
+        type: 'PUT',
+        data: {
+            _token: token,
+            _method: 'PUT',
+            status: $('#editKunj_status').val(),
+            tgl_janji_bayar: $('#editKunj_tgl_janji').val(),
+            nominal_janji_bayar: $('#editKunj_nominal').val(),
+            catatan: $('#editKunj_catatan').val()
+        },
+        success: function(resp) {
+            Swal.fire({ icon: 'success', title: 'Berhasil!', text: resp.message, timer: 1200, showConfirmButton: false });
+            closeModalEditKunjunganAdmin();
+            window.reloadDetailKunjungan();
+        },
+        error: function(xhr) {
+            var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Terjadi kesalahan.';
+            Swal.fire('Error', msg, 'error');
+        }
+    });
+});
+
+window.hapusDataKunjungan = function(id, tipe) {
+    Swal.fire({
+        title: 'Yakin hapus?',
+        text: tipe === 'kunjungan' ? 'Data kunjungan ini akan dihapus permanen.' : 'Data jadwal ini akan dihapus permanen.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: '/admin/kunjungan/' + id,
+                type: 'DELETE',
+                data: { _token: $('meta[name="csrf-token"]').attr('content') },
+                success: function(resp) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: resp.message, timer: 1200, showConfirmButton: false });
+                    window.reloadDetailKunjungan();
+                },
+                error: function(xhr) {
+                    var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Gagal menghapus.';
+                    Swal.fire('Error', msg, 'error');
+                }
+            });
+        }
+    });
+};
+
 
 </script>
 </body>

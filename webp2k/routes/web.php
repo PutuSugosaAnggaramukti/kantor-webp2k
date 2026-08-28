@@ -64,8 +64,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/admin/export-ao/{kode_ao}', [AdmKunjunganController::class, 'exportDetailAO'])->name('admin.export.ao');
     Route::get('/kunjungan-download-foto/{kode_ao?}', [AdmKunjunganController::class, 'downloadFotoKunjungan'])->name('admin.kunjungan.download-foto');
     Route::get('/export-jadwal', [AdmKunjunganController::class, 'exportJadwalExcel'])->name('admin.jadwal.export');
+    Route::get('/kunjungan/{id}', [AdmKunjunganController::class, 'getKunjungan'])->name('admin.kunjungan.get');
+    Route::put('/kunjungan/{id}', [AdmKunjunganController::class, 'updateKunjungan'])->name('admin.kunjungan.update');
+    Route::delete('/kunjungan/{id}', [AdmKunjunganController::class, 'hapusKunjungan'])->name('admin.kunjungan.delete');
 
-    // 4. DATA NASABAH 
+    // 4. DATA NASABAH
     Route::get('/nasabah', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.index'); // Rute bersih
     Route::get('/nasabah-content', [NasabahController::class, 'nasabahContent'])->name('admin.nasabah.content');
     Route::post('/nasabah/store', [NasabahController::class, 'store'])->name('nasabah.store');

@@ -68,7 +68,8 @@
                 <th style="padding: 10px; border-right: 2px solid #000;">Janji Bayar</th>
                 <th style="padding: 10px; border-right: 2px solid #000;">Nominal Sanggup</th>
                 <th style="padding: 10px; border-right: 2px solid #000;">Status</th>
-                <th style="padding: 10px;">Hasil</th>
+                <th style="padding: 10px; border-right: 2px solid #000;">Hasil</th>
+                <th style="padding: 10px;">Aksi</th>
             </tr>
         </thead>
                 <tbody>
@@ -158,9 +159,31 @@
                             </button>
                         @endif
                     </td>
+
+                    <td style="padding: 10px; text-align: center;">
+                        <div style="display: flex; gap: 5px; justify-content: center;">
+                            @if($item->id_kunjungan)
+                                <button type="button" onclick='editKunjungan({{ $item->id_kunjungan }})' title="Edit" style="background: #ffc107; color: #000; border: none; padding: 5px 8px; border-radius: 5px; cursor: pointer;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" onclick="hapusDataKunjungan({{ $item->id_kunjungan }}, 'kunjungan')" title="Hapus" style="background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 5px; cursor: pointer;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            @elseif(!empty($item->id_jadwal))
+                                <button type="button" onclick='editKunjungan({{ $item->id_jadwal }})' title="Edit" style="background: #ffc107; color: #000; border: none; padding: 5px 8px; border-radius: 5px; cursor: pointer;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" onclick="hapusDataKunjungan({{ $item->id_jadwal }}, 'jadwal')" title="Hapus" style="background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 5px; cursor: pointer;">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            @else
+                                <span style="color: #999; font-size: 11px;">-</span>
+                            @endif
+                        </div>
+                    </td>
                 </tr>
             @empty
-                <tr><td colspan="10" style="padding: 20px; text-align: center;">Data tidak ditemukan.</td></tr>
+                <tr><td colspan="11" style="padding: 20px; text-align: center;">Data tidak ditemukan.</td></tr>
             @endforelse
         </tbody>
     </table>

@@ -254,6 +254,7 @@ public function detail($kode_ao)
             ->whereRaw('MONTH(data_kunjungan_adms.created_at) = ?', [$bulanFilter]) // ← dinamis
             ->whereRaw('YEAR(data_kunjungan_adms.created_at) = ?', [$tahunFilter])  // ← dinamis
             ->select(
+                'data_kunjungan_adms.id as id_jadwal',
                 'data_kunjungan_adms.no_angsuran',
                 'data_kunjungan_adms.nama_nasabah',
                 'data_kunjungan_adms.alamat_nasabah',
@@ -321,6 +322,7 @@ public function detail($kode_ao)
             ->whereRaw('MONTH(kunjungans.created_at) = ?', [$bulanFilter])
             ->whereRaw('YEAR(kunjungans.created_at) = ?', [$tahunFilter])
             ->select(
+                'data_kunjungan_adms.id as id_jadwal',
                 'kunjungans.no_nasabah as no_angsuran',
                 'kunjungans.nama_nasabah as nama_nasabah',
                 'kunjungans.alamat_nasabah as alamat_nasabah',
@@ -991,5 +993,58 @@ public function getDaftarNoAnggota(Request $request)
             ->get();
 
         return response()->json($data);
+    }
+
+    public function getKunjungan($id)
+    {
+        $data = \DB::table('kunjungans')->where('id', $id)->first();
+        if (!$data) {
+            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+        }
+        return response()->json($data);
+    }
+
+    public function updateKunjungan(Request $request, $id)
+    {
+        try {
+            $kunjungan = \DB::table('kunjungans')->where('id', $id)->first();
+            if (!$kunjungan) {
+                return response()->json(['message' => 'Data tidak ditemukan'], 404);
+            }
+
+            $updateData = [];
+            if ($request->has('catatan')) $updateData['catatan'] = $request->catatan;
+            if ($request->has('tgl_janji_bayar')) $updateData['tgl_janji_bayar'] = $request->tgl_janji_bayar ?: null;
+            if ($request->has('nominal_janji_bayar')) $updateData['nominal_janji_bayar'] = $request->nominal_janji_bayar ?: null;
+            if ($request->has('status')) $updateData['status'] = $request->status;
+            $updateData['updated_at'] = now();
+
+            \DB::table('kunjungans')->where('id', $id)->update($updateData);
+
+            return response()->json(['success' => true, 'message' => 'Data kunjungan berhasil diperbarui.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function hapusKunjungan($id)
+    {
+        try {
+            $kunjungan = \DB::table('kunjungans')->where('id', $id)->first();
+            if ($kunjungan) {
+                \DB::table('kunjungans')->where('id', $id)->delete();
+                return response()->json(['success' => true, 'message' => 'Data kunjungan berhasil dihapus.']);
+            }
+
+            $jadwal = \DB::table('data_kunjungan_adms')->where('id', $id)->first();
+            if ($jadwal) {
+                \DB::table('data_kunjungan_adms')->where('id', $id)->delete();
+                return response()->json(['success' => true, 'message' => 'Data jadwal berhasil dihapus.']);
+            }
+
+            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Gagal menghapus: ' . $e->getMessage()], 500);
+        }
     }
 }
