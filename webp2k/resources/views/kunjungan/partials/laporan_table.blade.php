@@ -54,6 +54,7 @@ function filterLaporanByBulan(bulan) {
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Bulan</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 180px;">Status Pembayaran</th>
                 <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 150px;">Kunjungan</th>
+                <th style="border: 1px solid #333; padding: 15px; font-weight: 700; width: 80px;">Aksi</th>
             </tr>
         </thead>
         <tbody>
@@ -100,10 +101,22 @@ function filterLaporanByBulan(bulan) {
                         @endif
                     </div>
                 </td>
+
+                <td style="border: 1px solid #333; padding: 10px;">
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 5px;">
+                        @if($item->id_kunjungan)
+                            <button onclick="editKunjunganAo({{ $item->id_kunjungan }})" title="Edit" style="border: none; background: #ffc107; color: #000; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                                <i class="fa-solid fa-pen" style="font-size: 12px;"></i>
+                            </button>
+                        @else
+                            <span style="color: #999; font-size: 11px;">-</span>
+                        @endif
+                    </div>
+                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="7" style="padding: 20px; text-align: center;">Belum ada data kunjungan.</td>
+                <td colspan="8" style="padding: 20px; text-align: center;">Belum ada data kunjungan.</td>
             </tr>
             @endforelse
         </tbody>

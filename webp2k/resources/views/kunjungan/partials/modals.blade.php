@@ -279,3 +279,37 @@
         </form>
     </div>
 </div>
+
+<div id="modalEditKunjunganAo" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: white; width: 100%; max-width: 480px; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <div style="padding: 15px 20px; background: #3f36b1; color: white; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-weight: 800; font-size: 16px;">Edit Laporan Kunjungan</h3>
+            <button onclick="closeModalEditKunjunganAo()" style="background: none; border: none; color: white; font-size: 22px; cursor: pointer;">&times;</button>
+        </div>
+        <form id="formEditKunjunganAo" style="padding: 20px;">
+            @csrf
+            @method('PUT')
+            <input type="hidden" id="editAoKunj_id" value="">
+
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 13px;">Tanggal Janji Bayar</label>
+                <input type="date" id="editAoKunj_tgl_janji" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px;">
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 13px;">Nominal Janji Bayar</label>
+                <input type="number" id="editAoKunj_nominal" placeholder="0" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px;">
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 13px;">Catatan Kunjungan</label>
+                <textarea id="editAoKunj_catatan" rows="3" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button type="button" onclick="closeModalEditKunjunganAo()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #ddd; background: #f8f9fa; font-weight: 700; cursor: pointer; font-size: 13px;">Batal</button>
+                <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: #3f36b1; color: white; border: none; font-weight: 700; cursor: pointer; font-size: 13px;">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>

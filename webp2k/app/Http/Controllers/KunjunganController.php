@@ -47,7 +47,7 @@ class KunjunganController extends Controller
 
         // --- FILTER BULAN ---
         $bulanFilter = request('bulan'); // format Y-m, cth: 2026-07
-        
+
         // 1. Ambil nasabah milik AO yang login, cocokkan lewat kode_ao_nasabah 
         // Hanya tampilkan nasabah berkode PU.8XX, PU.026, dan PG.8XX di dropdown
        $daftar_nasabah = \App\Models\Nasabah::where('kode_ao_nasabah', $myCode)
@@ -628,6 +628,52 @@ class KunjunganController extends Controller
             return response()->json([
                 'error' => 'Gagal menghapus data: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function getKunjunganAo($id)
+    {
+        $user = Auth::guard('karyawan')->user();
+        if (!$user) return response()->json(['message' => 'Unauthorized'], 401);
+
+        $kunjungan = \DB::table('kunjungans')
+            ->where('id', $id)
+            ->where('kode_ao', 'LIKE', '%' . strtoupper(trim($user->kode_ao)) . '%')
+            ->first();
+
+        if (!$kunjungan) {
+            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+        }
+
+        return response()->json($kunjungan);
+    }
+
+    public function updateKunjunganAo(Request $request, $id)
+    {
+        $user = Auth::guard('karyawan')->user();
+        if (!$user) return response()->json(['message' => 'Unauthorized'], 401);
+
+        try {
+            $kunjungan = \DB::table('kunjungans')
+                ->where('id', $id)
+                ->where('kode_ao', 'LIKE', '%' . strtoupper(trim($user->kode_ao)) . '%')
+                ->first();
+
+            if (!$kunjungan) {
+                return response()->json(['message' => 'Data tidak ditemukan'], 404);
+            }
+
+            $updateData = [];
+            if ($request->has('catatan')) $updateData['catatan'] = $request->catatan;
+            if ($request->has('tgl_janji_bayar')) $updateData['tgl_janji_bayar'] = $request->tgl_janji_bayar ?: null;
+            if ($request->has('nominal_janji_bayar')) $updateData['nominal_janji_bayar'] = $request->nominal_janji_bayar ?: null;
+            $updateData['updated_at'] = now();
+
+            \DB::table('kunjungans')->where('id', $id)->update($updateData);
+
+            return response()->json(['success' => true, 'message' => 'Laporan kunjungan berhasil diperbarui.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
         }
     }
         

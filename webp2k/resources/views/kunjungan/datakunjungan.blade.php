@@ -1106,6 +1106,59 @@ function updateSandiAO() {
         }
     });
 }
+
+function editKunjunganAo(id) {
+    fetch('/user/kunjungan/' + id + '/edit')
+        .then(r => r.json())
+        .then(data => {
+            if (!data.id) {
+                Swal.fire('Error', 'Data tidak ditemukan', 'error');
+                return;
+            }
+            document.getElementById('editAoKunj_id').value = data.id;
+            document.getElementById('editAoKunj_tgl_janji').value = data.tgl_janji_bayar || '';
+            document.getElementById('editAoKunj_nominal').value = data.nominal_janji_bayar || '';
+            document.getElementById('editAoKunj_catatan').value = data.catatan || '';
+            document.getElementById('modalEditKunjunganAo').style.display = 'flex';
+        })
+        .catch(() => Swal.fire('Error', 'Gagal memuat data', 'error'));
+}
+
+function closeModalEditKunjunganAo() {
+    document.getElementById('modalEditKunjunganAo').style.display = 'none';
+}
+
+document.getElementById('formEditKunjunganAo').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var id = document.getElementById('editAoKunj_id').value;
+    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    fetch('/user/kunjungan/' + id + '/update', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': token,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            tgl_janji_bayar: document.getElementById('editAoKunj_tgl_janji').value,
+            nominal_janji_bayar: document.getElementById('editAoKunj_nominal').value,
+            catatan: document.getElementById('editAoKunj_catatan').value
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            closeModalEditKunjunganAo();
+            Swal.fire('Berhasil', data.message, 'success').then(() => {
+                loadContent('/user/laporan-kunjungan-content');
+            });
+        } else {
+            Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
+        }
+    })
+    .catch(() => Swal.fire('Error', 'Gagal menyimpan data', 'error'));
+});
 </script>
 
 

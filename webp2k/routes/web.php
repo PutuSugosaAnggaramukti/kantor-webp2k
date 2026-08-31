@@ -116,6 +116,8 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::get('/kunjungan/detail/{id}', [KunjunganController::class, 'showBukti'])->name('kunjungan.bukti');
     Route::post('/kunjungan/update-jadwal-global', [KunjunganController::class, 'updateJadwalGlobal'])->name('kunjungan.updateJadwalGlobal');
     Route::post('/kunjungan/store', [KunjunganController::class, 'store'])->name('kunjungan.store');
+    Route::get('/kunjungan/{id}/edit', [KunjunganController::class, 'getKunjunganAo'])->name('ao.kunjungan.edit');
+    Route::put('/kunjungan/{id}/update', [KunjunganController::class, 'updateKunjunganAo'])->name('ao.kunjungan.update');
     Route::post('/kunjungan/tambah-jadwal', [KunjunganController::class, 'storeAo'])->name('ao.kunjungan.store');
     Route::get('/pengaturan-content', [PengaturanController::class, 'indexContent'])->name('pengaturan.content');
     Route::post('/pengaturan/update-akun', [PengaturanController::class, 'updateAkun'])->name('settings.akun');
