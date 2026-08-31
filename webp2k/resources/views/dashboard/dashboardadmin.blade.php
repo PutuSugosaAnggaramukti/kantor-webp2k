@@ -127,7 +127,13 @@
                     @endif
                 </div>
 
-                <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Persentase Performa  <small style="font-size: 0.6rem; color: #999;">(Klik untuk detail AO)</small></h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0;">Persentase Performa</h3>
+                    <select id="filterPerforma" onchange="switchPerforma(this.value)" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; cursor: pointer;">
+                        <option value="bulan">Bulan Ini</option>
+                        <option value="semua">Semua Bulan</option>
+                    </select>
+                </div>
 
                 <div class="stats-grid">
                     <div class="stat-card" onclick="openModalAO('target')" style="background: white; color: #333; border-left: 8px solid #3f36b1; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 20px;">
@@ -138,9 +144,9 @@
                         <div style="position: relative; width: 70px; height: 70px;">
                             <svg viewBox="0 0 36 36" style="transform: rotate(-90deg); width: 100%; height: 100%;">
                                 <circle cx="18" cy="18" r="16" fill="none" stroke="#eee" stroke-width="4"></circle>
-                                <circle cx="18" cy="18" r="16" fill="none" stroke="#3f36b1" stroke-width="4" stroke-dasharray="{{ $kpi_target_nasional }}, 100" stroke-linecap="round"></circle>
+                                <circle id="svgPerforma" cx="18" cy="18" r="16" fill="none" stroke="#3f36b1" stroke-width="4" stroke-dasharray="{{ $kpi_target_nasional }}, 100" stroke-linecap="round"></circle>
                             </svg>
-                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold;">{{ $kpi_target_nasional }}%</div>
+                            <div id="labelPerforma" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold;">{{ $kpi_target_nasional }}%</div>
                         </div>
                     </div>
                 </div>
@@ -229,10 +235,10 @@
             <div style="margin-bottom: 20px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
                     <span style="font-weight: 600; color: #444;">{{ $ao->nama }}</span>
-                    <span class="label-persen" data-target="{{ $ao->persen_target }}" data-kol5="{{ $ao->persen_kol5 }}" style="font-weight: bold;">0%</span>
+                    <span class="label-persen" data-target="{{ $ao->persen_target }}" data-kol5="{{ $ao->persen_kol5 }}" data-target-alltime="{{ $ao->persen_target_alltime ?? 0 }}" data-kol5-alltime="{{ $ao->persen_kol5_alltime ?? 0 }}" style="font-weight: bold;">0%</span>
                 </div>
                 <div style="width: 100%; background-color: #eee; height: 12px; border-radius: 10px; overflow: hidden;">
-                    <div class="bar-progres" data-target="{{ $ao->persen_target }}" data-kol5="{{ $ao->persen_kol5 }}" style="width: 0%; height: 100%; border-radius: 10px; transition: width 0.8s ease-in-out;"></div>
+                    <div class="bar-progres" data-target="{{ $ao->persen_target }}" data-kol5="{{ $ao->persen_kol5 }}" data-target-alltime="{{ $ao->persen_target_alltime ?? 0 }}" data-kol5-alltime="{{ $ao->persen_kol5_alltime ?? 0 }}" style="width: 0%; height: 100%; border-radius: 10px; transition: width 0.8s ease-in-out;"></div>
                 </div>
             </div>
             @endforeach
@@ -524,26 +530,46 @@
         document.getElementById('statsModal').style.display = 'none';
     }
 
+    // State untuk performa toggle
+    let currentPerformaMode = 'bulan';
+
+    function switchPerforma(mode) {
+        currentPerformaMode = mode;
+        const svg = document.getElementById('svgPerforma');
+        const label = document.getElementById('labelPerforma');
+        const bulan = {{ $kpi_target_nasional }};
+        const semua = {{ $kpi_target_semua_bulan ?? 0 }};
+        const val = mode === 'bulan' ? bulan : semua;
+        svg.setAttribute('stroke-dasharray', val + ', 100');
+        label.innerText = val + '%';
+    }
+
     function openModalAO(type) {
         const modal = document.getElementById('modalAO');
         const title = document.getElementById('aoModalTitle');
         const bars = document.querySelectorAll('.bar-progres');
         const labels = document.querySelectorAll('.label-persen');
+        const isAllTime = currentPerformaMode === 'semua';
         
         modal.style.display = 'block';
         
         if (type === 'target') {
-            title.innerText = 'Rincian Penyelesaian Target';
+            title.innerText = isAllTime ? 'Rincian Target (Semua Bulan)' : 'Rincian Penyelesaian Target';
             title.style.color = '#3f36b1';
         } else {
-            title.innerText = 'Rincian Penyelesaian KOL 5';
+            title.innerText = isAllTime ? 'Rincian KOL 5 (Semua Bulan)' : 'Rincian Penyelesaian KOL 5';
             title.style.color = '#e74c3c';
         }
 
         setTimeout(() => {
             bars.forEach((bar, index) => {
-                const value = type === 'target' ? bar.dataset.target : bar.dataset.kol5;
+                let value;
                 const color = type === 'target' ? '#3f36b1' : '#e74c3c';
+                if (type === 'target') {
+                    value = isAllTime ? bar.dataset.targetAlltime : bar.dataset.target;
+                } else {
+                    value = isAllTime ? bar.dataset.kol5Alltime : bar.dataset.kol5;
+                }
                 bar.style.width = value + '%';
                 bar.style.backgroundColor = color;
                 labels[index].innerText = value + '%';

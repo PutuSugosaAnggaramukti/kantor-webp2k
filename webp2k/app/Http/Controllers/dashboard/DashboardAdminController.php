@@ -149,6 +149,53 @@ class DashboardAdminController extends Controller
             ? round(($selesaiKOL5AO / $totalWajibKOL5AO) * 100) 
             : 0;
 
+        // --- ALL-TIME (semua bulan) ---
+        $kunjunganAllTime = \DB::table('kunjungans')
+            ->where('kode_ao', $kodeAO)
+            ->distinct()
+            ->pluck('no_nasabah') 
+            ->toArray();
+        $karyawan->kunjungan_selesai_alltime = count($kunjunganAllTime);
+
+        $rencanaAOAllTime = \DB::table('data_kunjungan_adms')
+            ->where('kode_ao', $kodeAO)
+            ->distinct()
+            ->count('no_angsuran');
+
+        $karyawan->persen_target_alltime = $rencanaAOAllTime > 0
+            ? round(min(($karyawan->kunjungan_selesai_alltime / $rencanaAOAllTime) * 100, 100))
+            : ($karyawan->kunjungan_selesai_alltime > 0 ? 100 : 0);
+
+        // KOL 5 all-time
+        $rencanaKOL5AllTime = \DB::table('data_kunjungan_adms')
+            ->where('kode_ao', $kodeAO)
+            ->where('kol', 5)
+            ->distinct()
+            ->pluck('nama_nasabah')->toArray();
+
+        $mandiriKOL5AllTime = \DB::table('kunjungans')
+            ->where('kode_ao', $kodeAO)
+            ->where('kol', 5)
+            ->whereNotIn('nama_nasabah', $rencanaKOL5AllTime)
+            ->distinct()
+            ->pluck('nama_nasabah')->toArray();
+
+        $gabunganKOL5AllTime = array_unique(array_merge($rencanaKOL5AllTime, $mandiriKOL5AllTime));
+        $totalWajibKOL5AllTime = count($gabunganKOL5AllTime);
+
+        $namaSelesaiAllTime = array_unique(\DB::table('kunjungans')
+            ->where('kode_ao', $kodeAO)
+            ->pluck('nama_nasabah')->toArray());
+
+        $selesaiKOL5AllTime = 0;
+        foreach ($gabunganKOL5AllTime as $nama) {
+            if (in_array($nama, $namaSelesaiAllTime)) $selesaiKOL5AllTime++;
+        }
+
+        $karyawan->persen_kol5_alltime = $totalWajibKOL5AllTime > 0
+            ? round(($selesaiKOL5AllTime / $totalWajibKOL5AllTime) * 100)
+            : 0;
+
         // Syarat Capai Target: 10 nasabah unik dan KOL 5 tuntas
         $karyawan->capai_target = ($karyawan->kunjungan_selesai >= 10 && $karyawan->persen_kol5 >= 100);
         
@@ -160,8 +207,13 @@ class DashboardAdminController extends Controller
     $totalBelumAll = max(0, $totalKunjungan - $totalSelesaiAll);
     $aoSelesaiTarget = $performaAO->where('capai_target', true)->count();
 
-    // Persentase Nasional = Sudah / Total Kunjungan (bulan ini)
+    // Persentase Nasional Bulanan = Sudah / Total Kunjungan (bulan ini)
     $kpi_target_nasional = $totalKunjungan > 0 ? min(round(($totalSelesaiAll / $totalKunjungan) * 100), 100) : 0;
+
+    // Persentase Nasional Semua Bulan (all-time)
+    $totalSelesaiAllTime = $performaAO->sum('kunjungan_selesai_alltime');
+    $totalJadwalAllTime = \App\Models\DataKunjunganAdm::count();
+    $kpi_target_semua_bulan = $totalJadwalAllTime > 0 ? min(round(($totalSelesaiAllTime / $totalJadwalAllTime) * 100), 100) : 0;
 
     $target_kol5_nama = \DB::table('data_kunjungan_adms')
         ->where('bulan', $bulanAktif)
@@ -208,6 +260,7 @@ class DashboardAdminController extends Controller
         'labels' => $labels,
         'counts' => $counts,
         'kpi_target_nasional' => $kpi_target_nasional,
+        'kpi_target_semua_bulan' => $kpi_target_semua_bulan,
         'kpi_kol5_nasional' => $kpi_kol5_nasional,
         'total_wajib_kol5' => $total_wajib_kol5,
         'detailPerformaAO' => $performaAO,
