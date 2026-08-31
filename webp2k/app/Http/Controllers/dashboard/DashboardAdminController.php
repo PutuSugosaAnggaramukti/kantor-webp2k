@@ -79,47 +79,47 @@ class DashboardAdminController extends Controller
         ->count() : 0;
 
     // --- LOGIKA PERFORMA AO (INDIVIDU) ---
-   $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) {
+    [$tahunAktif, $bulanAngkaAktif] = explode('-', $bulanAktif);
+    $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) use ($bulanAktif, $tahunAktif, $bulanAngkaAktif) {
         $kodeAO = trim($karyawan->kode_ao);
         
-        // 1. Ambil SEMUA kunjungan fisik
-        $semuaKunjungan = \DB::table('kunjungans')
-            ->where('kode_ao', $kodeAO)
-            ->get();
-
-        // 2. LOGIKA ANTI-DUPLIKAT (Realisasi)
-        // Di tabel 'kunjungans', no_nasabah biasanya tersedia.
+        // 1. Kunjungan unik bulan ini
         $kunjunganUnik = \DB::table('kunjungans')
             ->where('kode_ao', $kodeAO)
+            ->whereYear('created_at', $tahunAktif)
+            ->whereMonth('created_at', $bulanAngkaAktif)
             ->distinct()
             ->pluck('no_nasabah') 
             ->toArray();
 
         $karyawan->kunjungan_selesai = count($kunjunganUnik);
-        $karyawan->total_kunjungan_fisik = $semuaKunjungan->count();
 
-        // 3. HITUNG TARGET (Jadwal Unik)
-        // Ganti 'no_nasabah' dengan 'no_angsuran' atau 'nama_nasabah' agar tidak error
+        // Kunjungan bulan ini (untuk KOL 5: perlu nama_nasabah)
+        $kunjunganBulanIni = \DB::table('kunjungans')
+            ->where('kode_ao', $kodeAO)
+            ->whereYear('created_at', $tahunAktif)
+            ->whereMonth('created_at', $bulanAngkaAktif)
+            ->get();
+
+        // 2. HITUNG TARGET (Jadwal Unik bulan ini)
         $rencanaAO = \DB::table('data_kunjungan_adms')
             ->where('kode_ao', $kodeAO)
+            ->where('bulan', $bulanAktif)
             ->distinct()
-            ->count('no_angsuran'); // Gunakan kolom yang pasti ada di tabel jadwal Anda
+            ->count('no_angsuran');
 
-        // 4. PERSENTASE TARGET
+        // 3. PERSENTASE TARGET (bulanan)
         if ($rencanaAO > 0) {
             $persenRaw = ($karyawan->kunjungan_selesai / $rencanaAO) * 100;
-            
-            // Mencegah angka 400% di UI: Batasi tampilan maksimal 100%
-            // Jika Anda ingin tetap melihat '400%', hapus min(..., 100)
             $karyawan->persen_target = round(min($persenRaw, 100)); 
         } else {
-            // Jika jadwal kosong tapi dia kunjungan mandiri, anggap tuntas 100%
             $karyawan->persen_target = ($karyawan->kunjungan_selesai > 0) ? 100 : 0;
         }
 
-        // --- LOGIKA KOL 5 (Tetap menggunakan nama_nasabah sebagai kunci) ---
+        // --- LOGIKA KOL 5 (bulanan) ---
         $rencanaKOL5AO = \DB::table('data_kunjungan_adms')
             ->where('kode_ao', $kodeAO)
+            ->where('bulan', $bulanAktif)
             ->where('kol', 5)
             ->distinct()
             ->pluck('nama_nasabah')->toArray();
@@ -127,6 +127,8 @@ class DashboardAdminController extends Controller
         $mandiriKOL5AO = \DB::table('kunjungans')
             ->where('kode_ao', $kodeAO)
             ->where('kol', 5)
+            ->whereYear('created_at', $tahunAktif)
+            ->whereMonth('created_at', $bulanAngkaAktif)
             ->whereNotIn('nama_nasabah', $rencanaKOL5AO)
             ->distinct()
             ->pluck('nama_nasabah')->toArray();
@@ -134,7 +136,7 @@ class DashboardAdminController extends Controller
         $gabunganWajibKOL5 = array_unique(array_merge($rencanaKOL5AO, $mandiriKOL5AO));
         $totalWajibKOL5AO = count($gabunganWajibKOL5);
         
-        $daftarNamaNasabahSelesai = array_unique($semuaKunjungan->pluck('nama_nasabah')->toArray());
+        $daftarNamaNasabahSelesai = array_unique($kunjunganBulanIni->pluck('nama_nasabah')->toArray());
         
         $selesaiKOL5AO = 0;
         foreach ($gabunganWajibKOL5 as $nama) {
@@ -155,18 +157,29 @@ class DashboardAdminController extends Controller
 
     // --- 2. LOGIKA AGREGAT NASIONAL ---
     $totalSelesaiAll = $performaAO->sum('kunjungan_selesai');
-    $totalBelumAll = max(0, $totalKunjunganAll - $totalSelesaiAll);
+    $totalBelumAll = max(0, $totalKunjungan - $totalSelesaiAll);
     $aoSelesaiTarget = $performaAO->where('capai_target', true)->count();
 
-    // Persentase Nasional (Dibatas 100% agar dashboard utama tidak aneh)
-    $kpi_target_nasional = $totalKunjunganAll > 0 ? min(round(($totalSelesaiAll / $totalKunjunganAll) * 100), 100) : 0;
+    // Persentase Nasional = Sudah / Total Kunjungan (bulan ini)
+    $kpi_target_nasional = $totalKunjungan > 0 ? min(round(($totalSelesaiAll / $totalKunjungan) * 100), 100) : 0;
 
-    $target_kol5_nama = \DB::table('data_kunjungan_adms')->where('kol', 5)->pluck('nama_nasabah')->toArray();
-    $mandiri_kol5_nama = \DB::table('kunjungans')->where('kol', 5)->whereNotIn('nama_nasabah', $target_kol5_nama)->pluck('nama_nasabah')->toArray();
+    $target_kol5_nama = \DB::table('data_kunjungan_adms')
+        ->where('bulan', $bulanAktif)
+        ->where('kol', 5)
+        ->pluck('nama_nasabah')->toArray();
+    $mandiri_kol5_nama = \DB::table('kunjungans')
+        ->where('kol', 5)
+        ->whereYear('created_at', $tahunAktif)
+        ->whereMonth('created_at', $bulanAngkaAktif)
+        ->whereNotIn('nama_nasabah', $target_kol5_nama)
+        ->pluck('nama_nasabah')->toArray();
     $gabungan_kol5_nasional = array_unique(array_merge($target_kol5_nama, $mandiri_kol5_nama));
     $total_wajib_kol5 = count($gabungan_kol5_nasional);
 
-    $nama_sudah_visit = \DB::table('kunjungans')->pluck('nama_nasabah')->toArray();
+    $nama_sudah_visit = \DB::table('kunjungans')
+        ->whereYear('created_at', $tahunAktif)
+        ->whereMonth('created_at', $bulanAngkaAktif)
+        ->pluck('nama_nasabah')->toArray();
     $kol5_done_count = 0;
     foreach ($gabungan_kol5_nasional as $nama) {
         if (in_array($nama, $nama_sudah_visit)) $kol5_done_count++;
