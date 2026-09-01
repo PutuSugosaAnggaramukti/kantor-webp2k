@@ -598,27 +598,29 @@
             url = url.replace(':id', id); 
 
             fetch(url, {
-                method: 'DELETE', // Gunakan DELETE sesuai route:list Mas tadi
+                method: 'DELETE',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}' // Tambahkan CSRF Token agar tidak error 419
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 }
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Terhapus!',
-                        text: data.success,
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire('Gagal!', data.error || 'Terjadi kesalahan.', 'error');
-                }
+            .then(response => {
+                return response.text().then(text => {
+                    let data;
+                    try { data = JSON.parse(text); } catch(e) { data = null; }
+                    if (!response.ok && !data) {
+                        Swal.fire('Error', 'Server mengembalikan error (HTTP ' + response.status + ').', 'error');
+                        return;
+                    }
+                    if (data) {
+                        if (data.success) {
+                            Swal.fire({ icon: 'success', title: 'Terhapus!', text: data.success, timer: 2000, showConfirmButton: false })
+                            .then(() => { location.reload(); });
+                        } else {
+                            Swal.fire('Gagal!', data.error || 'Terjadi kesalahan.', 'error');
+                        }
+                    }
+                });
             })
             .catch(error => {
                 Swal.fire('Error!', 'Koneksi ke server terputus.', 'error');
@@ -855,7 +857,6 @@
     }
 
     function submitKunjungan(form, formData, btn) {
-            // 4. Kirim data menggunakan Fetch API
             fetch(form.action, {
                 method: 'POST',
                 body: formData,
@@ -864,51 +865,36 @@
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 }
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // 5. Notifikasi Berhasil
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: data.success,
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        closeModal();
-                        location.reload(); 
-                    });
-                } else {
-                    // UNLOCK: Aktifkan kembali jika gagal
-                    btn.disabled = false;
-                    btn.innerHTML = 'Ya, Simpan!';
-
-                    // 6. Notifikasi Gagal (Tampilkan pesan validasi jika ada)
-                    let msg = data.error || 'Terjadi kesalahan saat menyimpan.';
-                    if (data.errors) {
-                        msg = Object.values(data.errors).flat().join('<br>');
+            .then(response => {
+                return response.text().then(text => {
+                    let data;
+                    try { data = JSON.parse(text); } catch(e) { data = null; }
+                    if (!response.ok && !data) {
+                        Swal.fire('Error', 'Server mengembalikan error (HTTP ' + response.status + '). Muat ulang halaman dan coba lagi.', 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = 'Ya, Simpan!';
+                        return;
                     }
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal!',
-                        html: msg,
-                    });
-                }
+                    if (data) {
+                        if (data.success) {
+                            Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.success, timer: 2000, showConfirmButton: false })
+                            .then(() => { closeModal(); location.reload(); });
+                        } else {
+                            btn.disabled = false;
+                            btn.innerHTML = 'Ya, Simpan!';
+                            let msg = data.error || data.message || 'Terjadi kesalahan saat menyimpan.';
+                            if (data.errors) msg = Object.values(data.errors).flat().join('<br>');
+                            Swal.fire({ icon: 'error', title: 'Gagal!', html: msg });
+                        }
+                    }
+                });
             })
             .catch(error => {
-                // UNLOCK: Aktifkan kembali jika error koneksi
                 btn.disabled = false;
                 btn.innerHTML = 'Ya, Simpan!';
-                
                 console.error('Error:', error);
-                // Coba baca isi respons asli server (bisa berupa HTML error 500 / 419) 
-                // agar pesan error tidak generik "Gagal terhubung ke server"
                 let detailMsg = 'Gagal terhubung ke server. Coba periksa koneksi internet atau muat ulang halaman.';
-                if (error instanceof TypeError && error.message === 'Failed to fetch') {
-                    // Koneksi benar-benar gagal
-                } else if (error.message) {
-                    detailMsg = 'Respons server tidak valid: ' + error.message;
-                }
+                if (error.message) detailMsg = 'Terjadi kesalahan: ' + error.message;
                 Swal.fire('Error', detailMsg, 'error');
             });
     }
@@ -985,41 +971,30 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 4. Jika Berhasil
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil!',
-                text: data.success,
-                timer: 2000,
-                showConfirmButton: false
-            }).then(() => {
-                closeModal(); // Tutup modal
-                location.reload(); // Refresh halaman untuk melihat data baru
-            });
-        } else {
-            // 5. Jika Gagal (Error Validasi EXIF, dsb)
-            let msg = data.error || 'Terjadi kesalahan sistem.';
-            if (data.errors) {
-                msg = Object.values(data.errors).flat().join('<br>');
+    .then(response => {
+        return response.text().then(text => {
+            let data;
+            try { data = JSON.parse(text); } catch(e) { data = null; }
+            if (!response.ok && !data) {
+                Swal.fire('Error', 'Server mengembalikan error (HTTP ' + response.status + '). Muat ulang halaman dan coba lagi.', 'error');
+                return;
             }
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal Simpan',
-                html: msg
-            });
-        }
+            if (data) {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.success, timer: 2000, showConfirmButton: false })
+                    .then(() => { closeModal(); location.reload(); });
+                } else {
+                    let msg = data.error || data.message || 'Terjadi kesalahan sistem.';
+                    if (data.errors) msg = Object.values(data.errors).flat().join('<br>');
+                    Swal.fire({ icon: 'error', title: 'Gagal Simpan', html: msg });
+                }
+            }
+        });
     })
     .catch(error => {
         console.error('Error:', error);
         let detailMsg = 'Gagal terhubung ke server. Coba periksa koneksi internet atau muat ulang halaman.';
-        if (error instanceof TypeError && error.message === 'Failed to fetch') {
-            // Koneksi benar-benar gagal
-        } else if (error.message) {
-            detailMsg = 'Respons server tidak valid: ' + error.message;
-        }
+        if (error.message) detailMsg = 'Terjadi kesalahan: ' + error.message;
         Swal.fire('Error', detailMsg, 'error');
     });
     });
@@ -1163,9 +1138,9 @@ function updateSandiAO() {
 
 function editKunjunganAo(id) {
     fetch('/user/kunjungan/' + id + '/edit')
-        .then(r => r.json())
+        .then(r => r.text().then(t => { let d; try { d = JSON.parse(t); } catch(e) { d = null; } return d; }))
         .then(data => {
-            if (!data.id) {
+            if (!data || !data.id) {
                 Swal.fire('Error', 'Data tidak ditemukan', 'error');
                 return;
             }
@@ -1200,15 +1175,15 @@ document.getElementById('formEditKunjunganAo').addEventListener('submit', functi
             catatan: document.getElementById('editAoKunj_catatan').value
         })
     })
-    .then(r => r.json())
+    .then(r => r.text().then(t => { let d; try { d = JSON.parse(t); } catch(e) { d = null; } return d; }))
     .then(data => {
-        if (data.success) {
+        if (data && data.success) {
             closeModalEditKunjunganAo();
             Swal.fire('Berhasil', data.message, 'success').then(() => {
                 loadContent('/user/laporan-kunjungan-content');
             });
         } else {
-            Swal.fire('Gagal', data.message || 'Terjadi kesalahan', 'error');
+            Swal.fire('Gagal', (data && data.message) || 'Terjadi kesalahan', 'error');
         }
     })
     .catch(() => Swal.fire('Error', 'Gagal menyimpan data', 'error'));

@@ -43,21 +43,25 @@ function submitIjin() {
             'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil',
-                text: data.message,
-                confirmButtonColor: '#f97316'
-            }).then(() => {
-                // Kembali ke dashboard setelah sukses
-                window.location.reload(); 
-            });
-        } else {
-            Swal.fire('Error', 'Terjadi kesalahan saat mengirim data', 'error');
-        }
+    .then(response => {
+        return response.text().then(text => {
+            let data;
+            try { data = JSON.parse(text); } catch(e) { data = null; }
+            if (!response.ok && !data) {
+                Swal.fire('Error', 'Server mengembalikan error (HTTP ' + response.status + ').', 'error');
+                return;
+            }
+            if (data) {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Berhasil', text: data.message, confirmButtonColor: '#f97316' })
+                    .then(() => { window.location.reload(); });
+                } else {
+                    let msg = data.message || data.error || 'Terjadi kesalahan saat mengirim data';
+                    if (data.errors) msg = Object.values(data.errors).flat().join('<br>');
+                    Swal.fire('Error', msg, 'error');
+                }
+            }
+        });
     })
     .catch(error => {
         console.error('Error:', error);

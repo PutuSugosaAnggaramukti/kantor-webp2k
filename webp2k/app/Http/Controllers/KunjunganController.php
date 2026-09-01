@@ -423,24 +423,37 @@ class KunjunganController extends Controller
 
                     $extension = strtolower($file->getClientOriginalExtension());
 
-                    // BACA EXIF GPS (tidak lagi menolak langsung jika tidak ada)
-                    $exif = function_exists('exif_read_data')
-                        ? @exif_read_data($file->getRealPath())
-                        : false;
-                    $hasExifGps = $exif
-                        && isset($exif['GPSLatitude'])
-                        && isset($exif['GPSLongitude']);
+                    $lat = 0;
+                    $lon = 0;
 
-                    if ($hasExifGps) {
-                        $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
-                        $lon = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
+                    try {
+                        $exif = function_exists('exif_read_data')
+                            ? @exif_read_data($file->getRealPath())
+                            : false;
 
-                        // HANYA anggap valid jika koordinat bukan 0,0
-                        // (error umum saat foto diambil/galeri: tag GPS ada tapi bernilai 0)
-                        if ($lat != 0 || $lon != 0) {
+                        if ($exif && isset($exif['GPSLatitude']) && isset($exif['GPSLongitude'])) {
+                            $lat = $this->getGps($exif['GPSLatitude'], $exif['GPSLatitudeRef'] ?? 'N');
+                            $lon = $this->getGps($exif['GPSLongitude'], $exif['GPSLongitudeRef'] ?? 'E');
+                        }
+
+                        if (($lat == 0 && $lon == 0) || !is_finite($lat) || !is_finite($lon)) {
+                            $binary = $this->readGpsFromBinaryExif($file->getRealPath());
+                            if ($binary) {
+                                $lat = $binary['lat'];
+                                $lon = $binary['lon'];
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        $binary = $this->readGpsFromBinaryExif($file->getRealPath());
+                        if ($binary) {
+                            $lat = $binary['lat'];
+                            $lon = $binary['lon'];
+                        }
+                    }
+
+                    if (($lat != 0 || $lon != 0) && is_finite($lat) && is_finite($lon)) {
+                        if ($lat >= -90 && $lat <= 90 && $lon >= -180 && $lon <= 180) {
                             $jumlahFotoValidGps++;
-
-                            // EKSTRAK KOORDINAT DARI FOTO PERTAMA YANG PUNYA GPS NYATA
                             if ($exifKoordinat === null) {
                                 $exifKoordinat = number_format($lat, 6, '.', '') . ', ' . number_format($lon, 6, '.', '');
                             }
@@ -679,7 +692,24 @@ class KunjunganController extends Controller
         
     private function getGps($exifCoord, $hemi) 
     {
-        if (!is_array($exifCoord)) return 0;
+        if (!isset($exifCoord)) return 0;
+
+        // Handle string seperti "2345/100" atau "8" langsung
+        if (is_string($exifCoord)) {
+            $exifCoord = trim($exifCoord);
+            if (str_contains($exifCoord, ',')) {
+                $exifCoord = array_map('trim', explode(',', $exifCoord));
+            } elseif (str_contains($exifCoord, '/')) {
+                $parts = explode('/', $exifCoord);
+                $exifCoord = [$parts[0], $parts[1] ?? 1];
+            } else {
+                $exifCoord = [$exifCoord, 1, 0];
+            }
+        }
+
+        if (!is_array($exifCoord)) {
+            $exifCoord = [$exifCoord, 1, 0];
+        }
 
         $degrees = count($exifCoord) > 0 ? $this->getFraction($exifCoord[0]) : 0;
         $minutes = count($exifCoord) > 1 ? $this->getFraction($exifCoord[1]) : 0;
@@ -688,7 +718,7 @@ class KunjunganController extends Controller
         $flip = ($hemi == 'S' || $hemi == 'W') ? -1 : 1;
         $result = $flip * ($degrees + ($minutes / 60) + ($seconds / 3600));
 
-        // Validasi rentang dunia
+        if (!is_numeric($result) || !is_finite($result)) return 0;
         if ($result < -180 || $result > 180) return 0;
         return $result;
     }
@@ -696,14 +726,19 @@ class KunjunganController extends Controller
     private function getFraction($fraction) 
     {
         if (is_array($fraction)) {
-            // exif_read_data bisa mengembalikan array [numerator, denominator]
-            if (count($fraction) >= 2 && $fraction[1] != 0) {
-                return (float) $fraction[0] / (float) $fraction[1];
+            if (count($fraction) >= 2) {
+                $num = (float) ($fraction[0] ?? 0);
+                $den = (float) ($fraction[1] ?? 1);
+                if ($den == 0) return 0;
+                return $num / $den;
             }
             return (float) ($fraction[0] ?? 0);
         }
 
-        $parts = explode('/', (string) $fraction);
+        $fraction = trim((string) $fraction);
+        if ($fraction === '' || $fraction === '0') return 0;
+        
+        $parts = explode('/', $fraction);
         if (count($parts) < 2) return floatval($fraction);
         if (floatval($parts[1]) == 0) return 0;
         return floatval($parts[0]) / floatval($parts[1]);
@@ -733,6 +768,115 @@ class KunjunganController extends Controller
         if ($lonF < 95 || $lonF > 141) return false;
 
         return true;
+    }
+
+    private function readGpsFromBinaryExif($filePath)
+    {
+        if (!file_exists($filePath)) return null;
+        $data = @file_get_contents($filePath);
+        if (!$data || strlen($data) < 4) return null;
+        if (ord($data[0]) !== 0xFF || ord($data[1]) !== 0xD8) return null;
+
+        $exifSegments = [];
+        $offset = 2;
+        $len = strlen($data);
+        while ($offset + 4 < $len) {
+            if (ord($data[$offset]) !== 0xFF) { $offset++; continue; }
+            $marker = ord($data[$offset + 1]);
+            $segLen = unpack('n', substr($data, $offset + 2, 2))[1];
+            if ($marker === 0xE1) {
+                if (substr($data, $offset + 4, 6) === "Exif\0\0") {
+                    $exifSegments[] = $offset + 10;
+                }
+            }
+            if ($marker === 0xD8 || $marker === 0xD9) { $offset += 2; continue; }
+            $offset += 2 + $segLen;
+        }
+        if (empty($exifSegments)) return null;
+
+        foreach ($exifSegments as $tiffStart) {
+            if ($tiffStart + 8 > $len) continue;
+            $le = (ord($data[$tiffStart]) === 0x49);
+            $u16 = function($off) use ($data, $le) {
+                if ($off + 2 > strlen($data)) return 0;
+                return $le ? unpack('v', substr($data, $off, 2))[1] : unpack('n', substr($data, $off, 2))[1];
+            };
+            $u32 = function($off) use ($data, $le) {
+                if ($off + 4 > strlen($data)) return 0;
+                return $le ? unpack('V', substr($data, $off, 4))[1] : unpack('N', substr($data, $off, 4))[1];
+            };
+
+            if ($u16($tiffStart + 2) !== 42) continue;
+
+            $ifd0 = $tiffStart + $u32($tiffStart + 4);
+            $nEntries = $u16($ifd0);
+            $gpsIfdOffset = -1;
+            for ($i = 0; $i < $nEntries; $i++) {
+                $entry = $ifd0 + 2 + $i * 12;
+                if ($u16($entry) === 0x8825) {
+                    $gpsIfdOffset = $u32($entry + 8);
+                    break;
+                }
+            }
+
+            if ($gpsIfdOffset < 0) {
+                $ifd1Off = $ifd0 + 2 + $nEntries * 12;
+                if ($ifd1Off + 4 <= $len) {
+                    $ifd1 = $tiffStart + $u32($ifd1Off);
+                    $n1 = $u16($ifd1);
+                    for ($i = 0; $i < $n1; $i++) {
+                        $entry = $ifd1 + 2 + $i * 12;
+                        if ($u16($entry) === 0x8825) {
+                            $gpsIfdOffset = $u32($entry + 8);
+                            break;
+                        }
+                    }
+                }
+            }
+            if ($gpsIfdOffset < 0) continue;
+
+            $gpsIfd = $tiffStart + $gpsIfdOffset;
+            $gpsNum = $u16($gpsIfd);
+            $readRational = function($off) use ($data, $tiffStart, $u32, $le) {
+                $num = $u32($off);
+                $den = $u32($off + 4);
+                return $den != 0 ? $num / $den : 0;
+            };
+            $readGpsValues = function($off, $type) use ($data, $tiffStart, $u32, $readRational) {
+                $realOff = ($type === 5 || $type === 10) ? $tiffStart + $u32($off) : $off;
+                $vals = [];
+                for ($j = 0; $j < 3; $j++) {
+                    $v = $readRational($realOff + $j * 8);
+                    if (!is_finite($v) || $v < 0) break;
+                    $vals[] = $v;
+                }
+                return $vals;
+            };
+
+            $latRef = 'N'; $lonRef = 'E'; $latArr = null; $lonArr = null;
+            for ($i = 0; $i < $gpsNum; $i++) {
+                $entry = $gpsIfd + 2 + $i * 12;
+                $tag = $u16($entry);
+                $type = $u16($entry + 2);
+                $valueOffset = $entry + 8;
+                switch ($tag) {
+                    case 0x0001: $latRef = chr(ord($data[$valueOffset])); break;
+                    case 0x0002: $latArr = $readGpsValues($valueOffset, $type); break;
+                    case 0x0003: $lonRef = chr(ord($data[$valueOffset])); break;
+                    case 0x0004: $lonArr = $readGpsValues($valueOffset, $type); break;
+                }
+            }
+            if (!$latArr || count($latArr) < 2 || !$lonArr || count($lonArr) < 2) continue;
+
+            $lat = $latArr[0] + ($latArr[1] ?? 0) / 60 + ($latArr[2] ?? 0) / 3600;
+            $lon = $lonArr[0] + ($lonArr[1] ?? 0) / 60 + ($lonArr[2] ?? 0) / 3600;
+            if ($latRef === 'S') $lat = -$lat;
+            if ($lonRef === 'W') $lon = -$lon;
+            if ($lat == 0 && $lon == 0) return null;
+            if ($lat < -90 || $lat > 90 || $lon < -180 || $lon > 180) return null;
+            return ['lat' => $lat, 'lon' => $lon];
+        }
+        return null;
     }
 
     /**
