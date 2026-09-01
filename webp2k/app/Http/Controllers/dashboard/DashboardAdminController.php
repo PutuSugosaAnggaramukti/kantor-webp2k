@@ -35,6 +35,79 @@ class DashboardAdminController extends Controller
             'total_gagal' => $stat['total_gagal'],
         ]);
     }
+
+    public function getPerformaBulan($bulan)
+    {
+        if (!preg_match('/^\d{4}-\d{2}$/', $bulan)) {
+            return response()->json(['error' => 'Format bulan tidak valid'], 400);
+        }
+
+        [$tahun, $bulanAngka] = explode('-', $bulan);
+
+        $totalKunjungan = \DB::table('data_kunjungan_adms')->where('bulan', $bulan)->count();
+
+        $sudahKunjungNo = \DB::table('kunjungans')
+            ->whereYear('created_at', $tahun)
+            ->whereMonth('created_at', $bulanAngka)
+            ->pluck('no_nasabah')->toArray();
+
+        $totalSelesai = \DB::table('data_kunjungan_adms')
+            ->where('bulan', $bulan)
+            ->whereIn('no_angsuran', $sudahKunjungNo)
+            ->count();
+
+        $kpi = $totalKunjungan > 0 ? min(round(($totalSelesai / $totalKunjungan) * 100), 100) : 0;
+
+        $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) use ($bulan, $tahun, $bulanAngka) {
+            $kodeAO = trim($karyawan->kode_ao);
+
+            $kunjunganSelesai = \DB::table('kunjungans')
+                ->where('kode_ao', $kodeAO)
+                ->whereYear('created_at', $tahun)
+                ->whereMonth('created_at', $bulanAngka)
+                ->distinct()->count('no_nasabah');
+
+            $rencanaAO = \DB::table('data_kunjungan_adms')
+                ->where('kode_ao', $kodeAO)
+                ->where('bulan', $bulan)
+                ->distinct()->count('no_angsuran');
+
+            $persenTarget = $rencanaAO > 0 ? round(min(($kunjunganSelesai / $rencanaAO) * 100, 100)) : ($kunjunganSelesai > 0 ? 100 : 0);
+
+            $rencanaKOL5 = \DB::table('data_kunjungan_adms')
+                ->where('kode_ao', $kodeAO)->where('bulan', $bulan)->where('kol', 5)
+                ->distinct()->pluck('nama_nasabah')->toArray();
+            $mandiriKOL5 = \DB::table('kunjungans')
+                ->where('kode_ao', $kodeAO)->where('kol', 5)
+                ->whereYear('created_at', $tahun)->whereMonth('created_at', $bulanAngka)
+                ->whereNotIn('nama_nasabah', $rencanaKOL5)
+                ->distinct()->pluck('nama_nasabah')->toArray();
+            $gabungan = array_unique(array_merge($rencanaKOL5, $mandiriKOL5));
+            $totalWajib = count($gabungan);
+            $namaSelesai = \DB::table('kunjungans')
+                ->where('kode_ao', $kodeAO)
+                ->whereYear('created_at', $tahun)->whereMonth('created_at', $bulanAngka)
+                ->pluck('nama_nasabah')->toArray();
+            $selesaiKOL5 = 0;
+            foreach ($gabungan as $nama) { if (in_array($nama, $namaSelesai)) $selesaiKOL5++; }
+            $persenKOL5 = $totalWajib > 0 ? round(($selesaiKOL5 / $totalWajib) * 100) : 0;
+
+            return (object)[
+                'nama' => $karyawan->nama,
+                'persen_target' => $persenTarget,
+                'persen_kol5' => $persenKOL5,
+            ];
+        });
+
+        return response()->json([
+            'bulan' => $bulan,
+            'label' => \Carbon\Carbon::createFromFormat('Y-m', $bulan)->translatedFormat('F Y'),
+            'kpi' => $kpi,
+            'total_kunjungan' => $totalKunjungan,
+            'total_selesai' => $totalSelesai,
+            'performa_ao' => $performaAO,
+        ]);
+    }
     
   public function getDashboardData()
 {
@@ -250,6 +323,15 @@ class DashboardAdminController extends Controller
     // --- RIWAYAT STATISTIK BULANAN (arsip bulan lalu yang bisa di-download) ---
     $riwayatStatistik = StatistikBulanan::orderBy('bulan', 'desc')->get();
 
+    // --- DAFTAR BULAN untuk dropdown performa ---
+    $daftarBulan = \DB::table('data_kunjungan_adms')
+        ->whereNotNull('bulan')
+        ->where('bulan', '!=', '')
+        ->selectRaw("DISTINCT bulan")
+        ->orderBy('bulan', 'desc')
+        ->pluck('bulan')
+        ->toArray();
+
     return [
         'totalKunjungan' => $totalKunjungan,
         'totalSelesai' => $totalSelesai,
@@ -268,6 +350,7 @@ class DashboardAdminController extends Controller
         'pengajuan_ijin_count' => $pengajuan_ijin_count,
         'list_pengajuan' => $list_pengajuan,
         'total_gagal_global' => $total_gagal_global,
+        'daftarBulan' => $daftarBulan,
     ];
 }
 

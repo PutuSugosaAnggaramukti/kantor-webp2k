@@ -130,7 +130,9 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1.5rem;">
                     <h3 style="margin: 0;">Persentase Performa</h3>
                     <select id="filterPerforma" onchange="switchPerforma(this.value)" style="padding: 5px 10px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px; cursor: pointer;">
-                        <option value="bulan">Bulan Ini</option>
+                        @foreach($daftarBulan as $b)
+                            <option value="{{ $b }}" {{ $b === $bulanAktif ? 'selected' : '' }}>{{ \Carbon\Carbon::createFromFormat('Y-m', $b)->translatedFormat('F Y') }}</option>
+                        @endforeach
                         <option value="semua">Semua Bulan</option>
                     </select>
                 </div>
@@ -531,17 +533,48 @@
     }
 
     // State untuk performa toggle
-    let currentPerformaMode = 'bulan';
+    let currentPerformaMode = '{{ $bulanAktif }}';
+    const kpiSemuaBulan = {{ $kpi_target_semua_bulan ?? 0 }};
 
     function switchPerforma(mode) {
         currentPerformaMode = mode;
         const svg = document.getElementById('svgPerforma');
         const label = document.getElementById('labelPerforma');
-        const bulan = {{ $kpi_target_nasional }};
-        const semua = {{ $kpi_target_semua_bulan ?? 0 }};
-        const val = mode === 'bulan' ? bulan : semua;
-        svg.setAttribute('stroke-dasharray', val + ', 100');
-        label.innerText = val + '%';
+
+        if (mode === 'semua') {
+            svg.setAttribute('stroke-dasharray', kpiSemuaBulan + ', 100');
+            label.innerText = kpiSemuaBulan + '%';
+            return;
+        }
+
+        fetch('/admin/dashboard-performa/' + mode, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(r => r.text().then(t => { let d; try { d = JSON.parse(t); } catch(e) { d = null; } return d; }))
+        .then(data => {
+            if (data && data.kpi !== undefined) {
+                svg.setAttribute('stroke-dasharray', data.kpi + ', 100');
+                label.innerText = data.kpi + '%';
+
+                if (data.performa_ao) {
+                    const bars = document.querySelectorAll('.bar-progres');
+                    const labels = document.querySelectorAll('.label-persen');
+                    bars.forEach((bar, i) => {
+                        if (data.performa_ao[i]) {
+                            bar.dataset.target = data.performa_ao[i].persen_target;
+                            bar.dataset.kol5 = data.performa_ao[i].persen_kol5;
+                        }
+                    });
+                    labels.forEach((lbl, i) => {
+                        if (data.performa_ao[i]) {
+                            lbl.dataset.target = data.performa_ao[i].persen_target;
+                            lbl.dataset.kol5 = data.performa_ao[i].persen_kol5;
+                        }
+                    });
+                }
+            }
+        })
+        .catch(() => {});
     }
 
     function openModalAO(type) {
