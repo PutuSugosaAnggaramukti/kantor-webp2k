@@ -132,108 +132,162 @@
         const dv = new DataView(buffer);
         if (dv.getUint8(0) !== 0xFF || dv.getUint8(1) !== 0xD8) return null;
 
-        // Cari segmen APP1 yang berisi "Exif\0\0"
+        const exifSegments = [];
         let offset = 2;
-        let tiffStart = -1;
         while (offset + 4 < buffer.byteLength) {
             if (dv.getUint8(offset) !== 0xFF) { offset++; continue; }
             const marker = dv.getUint8(offset + 1);
+            const length = dv.getUint16(offset + 2);
             if (marker === 0xE1) {
-                const length = dv.getUint16(offset + 2);
                 if (dv.getUint32(offset + 4) === 0x45786966 && dv.getUint16(offset + 8) === 0) {
-                    tiffStart = offset + 10;
-                    break;
+                    exifSegments.push(offset + 10);
                 }
             }
-            if (marker >= 0xD0 && marker <= 0xD7) { offset += 2; continue; }
-            if (marker === 0xD8 || marker === 0xD9) { offset += 1; continue; }
-            offset += 2 + dv.getUint16(offset + 2);
+            if (marker === 0xD8 || marker === 0xD9) { offset += 2; continue; }
+            offset += 2 + length;
         }
-        if (tiffStart < 0) return null;
+        if (exifSegments.length === 0) return null;
 
-        // Support both II (little endian) dan MM (big endian) — iPhone pakai MM
-        const le = dv.getUint16(tiffStart) === 0x4949;
-        const u16 = (off) => dv.getUint16(off, le);
-        const u32 = (off) => dv.getUint32(off, le);
-        const b = (off) => dv.getUint8(off);
-
-        if (u16(tiffStart + 2) !== 42) return null;
-
-        const ifd0 = tiffStart + u32(tiffStart + 4);
-        const nEntries = u16(ifd0);
-        let gpsIfdOffset = -1;
-        for (let i = 0; i < nEntries; i++) {
-            const entry = ifd0 + 2 + i * 12;
-            if (u16(entry) === 0x8825) gpsIfdOffset = u32(entry + 8); // GPSInfo
-        }
-        if (gpsIfdOffset < 0) return null;
-
-        const gpsIfd = tiffStart + gpsIfdOffset;
-        const gpsNum = u16(gpsIfd);
-
-        const readRational = (off) => {
-            const num = u32(off);
-            const den = u32(off + 4);
+        const readRational = (dv, off, le) => {
+            const num = dv.getUint32(off, le);
+            const den = dv.getUint32(off + 4, le);
             return den !== 0 ? num / den : 0;
         };
 
-        // Baca nilai GPS mentah (bisa array 1, 2, atau 3 elemen)
-        const readGpsValues = (off, type) => {
-            const realOff = type === 5 ? tiffStart + u32(off) : off;
-            // Baca semua komponen yang tersedia (1-3)
-            const vals = [];
-            for (let j = 0; j < 3; j++) {
-                try {
-                    const v = readRational(realOff + j * 8);
-                    if (isNaN(v) || !isFinite(v)) break;
-                    vals.push(v);
-                } catch(e) { break; }
+        const findGpsInIfd = (dv, ifdOffset, tiffStart, le) => {
+            const u16 = (off) => dv.getUint16(off, le);
+            const u32 = (off) => dv.getUint32(off, le);
+            const b = (off) => dv.getUint8(off);
+            const nEntries = u16(ifdOffset);
+            for (let i = 0; i < nEntries; i++) {
+                const entry = ifdOffset + 2 + i * 12;
+                if (u16(entry) === 0x8825) {
+                    const gpsIfd = tiffStart + u32(entry + 8);
+                    const gpsNum = u16(gpsIfd);
+
+                    const readGpsValues = (off, type) => {
+                        const needsOffset = (type === 5 || type === 10);
+                        const realOff = needsOffset ? tiffStart + u32(off) : off;
+                        const vals = [];
+                        for (let j = 0; j < 3; j++) {
+                            try {
+                                const v = readRational(dv, realOff + j * 8, le);
+                                if (isNaN(v) || !isFinite(v)) break;
+                                vals.push(v);
+                            } catch(e) { break; }
+                        }
+                        return vals;
+                    };
+
+                    let latRef = 'N', lonRef = 'E', latArr = null, lonArr = null;
+                    for (let i = 0; i < gpsNum; i++) {
+                        const entry = gpsIfd + 2 + i * 12;
+                        const tag = u16(entry);
+                        const type = u16(entry + 2);
+                        const valueOffset = entry + 8;
+                        switch (tag) {
+                            case 0x0001: latRef = String.fromCharCode(b(valueOffset)); break;
+                            case 0x0002: latArr = readGpsValues(valueOffset, type); break;
+                            case 0x0003: lonRef = String.fromCharCode(b(valueOffset)); break;
+                            case 0x0004: lonArr = readGpsValues(valueOffset, type); break;
+                        }
+                    }
+                    if (latArr && latArr.length >= 2 && lonArr && lonArr.length >= 2) {
+                        return { latRef, lonRef, latArr, lonArr };
+                    }
+                }
             }
-            return vals;
+            return null;
         };
 
-        let latRef = 'N', lonRef = 'E', latArr = null, lonArr = null;
-        for (let i = 0; i < gpsNum; i++) {
-            const entry = gpsIfd + 2 + i * 12;
-            const tag = u16(entry);
-            const type = u16(entry + 2);
-            const valueOffset = entry + 8;
-            switch (tag) {
-                case 0x0001: latRef = String.fromCharCode(b(valueOffset)); break;
-                case 0x0002: latArr = readGpsValues(valueOffset, type); break;
-                case 0x0003: lonRef = String.fromCharCode(b(valueOffset)); break;
-                case 0x0004: lonArr = readGpsValues(valueOffset, type); break;
+        for (const tiffStart of exifSegments) {
+            if (tiffStart + 8 > buffer.byteLength) continue;
+            const le = dv.getUint16(tiffStart) === 0x4949;
+            const u16 = (off) => dv.getUint16(off, le);
+            const u32 = (off) => dv.getUint32(off, le);
+            if (u16(tiffStart + 2) !== 42) continue;
+
+            const ifd0 = tiffStart + u32(tiffStart + 4);
+            if (ifd0 + 2 > buffer.byteLength) continue;
+            const nEntries = u16(ifd0);
+
+            let gpsIfdOffset = -1;
+            for (let i = 0; i < nEntries; i++) {
+                const entry = ifd0 + 2 + i * 12;
+                if (u16(entry) === 0x8825) {
+                    gpsIfdOffset = u32(entry + 8);
+                    break;
+                }
+            }
+
+            if (gpsIfdOffset < 0) {
+                if (ifd0 + 2 + nEntries * 12 + 4 > buffer.byteLength) continue;
+                const ifd1 = tiffStart + u32(ifd0 + 2 + nEntries * 12);
+                if (ifd1 + 2 <= buffer.byteLength) {
+                    const result = findGpsInIfd(dv, ifd1, tiffStart, le);
+                    if (result) return convertGpsToDecimal(result);
+                }
+                continue;
+            }
+
+            const gpsIfd = tiffStart + gpsIfdOffset;
+            if (gpsIfd + 2 > buffer.byteLength) continue;
+            const gpsNum = u16(gpsIfd);
+
+            const readGpsValues = (off, type) => {
+                const needsOffset = (type === 5 || type === 10);
+                const realOff = needsOffset ? tiffStart + u32(off) : off;
+                const vals = [];
+                for (let j = 0; j < 3; j++) {
+                    try {
+                        const v = readRational(dv, realOff + j * 8, le);
+                        if (isNaN(v) || !isFinite(v)) break;
+                        vals.push(v);
+                    } catch(e) { break; }
+                }
+                return vals;
+            };
+
+            let latRef = 'N', lonRef = 'E', latArr = null, lonArr = null;
+            for (let i = 0; i < gpsNum; i++) {
+                const entry = gpsIfd + 2 + i * 12;
+                const tag = u16(entry);
+                const type = u16(entry + 2);
+                const valueOffset = entry + 8;
+                switch (tag) {
+                    case 0x0001: latRef = String.fromCharCode(dv.getUint8(valueOffset)); break;
+                    case 0x0002: latArr = readGpsValues(valueOffset, type); break;
+                    case 0x0003: lonRef = String.fromCharCode(dv.getUint8(valueOffset)); break;
+                    case 0x0004: lonArr = readGpsValues(valueOffset, type); break;
+                }
+            }
+            if (latArr && latArr.length >= 2 && lonArr && lonArr.length >= 2) {
+                return convertGpsToDecimal({ latRef, lonRef, latArr, lonArr });
             }
         }
-        if (!latArr || latArr.length < 2 || !lonArr || lonArr.length < 2) return null;
+        return null;
+    }
 
-        // Konversi DMS ke desimal (handle 1, 2, atau 3 komponen)
+    function convertGpsToDecimal(gps) {
         let lat, lon;
-        if (latArr.length === 3) {
-            // DMS: derajat + menit/60 + detik/3600
-            lat = latArr[0] + latArr[1] / 60 + latArr[2] / 3600;
-        } else if (latArr.length === 2) {
-            // DM: derajat + menit desimal/60
-            lat = latArr[0] + latArr[1] / 60;
+        if (gps.latArr.length === 3) {
+            lat = gps.latArr[0] + gps.latArr[1] / 60 + gps.latArr[2] / 3600;
+        } else if (gps.latArr.length === 2) {
+            lat = gps.latArr[0] + gps.latArr[1] / 60;
         } else {
-            lat = latArr[0];
+            lat = gps.latArr[0];
         }
-
-        if (lonArr.length === 3) {
-            lon = lonArr[0] + lonArr[1] / 60 + lonArr[2] / 3600;
-        } else if (lonArr.length === 2) {
-            lon = lonArr[0] + lonArr[1] / 60;
+        if (gps.lonArr.length === 3) {
+            lon = gps.lonArr[0] + gps.lonArr[1] / 60 + gps.lonArr[2] / 3600;
+        } else if (gps.lonArr.length === 2) {
+            lon = gps.lonArr[0] + gps.lonArr[1] / 60;
         } else {
-            lon = lonArr[0];
+            lon = gps.lonArr[0];
         }
-
-        if (latRef === 'S') lat = -lat;
-        if (lonRef === 'W') lon = -lon;
-
-        // Validasi: harus dalam rentang dunia dan bukan 0,0
+        if (gps.latRef === 'S') lat = -lat;
+        if (gps.lonRef === 'W') lon = -lon;
         if (lat === 0 && lon === 0) return null;
         if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
-
         return { lat, lon };
     }
 
