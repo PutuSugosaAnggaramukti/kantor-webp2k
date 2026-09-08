@@ -75,7 +75,8 @@
                     <th style="padding: 15px; border-right: 2px solid #000; width: 150px;">No. Angsuran</th>
                     <th style="padding: 15px; border-right: 2px solid #000;">Nama Nasabah</th>
                     <th style="padding: 15px; border-right: 2px solid #000;">Dikunjungi Oleh (AO)</th>
-                    <th style="padding: 15px;">Tgl Kunjung</th>
+                    <th style="padding: 15px; border-right: 2px solid #000;">Tgl Kunjung</th>
+                    <th style="padding: 15px; width: 80px;">Aksi</th>
                 </tr>
             </thead>
             <tbody style="font-weight: 700; font-size: 14px; text-align: center;">
@@ -110,9 +111,20 @@
                             - 
                         @endif
                     </td>
+                    <td style="padding: 12px;">
+                        @if($nasabah->laporanSelesai->isNotEmpty())
+                            <button onclick="lihatDetailNasabah('{{ $nasabah->no_angsuran }}', '{{ addslashes($nasabah->nasabah) }}')" 
+                                    title="Detail Laporan"
+                                    style="background: #3f36b1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
+                                <i class="fa-solid fa-eye" style="font-size: 11px;"></i> Detail
+                            </button>
+                        @else 
+                            - 
+                        @endif
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="5" style="padding: 30px; text-align: center; color: #888;">Belum ada data nasabah yang berhasil dikunjungi.</td></tr>
+                <tr><td colspan="6" style="padding: 30px; text-align: center; color: #888;">Belum ada data nasabah yang berhasil dikunjungi.</td></tr>
                 @endforelse
         </tbody>
     </table>
@@ -126,3 +138,101 @@
 @if(!request()->ajax())
 </div>
 @endif
+
+<div id="modalDetailNasabah" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
+        <div style="padding: 15px 20px; background: #3f36b1; color: white; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+            <h3 id="detailNasabahTitle" style="margin: 0; font-weight: 800; font-size: 16px;">Detail Laporan Kunjungan</h3>
+            <button onclick="closeModalDetailNasabah()" style="background: none; border: none; color: white; font-size: 22px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="detailNasabahBody" style="padding: 20px; overflow-y: auto; flex: 1;">
+            <div style="text-align: center; padding: 30px; color: #888;">
+                <i class="fas fa-spinner fa-spin"></i> Memuat data...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function lihatDetailNasabah(noAngsuran, namaNasabah) {
+    document.getElementById('detailNasabahTitle').textContent = 'Laporan Kunjungan — ' + namaNasabah;
+    document.getElementById('detailNasabahBody').innerHTML = '<div style="text-align:center;padding:30px;color:#888;"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>';
+    document.getElementById('modalDetailNasabah').style.display = 'flex';
+
+    fetch('/admin/pelaporan/laporan-nasabah/' + noAngsuran, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.text().then(t => { let d; try { d = JSON.parse(t); } catch(e) { d = null; } return d; }))
+    .then(data => {
+        if (!data || !data.laporan) {
+            document.getElementById('detailNasabahBody').innerHTML = '<div style="text-align:center;padding:30px;color:#e74c3c;">Gagal memuat data.</div>';
+            return;
+        }
+        renderDetailNasabah(data);
+    })
+    .catch(() => {
+        document.getElementById('detailNasabahBody').innerHTML = '<div style="text-align:center;padding:30px;color:#e74c3c;">Gagal memuat data.</div>';
+    });
+}
+
+function renderDetailNasabah(data) {
+    const n = data.nasabah;
+    const laporan = data.laporan;
+    let html = '';
+
+    html += '<div style="background:#f8f9fa;border-radius:10px;padding:15px;margin-bottom:15px;border-left:4px solid #3f36b1;">';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">';
+    html += '<div><strong>No. Angsuran:</strong> ' + (n.no_angsuran || '-') + '</div>';
+    html += '<div><strong>Nama:</strong> ' + (n.nama || '-') + '</div>';
+    html += '<div><strong>Alamat:</strong> ' + (n.alamat || '-') + '</div>';
+    html += '<div><strong>KOL:</strong> ' + (n.kol || '-') + '</div>';
+    html += '</div></div>';
+
+    if (laporan.length === 0) {
+        html += '<div style="text-align:center;padding:30px;color:#888;">Belum ada laporan kunjungan.</div>';
+    } else {
+        laporan.forEach(function(l, i) {
+            html += '<div style="border:1px solid #e0e0e0;border-radius:10px;padding:15px;margin-bottom:12px;">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">';
+            html += '<div style="font-weight:700;color:#3f36b1;font-size:14px;">Kunjungan #' + (i + 1) + '</div>';
+            html += '<div style="font-size:12px;color:#888;">' + l.created_at + '</div>';
+            html += '</div>';
+
+            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;margin-bottom:8px;">';
+            html += '<div><strong>AO:</strong> (' + l.kode_ao + ') ' + l.nama_ao + '</div>';
+            html += '<div><strong>Ada di Lokasi:</strong> ' + l.ada_di_lokasi + '</div>';
+            html += '<div><strong>Tgl Janji Bayar:</strong> ' + l.tgl_janji_bayar + '</div>';
+            html += '<div><strong>Nominal Janji:</strong> ' + l.nominal_janji_bayar + '</div>';
+            html += '</div>';
+
+            if (l.catatan && l.catatan !== '-') {
+                html += '<div style="margin-bottom:8px;"><strong style="font-size:13px;">Catatan:</strong><div style="background:#f8f9fa;padding:8px;border-radius:6px;font-size:13px;margin-top:4px;">' + l.catatan + '</div></div>';
+            }
+
+            if (l.foto && l.foto.length > 0) {
+                html += '<div style="margin-top:8px;"><strong style="font-size:13px;">Foto:</strong><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">';
+                l.foto.forEach(function(f) {
+                    html += '<a href="/uploads/kunjungan/' + f + '" target="_blank"><img src="/uploads/kunjungan/' + f + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid #ddd;"></a>';
+                });
+                html += '</div></div>';
+            }
+
+            if (l.bukti_transfer) {
+                html += '<div style="margin-top:8px;"><strong style="font-size:13px;">Bukti Transfer:</strong><div style="margin-top:4px;"><a href="/uploads/kunjungan/' + l.bukti_transfer + '" target="_blank"><img src="/uploads/kunjungan/' + l.bukti_transfer + '" style="max-width:150px;border-radius:8px;border:1px solid #ddd;"></a></div></div>';
+            }
+
+            html += '</div>';
+        });
+    }
+
+    document.getElementById('detailNasabahBody').innerHTML = html;
+}
+
+function closeModalDetailNasabah() {
+    document.getElementById('modalDetailNasabah').style.display = 'none';
+}
+
+document.getElementById('modalDetailNasabah').addEventListener('click', function(e) {
+    if (e.target === this) closeModalDetailNasabah();
+});
+</script>

@@ -87,6 +87,49 @@ class PelaporanController extends Controller
         ]);
     }
 
+    public function laporanNasabah($noAngsuran)
+    {
+        $nasabah = Nasabah::where('no_angsuran', $noAngsuran)->first();
+        if (!$nasabah) {
+            return response()->json(['error' => 'Nasabah tidak ditemukan'], 404);
+        }
+
+        $laporan = \App\Models\Kunjungan::where('no_nasabah', $noAngsuran)
+            ->with('karyawan')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($item) {
+                $foto = [];
+                if ($item->foto_kunjungan) {
+                    $raw = is_string($item->foto_kunjungan) ? json_decode($item->foto_kunjungan, true) : $item->foto_kunjungan;
+                    $foto = is_array($raw) ? $raw : [$raw];
+                }
+                return [
+                    'id' => $item->id,
+                    'kode_ao' => $item->kode_ao,
+                    'nama_ao' => $item->karyawan->nama ?? '-',
+                    'created_at' => \Carbon\Carbon::parse($item->created_at)->format('d-m-Y H:i'),
+                    'ada_di_lokasi' => $item->ada_di_lokasi ?? '-',
+                    'catatan' => $item->catatan ?? '-',
+                    'koordinat' => $item->koordinat ?? '-',
+                    'tgl_janji_bayar' => $item->tgl_janji_bayar ? \Carbon\Carbon::parse($item->tgl_janji_bayar)->format('d-m-Y') : '-',
+                    'nominal_janji_bayar' => $item->nominal_janji_bayar ? 'Rp ' . number_format($item->nominal_janji_bayar, 0, ',', '.') : '-',
+                    'bukti_transfer' => $item->bukti_transfer,
+                    'foto' => $foto,
+                ];
+            });
+
+        return response()->json([
+            'nasabah' => [
+                'no_angsuran' => $nasabah->no_angsuran,
+                'nama' => $nasabah->nasabah,
+                'alamat' => $nasabah->alamat ?? '-',
+                'kol' => $nasabah->kol ?? '-',
+            ],
+            'laporan' => $laporan,
+        ]);
+    }
+
     public function exportExcel(Request $request)
     {
         $tgl_awal = $request->tanggal_awal;

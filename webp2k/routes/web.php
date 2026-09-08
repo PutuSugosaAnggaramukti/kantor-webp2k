@@ -94,6 +94,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dokumen-content', [AdmDokumenController::class, 'dokumenIndex']);
     Route::get('/download-word/{id}', [AdmDokumenController::class, 'downloadWord'])->name('download.docx');
 
+    // 7. PELAPORAN DETAIL NASABAH
+    Route::get('/pelaporan/laporan-nasabah/{noAngsuran}', [PelaporanController::class, 'laporanNasabah'])->name('admin.pelaporan.laporan-nasabah');
+
     // 7. IJIN KUNJUNGAN 
     Route::get('/ijin-kunjungan', [IjinKunjunganController::class, 'indexAdmin'])->name('admin.ijin.index');
     Route::post('/ijin-kunjungan/update-status/{id}', [IjinKunjunganController::class, 'updateStatus'])->name('admin.ijin.updateStatus');
