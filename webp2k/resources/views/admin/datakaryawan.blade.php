@@ -1045,7 +1045,6 @@ function handleAjaxSettings(url, data, successMessage) {
 
 
 window.showVisitDetail = function(data) {
-    console.log("Data yang diterima:", data); // Cek ini di console browser
 
     // --- 1. FOTO ---
     let fotoSource = '/assets/no_image.png';

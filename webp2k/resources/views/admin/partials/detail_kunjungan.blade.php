@@ -150,7 +150,19 @@
 
                     <td style="padding: 10px;">
                         @if($item->id_kunjungan)
-                            <button type="button" onclick='showVisitDetail(@json($item))' class="btn-view" style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
+                            @php
+                                $visitData = [
+                                    'foto_kunjungan' => $item->foto_kunjungan,
+                                    'foto_jam' => $item->foto_jam ?? null,
+                                    'tgl_realisasi' => $item->tgl_realisasi ?? null,
+                                    'created_at' => $item->created_at,
+                                    'koordinat' => $item->koordinat,
+                                    'tgl_janji_hasil' => $item->tgl_janji_hasil ?? null,
+                                    'nominal_janji_hasil' => $item->nominal_janji_hasil ?? null,
+                                    'catatan_lapangan' => $item->catatan_lapangan ?? null,
+                                ];
+                            @endphp
+                            <button type="button" onclick='showVisitDetail(@json($visitData))' class="btn-view" style="background: #007bff; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">
                                 <i class="fas fa-eye"></i>
                             </button>
                         @else

@@ -26,28 +26,20 @@
             </tr>
         </thead>
         <tbody style="font-weight: 700; font-size: 14px;">
-            @php
-                // Data dummy sesuai gambar referensi
-                $detailNasabah = [
-                    ['tgl' => '2025-12-01', 'no_ang' => '20002347', 'nama' => 'HENI SUSILONINGSIH DRA'],
-                    ['tgl' => '2025-12-02', 'no_ang' => '20000228', 'nama' => 'EKO SUTRISNO AJI'],
-                    ['tgl' => '2025-12-03', 'no_ang' => '20002225', 'nama' => 'INGRAM SUHARTO'],
-                    ['tgl' => '2025-12-03', 'no_ang' => '21002253', 'nama' => 'SUPARDI'],
-                    ['tgl' => '2025-12-04', 'no_ang' => '22002666', 'nama' => 'MUJINAH'],
-                    ['tgl' => '2025-12-05', 'no_ang' => '19000718', 'nama' => 'FELIX DODY YULIANTO'],
-                ];
-            @endphp
-
-            @foreach($detailNasabah as $index => $item)
-            <tr style="border-bottom: 2px solid #000; text-align: center;">
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['tgl'] }}</td>
-                <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['no_ang'] }}</td>
-                <td style="padding: 15px; text-align: left; padding-left: 20px; text-transform: uppercase;">
-                    {{ $item['nama'] }}
-                </td>
-            </tr>
-            @endforeach
+            @if(isset($detailNasabah) && count($detailNasabah) > 0)
+                @foreach($detailNasabah as $index => $item)
+                <tr style="border-bottom: 2px solid #000; text-align: center;">
+                    <td style="padding: 15px; border-right: 2px solid #000;">{{ $index + 1 }}</td>
+                    <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['tgl'] ?? '-' }}</td>
+                    <td style="padding: 15px; border-right: 2px solid #000;">{{ $item['no_ang'] ?? '-' }}</td>
+                    <td style="padding: 15px; text-align: left; padding-left: 20px; text-transform: uppercase;">
+                        {{ $item['nama'] ?? '-' }}
+                    </td>
+                </tr>
+                @endforeach
+            @else
+                <tr><td colspan="4" style="padding: 30px; text-align: center; color: #888;">Belum ada data.</td></tr>
+            @endif
         </tbody>
     </table>
 </div>
