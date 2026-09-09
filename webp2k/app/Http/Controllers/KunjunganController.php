@@ -842,12 +842,26 @@ class KunjunganController extends Controller
                 $den = $u32($off + 4);
                 return $den != 0 ? $num / $den : 0;
             };
-            $readGpsValues = function($off, $type) use ($data, $tiffStart, $u32, $readRational) {
-                $realOff = ($type === 5 || $type === 10) ? $tiffStart + $u32($off) : $off;
+            $readSRational = function($off) use ($data, $tiffStart, $u32, $le) {
+                // SRATIONAL uses signed 32-bit integers for numerator (Samsung GPS)
+                if ($off + 8 > strlen($data)) return 0;
+                // Read signed 32-bit integer for numerator
+                $numBytes = substr($data, $off, 4);
+                $num = $le ? unpack('V', $numBytes)[1] : unpack('N', $numBytes)[1];
+                // Convert unsigned to signed (two's complement)
+                if ($num >= 0x80000000) $num -= 0x100000000;
+                $den = $u32($off + 4);
+                return $den != 0 ? $num / $den : 0;
+            };
+            $readGpsValues = function($off, $type) use ($data, $tiffStart, $u32, $readRational, $readSRational) {
+                $isRational = ($type === 5);   // RATIONAL (unsigned)
+                $isSRational = ($type === 10); // SRATIONAL (signed - Samsung)
+                if (!$isRational && !$isSRational) return [];
+                $realOff = $tiffStart + $u32($off);
                 $vals = [];
                 for ($j = 0; $j < 3; $j++) {
-                    $v = $readRational($realOff + $j * 8);
-                    if (!is_finite($v) || $v < 0) break;
+                    $v = $isSRational ? $readSRational($realOff + $j * 8) : $readRational($realOff + $j * 8);
+                    if (!is_finite($v)) break;
                     $vals[] = $v;
                 }
                 return $vals;

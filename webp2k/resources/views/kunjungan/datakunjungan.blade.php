@@ -154,6 +154,12 @@
             return den !== 0 ? num / den : 0;
         };
 
+        const readSRational = (dv, off, le) => {
+            const num = dv.getInt32(off, le);
+            const den = dv.getUint32(off + 4, le);
+            return den !== 0 ? num / den : 0;
+        };
+
         const findGpsInIfd = (dv, ifdOffset, tiffStart, le) => {
             const u16 = (off) => dv.getUint16(off, le);
             const u32 = (off) => dv.getUint32(off, le);
@@ -166,12 +172,17 @@
                     const gpsNum = u16(gpsIfd);
 
                     const readGpsValues = (off, type) => {
-                        const needsOffset = (type === 5 || type === 10);
+                        const isRational = (type === 5);   // RATIONAL (unsigned)
+                        const isSRational = (type === 10); // SRATIONAL (signed - Samsung)
+                        if (!isRational && !isSRational) return [];
+                        const needsOffset = true; // GPS coords always use offset (24 bytes > 4)
                         const realOff = needsOffset ? tiffStart + u32(off) : off;
                         const vals = [];
                         for (let j = 0; j < 3; j++) {
                             try {
-                                const v = readRational(dv, realOff + j * 8, le);
+                                const v = isSRational 
+                                    ? readSRational(dv, realOff + j * 8, le)
+                                    : readRational(dv, realOff + j * 8, le);
                                 if (isNaN(v) || !isFinite(v)) break;
                                 vals.push(v);
                             } catch(e) { break; }
@@ -235,12 +246,16 @@
             const gpsNum = u16(gpsIfd);
 
             const readGpsValues = (off, type) => {
-                const needsOffset = (type === 5 || type === 10);
-                const realOff = needsOffset ? tiffStart + u32(off) : off;
+                const isRational = (type === 5);   // RATIONAL (unsigned)
+                const isSRational = (type === 10); // SRATIONAL (signed - Samsung)
+                if (!isRational && !isSRational) return [];
+                const realOff = tiffStart + u32(off);
                 const vals = [];
                 for (let j = 0; j < 3; j++) {
                     try {
-                        const v = readRational(dv, realOff + j * 8, le);
+                        const v = isSRational 
+                            ? readSRational(dv, realOff + j * 8, le)
+                            : readRational(dv, realOff + j * 8, le);
                         if (isNaN(v) || !isFinite(v)) break;
                         vals.push(v);
                     } catch(e) { break; }
