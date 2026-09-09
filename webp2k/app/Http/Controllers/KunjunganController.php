@@ -386,7 +386,7 @@ class KunjunganController extends Controller
                 'nama_nasabah'         => 'required',
                 'ada_di_lokasi'        => 'required',
                 'foto_kunjungan'       => 'required',
-                'foto_kunjungan.*'     => 'image|mimes:jpg,jpeg|max:5120',
+                'foto_kunjungan.*'     => 'image|mimes:jpg,jpeg|max:10240',
                 'bukti_transfer'       => 'nullable|file|max:10240',
                 'tgl_janji_bayar'      => 'nullable|date',
                 'nominal_janji_bayar'  => 'nullable',

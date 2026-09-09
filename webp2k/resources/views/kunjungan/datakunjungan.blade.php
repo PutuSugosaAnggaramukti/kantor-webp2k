@@ -762,11 +762,10 @@
             // 3b. KUNCI ULANG KOORDINAT saat menyimpan: pastikan field koordinat terisi
             // (kalau tadi modal cepat dibuka sebelum GPS fix, ini kesempatan terakhir)
             lockCoordinateBeforeSave('form-koordinat').then(() => {
-                // Kunci juga jam REAL dari HP user
                 setWaktuLaporanHp('form-waktu-laporan');
-                // Bangun ulang FormData setelah koordinat terakhir diperbarui
-                const formData = new FormData(form);
-                submitKunjungan(form, formData, btn);
+                compressImages(form).then(formData => {
+                    submitKunjungan(form, formData, btn);
+                });
             });
         }
     });
@@ -854,6 +853,64 @@
             () => { /* biarkan watchPosition lanjut */ },
             { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
         );
+    }
+
+    function compressImages(form) {
+        return new Promise((resolve) => {
+            const fileInput = form.querySelector('input[name="foto_kunjungan[]"]');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                resolve(new FormData(form));
+                return;
+            }
+
+            const MAX_SIZE = 2 * 1024 * 1024;
+            const MAX_WIDTH = 2048;
+            const MAX_HEIGHT = 2048;
+            const QUALITY = 0.8;
+            const files = Array.from(fileInput.files);
+            const compressed = [];
+            let processed = 0;
+
+            files.forEach((file, idx) => {
+                if (file.size <= MAX_SIZE && file.type === 'image/jpeg') {
+                    compressed[idx] = file;
+                    processed++;
+                    if (processed === files.length) buildFormData();
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        let w = img.width, h = img.height;
+                        if (w > MAX_WIDTH || h > MAX_HEIGHT) {
+                            const ratio = Math.min(MAX_WIDTH / w, MAX_HEIGHT / h);
+                            w = Math.round(w * ratio);
+                            h = Math.round(h * ratio);
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        canvas.toBlob(function(blob) {
+                            compressed[idx] = new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
+                            processed++;
+                            if (processed === files.length) buildFormData();
+                        }, 'image/jpeg', QUALITY);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+
+            function buildFormData() {
+                const fd = new FormData(form);
+                fd.delete('foto_kunjungan[]');
+                compressed.forEach(f => fd.append('foto_kunjungan[]', f));
+                resolve(fd);
+            }
+        });
     }
 
     function submitKunjungan(form, formData, btn) {
@@ -959,10 +1016,7 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
         }
     });
 
-    // 2. Ambil data dari form (setelah koordinat terakhir diperbarui)
-    const formData = new FormData(formManual);
-
-    // 3. Kirim via Fetch API (AJAX)
+    compressImages(formManual).then(formData => {
     fetch(formManual.action, {
         method: 'POST',
         body: formData,
