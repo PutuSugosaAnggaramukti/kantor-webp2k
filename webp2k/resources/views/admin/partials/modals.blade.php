@@ -187,13 +187,13 @@
         
         <form action="{{ route('admin.pelaporan.export') }}" method="GET">
             <div class="form-group-karyawan">
-                <label>Tanggal Awal</label>
-                <input type="date" name="tanggal_awal" required style="width: 100%; padding: 8px;">
+                <label>Tanggal Awal <small style="color: #888;">(Kosongkan untuk export semua)</small></label>
+                <input type="date" name="tanggal_awal" style="width: 100%; padding: 8px;">
             </div>
 
             <div class="form-group-karyawan" style="margin-top: 20px;">
-                <label>Tanggal Akhir</label>
-                <input type="date" name="tanggal_akhir" required style="width: 100%; padding: 8px;">
+                <label>Tanggal Akhir <small style="color: #888;">(Kosongkan untuk export semua)</small></label>
+                <input type="date" name="tanggal_akhir" style="width: 100%; padding: 8px;">
             </div>
 
             <div style="display: flex; justify-content: flex-end; margin-top: 30px; gap: 10px;">

@@ -136,7 +136,11 @@ class PelaporanController extends Controller
         $tgl_awal = $request->tanggal_awal;
         $tgl_akhir = $request->tanggal_akhir;
 
-        $fileName = 'Laporan_Kunjungan_' . $tgl_awal . '_to_' . $tgl_akhir . '.xlsx';
+        if ($tgl_awal && $tgl_akhir) {
+            $fileName = 'Laporan_Kunjungan_' . $tgl_awal . '_to_' . $tgl_akhir . '.xlsx';
+        } else {
+            $fileName = 'Laporan_Kunjungan_Semua.xlsx';
+        }
 
         return Excel::download(new PelaporanExport($tgl_awal, $tgl_akhir), $fileName);
     }

@@ -3,6 +3,7 @@
         <tr>
             <th colspan="16" style="text-align: center; font-weight: bold; font-size: 14px;">REKAPITULASI KUNJUNGAN PER AO</th>
         </tr>
+        @if($tglAwal && $tglAkhir)
         <tr>
             <th colspan="16" style="text-align: center;">
                 Periode: 
@@ -11,6 +12,7 @@
                 {{ \Carbon\Carbon::parse($tglAkhir)->locale('id')->translatedFormat('d F Y') }}
             </th>
         </tr>
+        @endif
         <tr></tr>
         <tr style="background-color: #f5f5f5; text-align: center; font-weight: bold;">
             <th style="border: 1px solid #000; width: 50px;">No</th>

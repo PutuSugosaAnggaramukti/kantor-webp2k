@@ -12,19 +12,17 @@ class PelaporanExport implements FromView, ShouldAutoSize, WithStyles
 {
     protected $tglAwal, $tglAkhir;
 
-    public function __construct($tglAwal, $tglAkhir) {
+    public function __construct($tglAwal = null, $tglAkhir = null) {
         $this->tglAwal = $tglAwal;
         $this->tglAkhir = $tglAkhir;
     }
 
     public function view(): View
     {
-        $data_kunjungan = \DB::table('kunjungans')
+        $query = \DB::table('kunjungans')
             ->leftJoin('data_kunjungan_adms', 'kunjungans.jadwal_id', '=', 'data_kunjungan_adms.id')
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->leftJoin('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
-            ->whereDate('kunjungans.created_at', '>=', $this->tglAwal)
-            ->whereDate('kunjungans.created_at', '<=', $this->tglAkhir)
             ->select(
                 'kunjungans.*',
                 'data_kunjungan_adms.tanggal as tanggal_jadwal',
@@ -40,9 +38,14 @@ class PelaporanExport implements FromView, ShouldAutoSize, WithStyles
                 'nasabahs.pokok_per_bulan as pokok_per_bulan_nasabah',
                 'nasabahs.bunga_per_bulan as bunga_per_bulan_nasabah',
                 'karyawans.nama as nama_karyawan'
-            )
-            ->orderBy('kunjungans.created_at', 'desc')
-            ->get();
+            );
+
+        if ($this->tglAwal && $this->tglAkhir) {
+            $query->whereDate('kunjungans.created_at', '>=', $this->tglAwal)
+                  ->whereDate('kunjungans.created_at', '<=', $this->tglAkhir);
+        }
+
+        $data_kunjungan = $query->orderBy('kunjungans.created_at', 'desc')->get();
 
         return view('admin.exports.pelaporan_excel', [
             'data_ao' => $data_kunjungan,
