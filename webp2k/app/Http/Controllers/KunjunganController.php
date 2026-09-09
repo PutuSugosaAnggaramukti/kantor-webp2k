@@ -854,9 +854,10 @@ class KunjunganController extends Controller
                 return $den != 0 ? $num / $den : 0;
             };
             $readGpsValues = function($off, $type) use ($data, $tiffStart, $u32, $readRational, $readSRational) {
-                $isRational = ($type === 5);   // RATIONAL (unsigned)
                 $isSRational = ($type === 10); // SRATIONAL (signed - Samsung)
-                if (!$isRational && !$isSRational) return [];
+                // Support offset-based types: RATIONAL(5), SRATIONAL(10), LONG(4), SLONG(9)
+                $needsOffset = ($type === 4 || $type === 5 || $type === 9 || $type === 10);
+                if (!$needsOffset) return [];
                 $realOff = $tiffStart + $u32($off);
                 $vals = [];
                 for ($j = 0; $j < 3; $j++) {

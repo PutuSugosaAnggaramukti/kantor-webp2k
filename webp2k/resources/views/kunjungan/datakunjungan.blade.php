@@ -172,11 +172,11 @@
                     const gpsNum = u16(gpsIfd);
 
                     const readGpsValues = (off, type) => {
-                        const isRational = (type === 5);   // RATIONAL (unsigned)
                         const isSRational = (type === 10); // SRATIONAL (signed - Samsung)
-                        if (!isRational && !isSRational) return [];
-                        const needsOffset = true; // GPS coords always use offset (24 bytes > 4)
-                        const realOff = needsOffset ? tiffStart + u32(off) : off;
+                        // Support offset-based types: RATIONAL(5), SRATIONAL(10), LONG(4), SLONG(9)
+                        const needsOffset = (type === 4 || type === 5 || type === 9 || type === 10);
+                        if (!needsOffset) return [];
+                        const realOff = tiffStart + u32(off);
                         const vals = [];
                         for (let j = 0; j < 3; j++) {
                             try {
@@ -246,9 +246,10 @@
             const gpsNum = u16(gpsIfd);
 
             const readGpsValues = (off, type) => {
-                const isRational = (type === 5);   // RATIONAL (unsigned)
                 const isSRational = (type === 10); // SRATIONAL (signed - Samsung)
-                if (!isRational && !isSRational) return [];
+                // Support offset-based types: RATIONAL(5), SRATIONAL(10), LONG(4), SLONG(9)
+                const needsOffset = (type === 4 || type === 5 || type === 9 || type === 10);
+                if (!needsOffset) return [];
                 const realOff = tiffStart + u32(off);
                 const vals = [];
                 for (let j = 0; j < 3; j++) {
