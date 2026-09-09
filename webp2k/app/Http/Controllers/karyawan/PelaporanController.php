@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel; 
 use App\Exports\PelaporanExport;
 use App\Exports\PelaporanDetailExport;
+use App\Exports\NasabahTerkunjungiExport;
 
 class PelaporanController extends Controller
 {
@@ -153,6 +154,14 @@ class PelaporanController extends Controller
         // 3. Eksekusi download menggunakan class Export
         // Kita lempar $id ke constructor PelaporanDetailExport
         return Excel::download(new PelaporanDetailExport($id), $fileName);
+    }
+
+    public function exportNasabahTerkunjungi()
+    {
+        $timestamp = now()->format('d-m-Y');
+        $fileName = "Nasabah_Terkunjungi_{$timestamp}.xlsx";
+
+        return Excel::download(new NasabahTerkunjungiExport(), $fileName);
     }
 
     

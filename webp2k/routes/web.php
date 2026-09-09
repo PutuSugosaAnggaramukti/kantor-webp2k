@@ -88,6 +88,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/detail-pelaporan-nasabah', [PelaporanController::class, 'detail_nasabah']);
     Route::get('/pelaporan/export', [PelaporanController::class, 'exportExcel'])->name('admin.pelaporan.export');
     Route::get('/pelaporan/export-detail/{id}', [PelaporanController::class, 'exportDetailAo'])->name('admin.pelaporan.export-detail');
+    Route::get('/pelaporan/export-nasabah-terkunjungi', [PelaporanController::class, 'exportNasabahTerkunjungi'])->name('admin.pelaporan.export-nasabah');
 
     // 6. DOKUMEN 
     Route::get('/dokumen', [AdmDokumenController::class, 'dokumenIndex'])->name('admin.dokumen.index'); // Rute bersih

@@ -64,8 +64,11 @@
     <hr style="border: 1px solid #ccc; margin-bottom: 30px;">
 
     {{-- TABEL 2: REKAP NASABAH TERKUNJUNGI --}}
-    <div style="margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3 style="font-size: 18px; font-weight: 700; color: #333;">Daftar Nasabah Sudah Dikunjungi</h3>
+        <a href="{{ route('admin.pelaporan.export-nasabah') }}" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer; text-decoration: none; font-size: 13px;">
+            <i class="fa-solid fa-file-excel"></i> Export Excel
+        </a>
     </div>
     <div class="table-responsive">
         <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background-color: #fff;">
