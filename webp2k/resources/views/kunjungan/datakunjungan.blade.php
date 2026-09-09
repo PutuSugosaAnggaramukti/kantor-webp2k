@@ -621,6 +621,7 @@
                 }
             })
             .then(response => {
+                if (response.status === 401) { handleAuthError(); return; }
                 return response.text().then(text => {
                     let data;
                     try { data = JSON.parse(text); } catch(e) { data = null; }
@@ -929,6 +930,15 @@
         });
     }
 
+    function handleAuthError() {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Sesi Berakhir',
+            text: 'Silakan login ulang untuk melanjutkan.',
+            confirmButtonText: 'Login'
+        }).then(() => { window.location.href = '/login'; });
+    }
+
     function submitKunjungan(form, formData, btn) {
             fetch(form.action, {
                 method: 'POST',
@@ -939,6 +949,7 @@
                 }
             })
             .then(response => {
+                if (response.status === 401) { handleAuthError(); return; }
                 return response.text().then(text => {
                     let data;
                     try { data = JSON.parse(text); } catch(e) { data = null; }
@@ -1042,6 +1053,7 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
         }
     })
     .then(response => {
+        if (response.status === 401) { handleAuthError(); return; }
         return response.text().then(text => {
             let data;
             try { data = JSON.parse(text); } catch(e) { data = null; }
@@ -1104,6 +1116,7 @@ function simpanJadwalMandiri() {
             }
         },
         error: function(xhr) {
+            if (xhr.status === 401) { handleAuthError(); return; }
             let errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Terjadi kesalahan server';
             Swal.fire('Gagal!', errorMsg, 'error');
         }
@@ -1208,8 +1221,12 @@ function updateSandiAO() {
 
 function editKunjunganAo(id) {
     fetch('/user/kunjungan/' + id + '/edit')
-        .then(r => r.text().then(t => { let d; try { d = JSON.parse(t); } catch(e) { d = null; } return d; }))
+        .then(r => {
+            if (r.status === 401) { handleAuthError(); return null; }
+            return r.text().then(t => { let d; try { d = JSON.parse(t); } catch(e) { d = null; } return d; });
+        })
         .then(data => {
+            if (!data) return;
             if (!data || !data.id) {
                 Swal.fire('Error', 'Data tidak ditemukan', 'error');
                 return;
@@ -1245,8 +1262,12 @@ document.getElementById('formEditKunjunganAo').addEventListener('submit', functi
             catatan: document.getElementById('editAoKunj_catatan').value
         })
     })
-    .then(r => r.text().then(t => { let d; try { d = JSON.parse(t); } catch(e) { d = null; } return d; }))
+    .then(r => {
+        if (r.status === 401) { handleAuthError(); return null; }
+        return r.text().then(t => { let d; try { d = JSON.parse(t); } catch(e) { d = null; } return d; });
+    })
     .then(data => {
+        if (!data) return;
         if (data && data.success) {
             closeModalEditKunjunganAo();
             Swal.fire('Berhasil', data.message, 'success').then(() => {
