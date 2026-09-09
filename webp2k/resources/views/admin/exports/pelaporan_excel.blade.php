@@ -98,7 +98,7 @@
                 </td>
 
                 <td style="border: 1px solid #000; text-align: right;">
-                    {{ $kunj->nominal_janji_bayar ? number_format($kunj->nominal_janji_bayar, 0, ',', '.') : '-' }}
+                    {{ $kunj->nominal_janji_bayar ? 'Rp ' . number_format($kunj->nominal_janji_bayar, 0, ',', '.') : '-' }}
                 </td>
             </tr>
         @endforeach
