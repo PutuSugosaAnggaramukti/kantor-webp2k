@@ -1,10 +1,10 @@
 <table>
     <thead>
         <tr>
-            <th colspan="16" style="text-align: center; font-weight: bold; font-size: 14px;">REKAPITULASI KUNJUNGAN PER AO</th>
+            <th colspan="15" style="text-align: center; font-weight: bold; font-size: 14px;">REKAPITULASI KUNJUNGAN PER AO</th>
         </tr>
         <tr>
-            <th colspan="16" style="text-align: center;">
+            <th colspan="15" style="text-align: center;">
                 Periode: 
                 {{ \Carbon\Carbon::parse($tglAwal)->locale('id')->translatedFormat('d F') }} 
                 - 
@@ -26,8 +26,7 @@
             <th style="border: 1px solid #000; width: 120px;">Bunga/bln</th>
             <th style="border: 1px solid #000; width: 120px;">Kode AO</th>
             <th style="border: 1px solid #000; width: 180px;">Nama AO</th>
-            <th style="border: 1px solid #000; width: 100px;">Tanggal</th>
-            <th style="border: 1px solid #000; width: 300px;">Catatan Lapangan</th>
+            <th style="border: 1px solid #000; width: 350px;">Catatan Lapangan</th>
             <th style="border: 1px solid #000; width: 130px;">Tgl Janji Bayar</th>
         </tr>
     </thead>
@@ -85,12 +84,12 @@
                     {{ $kunj->nama_karyawan ?? 'N/A' }}
                 </td>
 
-                <td style="border: 1px solid #000; text-align: center;">
-                    {{ \Carbon\Carbon::parse($kunj->tanggal_jadwal)->format('d-m-Y') }}
-                </td>
-
                 <td style="border: 1px solid #000; vertical-align: top;">
-                    {{ $kunj->catatan ?? '-' }}
+                    @php
+                        $tanggalKunjungan = \Carbon\Carbon::parse($kunj->created_at)->locale('id')->translatedFormat('d F Y');
+                        $catatan = $kunj->catatan ?? '-';
+                    @endphp
+                    Tanggal {{ $tanggalKunjungan }} {{ $catatan }}
                 </td>
 
                 <td style="border: 1px solid #000; text-align: center;">
