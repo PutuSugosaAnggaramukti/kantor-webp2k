@@ -1080,6 +1080,7 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
         Swal.fire('Error', detailMsg, 'error');
     });
     });
+    });
 });
 
 function simpanJadwalMandiri() {
