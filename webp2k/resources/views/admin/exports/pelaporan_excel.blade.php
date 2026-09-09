@@ -44,7 +44,7 @@
                 </td>
 
                 <td style="border: 1px solid #000; text-align: center;">
-                    {{ $kunj->no_angsuran ?? '-' }}
+                    {{ $kunj->no_nasabah ?? '-' }}
                 </td>
 
                 <td style="border: 1px solid #000; text-align: center;">
@@ -87,12 +87,8 @@
                     {{ $kunj->nama_karyawan ?? 'N/A' }}
                 </td>
 
-                <td style="border: 1px solid #000; vertical-align: top;">
-                    @php
-                        $tanggalKunjungan = \Carbon\Carbon::parse($kunj->created_at)->locale('id')->translatedFormat('d F Y');
-                        $catatan = $kunj->catatan ?? '-';
-                    @endphp
-                    Tanggal {{ $tanggalKunjungan }} {{ $catatan }}
+                <td style="border: 1px solid #000; vertical-align: top; white-space: pre-line;">
+                    {{ $kunj->catatan_lengkap }}
                 </td>
 
                 <td style="border: 1px solid #000; text-align: center;">
