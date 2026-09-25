@@ -936,8 +936,31 @@
             title: 'Sesi Berakhir',
             text: 'Silakan login ulang untuk melanjutkan.',
             confirmButtonText: 'Login'
-        }).then(() => { window.location.href = '/login'; });
+        }).then(() => { window.location.href = '/'; });
     }
+
+    // --- Session Heartbeat ---
+    // Mengisi laporan TIDAK mengirim request sama sekali (semua diproses di browser),
+    // sehingga sesi bisa kedaluwarsa diam-diam. Ping berkala menjaga sesi tetap hidup
+    // selama halaman terbuka, dan mendeteksi sesi habis saat kembali dari galeri.
+    function pingSesi() {
+        fetch("{{ route('user.ping') }}", {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            cache: 'no-store'
+        })
+        .then(r => { if (r.status === 401) handleAuthError(); })
+        .catch(() => {});
+    }
+    setInterval(pingSesi, 5 * 60 * 1000);
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) pingSesi();
+    });
+    window.addEventListener('pageshow', function(e) {
+        if (e.persisted) pingSesi();
+    });
 
     function submitKunjungan(form, formData, btn) {
             fetch(form.action, {

@@ -133,6 +133,10 @@ Route::middleware(['auth:karyawan', 'role:user'])->prefix('user')->group(functio
     Route::get('/export-excel', [KunjunganController::class, 'exportExcel'])->name('export.excel');
     Route::get('/pengajuan-ijin', [IjinKunjunganController::class, 'create'])->name('user.ijin.create');
     Route::post('/pengajuan-ijin/store', [IjinKunjunganController::class, 'store'])->name('user.ijin.store');
+    // Heartbeat: menjaga sesi tetap hidup saat user lama mengisi form (tanpa request)
+    Route::get('/ping', function () {
+        return response()->json(['ok' => true]);
+    })->name('user.ping');
 });
 
 
