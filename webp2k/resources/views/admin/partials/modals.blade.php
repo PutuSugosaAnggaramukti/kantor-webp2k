@@ -606,44 +606,48 @@
     </div>
 </div>
 
-<div id="modalEditKunjunganAdmin" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: white; width: 100%; max-width: 500px; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+<div id="modalEditKunjunganAdmin" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; padding: 20px;" onclick="if (event.target === this) closeModalEditKunjunganAdmin();">
+    <div style="background: white; width: 100%; max-width: 460px; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
         <div style="padding: 15px 20px; background: #4e4bc1; color: white; display: flex; justify-content: space-between; align-items: center;">
             <h3 style="margin: 0; font-weight: 800; font-size: 16px;">Edit Data Kunjungan</h3>
-            <button onclick="closeModalEditKunjunganAdmin()" style="background: none; border: none; color: white; font-size: 22px; cursor: pointer;">&times;</button>
+            <button type="button" onclick="closeModalEditKunjunganAdmin()" style="background: none; border: none; color: white; font-size: 22px; cursor: pointer; line-height: 1;">&times;</button>
         </div>
-        <form id="formEditKunjunganAdmin" style="padding: 20px;">
+        <form id="formEditKunjunganAdmin" style="padding: 20px 22px 22px;">
             @csrf
             @method('PUT')
             <input type="hidden" id="editKunj_id" value="">
 
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 13px;">Status</label>
-                <select id="editKunj_status" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px;">
-                    <option value="Menunggu Pembayaran">Menunggu Pembayaran</option>
-                    <option value="Sudah Bayar">Sudah Bayar</option>
-                    <option value="Gagal Bayar">Gagal Bayar</option>
+            <div id="editKunj_info" style="display: none; margin-bottom: 16px; padding: 10px 12px; background: #f4f5ff; border-left: 4px solid #4e4bc1; border-radius: 6px; font-size: 12px; color: #333; line-height: 1.6;"></div>
+
+            <div style="margin-bottom: 15px;">
+                <label for="editKunj_status" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 13px;">Status</label>
+                <select id="editKunj_status" style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; background: #fff; cursor: pointer;">
+                    <option value="Menunggu Pembayaran">⏳ Menunggu Pembayaran</option>
+                    <option value="Sudah Bayar">✅ Sudah Bayar</option>
+                    <option value="Gagal Bayar">❌ Gagal Bayar</option>
+                    <option value="Broken Promise">⚠️ Broken Promise</option>
                 </select>
+                <small style="display: block; margin-top: 5px; font-size: 11px; color: #777; line-height: 1.5;">Terisi otomatis mengikuti status pada tabel Detail Kunjungan. Masih bisa diubah bila perlu.</small>
             </div>
 
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 13px;">Tanggal Janji Bayar</label>
-                <input type="date" id="editKunj_tgl_janji" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px;">
+            <div style="margin-bottom: 15px;">
+                <label for="editKunj_tgl_janji" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 13px;">Tanggal Janji Bayar</label>
+                <input type="date" id="editKunj_tgl_janji" style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px;">
             </div>
 
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 13px;">Nominal Janji Bayar</label>
-                <input type="number" id="editKunj_nominal" placeholder="0" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px;">
+            <div style="margin-bottom: 15px;">
+                <label for="editKunj_nominal" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 13px;">Nominal Janji Bayar</label>
+                <input type="number" id="editKunj_nominal" min="0" step="1" placeholder="0" style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px;">
             </div>
 
-            <div style="margin-bottom: 12px;">
-                <label style="display: block; font-weight: 700; margin-bottom: 5px; font-size: 13px;">Catatan Kunjungan</label>
-                <textarea id="editKunj_catatan" rows="3" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 8px; font-size: 13px; resize: vertical;"></textarea>
+            <div style="margin-bottom: 5px;">
+                <label for="editKunj_catatan" style="display: block; font-weight: 700; margin-bottom: 6px; font-size: 13px;">Catatan Kunjungan</label>
+                <textarea id="editKunj_catatan" rows="3" placeholder="Tulis catatan kunjungan..." style="width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; resize: vertical;"></textarea>
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-                <button type="button" onclick="closeModalEditKunjunganAdmin()" style="padding: 10px 20px; border-radius: 8px; border: 2px solid #ddd; background: #f8f9fa; font-weight: 700; cursor: pointer; font-size: 13px;">Batal</button>
-                <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: #4e4bc1; color: white; border: none; font-weight: 700; cursor: pointer; font-size: 13px;">Simpan</button>
+            <div style="display: flex; gap: 10px; margin-top: 22px;">
+                <button type="button" onclick="closeModalEditKunjunganAdmin()" style="flex: 1; padding: 11px; border-radius: 8px; border: 1px solid #ccc; background: #f8f9fa; font-weight: 700; cursor: pointer; font-size: 13px;">Batal</button>
+                <button type="submit" style="flex: 1; padding: 11px; border-radius: 8px; background: #4e4bc1; color: white; border: none; font-weight: 700; cursor: pointer; font-size: 13px;">Simpan</button>
             </div>
         </form>
     </div>

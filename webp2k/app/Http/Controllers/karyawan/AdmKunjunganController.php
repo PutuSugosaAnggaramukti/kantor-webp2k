@@ -1012,6 +1012,19 @@ public function getDaftarNoAnggota(Request $request)
         if (!$data) {
             return response()->json(['message' => 'Data tidak ditemukan'], 404);
         }
+
+        // Status efektif = sama persis dengan kolom Status di tabel Detail Kunjungan:
+        // ada bukti transfer -> Sudah Bayar; janji bayar lewat & masih Menunggu -> Broken Promise
+        if (!empty($data->bukti_transfer)) {
+            $data->status_efektif = 'Sudah Bayar';
+        } elseif ($data->status === 'Menunggu Pembayaran'
+            && !empty($data->tgl_janji_bayar)
+            && \Carbon\Carbon::parse($data->tgl_janji_bayar)->isPast()) {
+            $data->status_efektif = 'Broken Promise';
+        } else {
+            $data->status_efektif = $data->status ?: 'Menunggu Pembayaran';
+        }
+
         return response()->json($data);
     }
 
@@ -1027,7 +1040,17 @@ public function getDaftarNoAnggota(Request $request)
             if ($request->has('catatan')) $updateData['catatan'] = $request->catatan;
             if ($request->has('tgl_janji_bayar')) $updateData['tgl_janji_bayar'] = $request->tgl_janji_bayar ?: null;
             if ($request->has('nominal_janji_bayar')) $updateData['nominal_janji_bayar'] = $request->nominal_janji_bayar ?: null;
-            if ($request->has('status')) $updateData['status'] = $request->status;
+            if ($request->has('status')) {
+                $status = $request->status;
+                // 'Broken Promise' tidak ada di enum DB (status lewat tanggal janji),
+                // tetap disimpan sebagai Menunggu agar tampilannya tetap Broken Promise
+                if ($status === 'Broken Promise') {
+                    $status = 'Menunggu Pembayaran';
+                }
+                if (in_array($status, ['Menunggu Pembayaran', 'Sudah Bayar', 'Gagal Bayar'], true)) {
+                    $updateData['status'] = $status;
+                }
+            }
             $updateData['updated_at'] = now();
 
             \DB::table('kunjungans')->where('id', $id)->update($updateData);

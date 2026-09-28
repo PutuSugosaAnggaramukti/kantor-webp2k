@@ -1186,16 +1186,41 @@ window.editKunjungan = function(id) {
         type: 'GET',
         success: function(data) {
             $('#editKunj_id').val(data.id);
-            $('#editKunj_status').val(data.status || 'Menunggu Pembayaran');
+
+            // Default status = status efektif di tabel (Broken Promise / Sudah Bayar / dst)
+            var statusEfektif = data.status_efektif || data.status || 'Menunggu Pembayaran';
+            if ($('#editKunj_status option[value="' + statusEfektif + '"]').length === 0) {
+                statusEfektif = 'Menunggu Pembayaran';
+            }
+            $('#editKunj_status').val(statusEfektif);
+
             $('#editKunj_tgl_janji').val(data.tgl_janji_bayar || '');
-            $('#editKunj_nominal').val(data.nominal_janji_bayar || '');
+            $('#editKunj_nominal').val(data.nominal_janji_bayar !== null && data.nominal_janji_bayar !== '' && data.nominal_janji_bayar !== undefined ? parseFloat(data.nominal_janji_bayar) : '');
             $('#editKunj_catatan').val(data.catatan || '');
+
+            // Banner info: nasabah & tanggal kunjungan (agar jelas sedang edit baris mana)
+            var info = [];
+            if (data.nama_nasabah) info.push('<b>Nasabah:</b> ' + $('<div>').text(data.nama_nasabah).html());
+            if (data.created_at) info.push('<b>Tanggal Kunjungan:</b> ' + window.fmtTanggalSingkat(data.created_at));
+            if (info.length) {
+                $('#editKunj_info').html(info.join('<br>')).show();
+            } else {
+                $('#editKunj_info').hide();
+            }
+
             document.getElementById('modalEditKunjunganAdmin').style.display = 'flex';
         },
         error: function() {
             Swal.fire('Error', 'Gagal memuat data kunjungan.', 'error');
         }
     });
+};
+
+window.fmtTanggalSingkat = function(str) {
+    var d = new Date(String(str).replace(' ', 'T'));
+    if (isNaN(d.getTime())) return str;
+    var pad = function(n) { return String(n).padStart(2, '0'); };
+    return pad(d.getDate()) + '-' + pad(d.getMonth() + 1) + '-' + d.getFullYear();
 };
 
 window.closeModalEditKunjunganAdmin = function() {
