@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -338,6 +339,8 @@ class KunjunganController extends Controller
             $jadwal->tanggal = $request->tanggal;
             $jadwal->save();
 
+            ActivityLog::record('Ubah Jadwal', 'Mengubah tanggal jadwal ' . $jadwal->nama_nasabah);
+
             return redirect()->back()->with('success', 'Jadwal ' . $jadwal->nama_nasabah . ' berhasil diperbarui.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal update: ' . $e->getMessage());
@@ -538,8 +541,8 @@ class KunjunganController extends Controller
 
                 'nominal_janji_bayar' =>
                     $request->filled('nominal_janji_bayar')
-                    ? str_replace(['.', ','], '', $request->nominal_janji_bayar)
-                    : 0,
+                        ? str_replace(['.', ','], '', $request->nominal_janji_bayar)
+                        : 0,
 
                 'foto_kunjungan' => json_encode($daftar_nama_foto),
 
@@ -549,6 +552,12 @@ class KunjunganController extends Controller
 
                 'created_at' => $this->resolveWaktuLaporan($request),
             ]);
+
+            ActivityLog::record(
+                'Simpan Laporan',
+                'Laporan kunjungan ' . $request->nama_nasabah . ' (' . $request->no_nasabah . ')'
+            );
+
 
             return response()->json([
                 'success' =>
@@ -609,6 +618,11 @@ class KunjunganController extends Controller
             'sisa_pokok'     => $nasabahMaster->sisa_pokok ?? 0,
         ]);
 
+        ActivityLog::record(
+            'Tambah Jadwal',
+            'Menambah jadwal ' . $request->nama_nasabah . ' (' . $request->no_angsuran . ')'
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Jadwal kunjungan berhasil Anda tambahkan!'
@@ -631,6 +645,8 @@ class KunjunganController extends Controller
                     ->where('id', $id)
                     ->delete();
             });
+
+            ActivityLog::record('Hapus Jadwal', 'Menghapus jadwal id ' . $id);
 
             return response()->json([
                 'success' => 'Data jadwal berhasil dihapus!'
@@ -683,6 +699,8 @@ class KunjunganController extends Controller
             $updateData['updated_at'] = now();
 
             \DB::table('kunjungans')->where('id', $id)->update($updateData);
+
+            ActivityLog::record('Ubah Laporan', 'Mengubah laporan kunjungan id ' . $id);
 
             return response()->json(['success' => true, 'message' => 'Laporan kunjungan berhasil diperbarui.']);
         } catch (\Exception $e) {

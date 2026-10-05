@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\karyawan;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -39,6 +40,8 @@ class PengaturanAdmController extends Controller
 
         $user->password = Hash::make($request->new_password);
         $user->save();
+
+        ActivityLog::record('Ubah Kata Sandi', 'Admin mengubah kata sandi akunnya');
 
         return response()->json([
             'success' => true, 

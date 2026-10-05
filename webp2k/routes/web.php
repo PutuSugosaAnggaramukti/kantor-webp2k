@@ -15,6 +15,7 @@ use App\Http\Controllers\karyawan\NasabahController;
 use App\Http\Controllers\karyawan\PelaporanController;
 use App\Http\Controllers\IjinKunjunganController;
 use App\Http\Controllers\karyawan\PengaturanAdmController;
+use App\Http\Controllers\ActivityLogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -106,6 +107,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/pengaturan', [PengaturanAdmController::class, 'index'])->name('admin.pengaturan.full');
     Route::get('/pengaturan-content', [PengaturanAdmController::class, 'index'])->name('admin.pengaturan');
     Route::post('/pengaturan/update-sandi', [PengaturanAdmController::class, 'updateSandi'])->name('admin.settings.sandi');
+
+    // 9. VIEWLOG (Aktivitas User)
+    Route::get('/viewlog', [ActivityLogController::class, 'index'])->name('admin.viewlog');
+    Route::get('/viewlog-content', [ActivityLogController::class, 'index']);
 });
 
 

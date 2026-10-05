@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\karyawan;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\DataKunjunganAdm;
 use App\Models\Kunjungan;
 use App\Models\Karyawan;
@@ -761,6 +762,11 @@ public function getDaftarNoAnggota(Request $request)
             'sisa_pokok'     => $nasabahMaster->sisa_pokok ?? 0,
         ]);
 
+        ActivityLog::record(
+            'Tambah Jadwal',
+            'Menambah jadwal ' . $request->nama_nasabah . ' (' . $request->no_angsuran . ')'
+        );
+
         return response()->json([
             'success' => true,
             'message' => 'Jadwal kunjungan berhasil ditambahkan!'
@@ -774,6 +780,7 @@ public function getDaftarNoAnggota(Request $request)
             $deleted = \DB::table('data_kunjungan_adms')->where('id', $id)->delete();
 
             if ($deleted) {
+                ActivityLog::record('Hapus Jadwal', 'Menghapus jadwal id ' . $id);
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Jadwal berhasil dihapus.'
@@ -897,6 +904,7 @@ public function getDaftarNoAnggota(Request $request)
             }
 
             DB::commit();
+            ActivityLog::record('Import Excel', 'Mengimport jadwal dari file Excel');
             return response()->json(['success' => true, 'message' => 'Import Berhasil dengan KOL dari kolom 36!']);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -938,6 +946,11 @@ public function getDaftarNoAnggota(Request $request)
                 }
             }
 
+            ActivityLog::record(
+                'Ubah Status',
+                'Mengubah status jadi "' . $request->status . '" untuk kunjungan id ' . $id
+            );
+
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json(['message' => $e->getMessage()], 500);
@@ -949,6 +962,8 @@ public function getDaftarNoAnggota(Request $request)
         $jadwal->kode_ao = $request->kode_ao_baru; // Misal dioper ke C-005
         $jadwal->save();
 
+        ActivityLog::record('Oper Jadwal', 'Mengoper jadwal id ' . $id . ' ke ' . $request->kode_ao_baru);
+
         return back()->with('success', 'Jadwal berhasil dioper ke AO lain.');
     }
 
@@ -957,6 +972,8 @@ public function getDaftarNoAnggota(Request $request)
         try {
             // Menggunakan truncate untuk mengosongkan tabel dan mereset ID auto_increment
             \DB::table('data_kunjungan_adms')->truncate();
+
+            ActivityLog::record('Reset Jadwal', 'Mengosongkan seluruh tabel jadwal');
 
             return response()->json([
                 'message' => 'Jadwal berhasil dikosongkan. Silakan buat jadwal baru.'
@@ -981,6 +998,8 @@ public function getDaftarNoAnggota(Request $request)
                 ->whereMonth('created_at', date('m'))
                 ->whereYear('created_at', date('Y'))
                 ->delete();
+
+            ActivityLog::record('Hapus Terpilih', 'Menghapus jadwal AO: ' . implode(', ', $kode_ao_list));
 
             return response()->json([
                 'success' => 'Jadwal dan History kunjungan AO berhasil dihapus. Rekap sudah sinkron.'
@@ -1055,6 +1074,12 @@ public function getDaftarNoAnggota(Request $request)
 
             \DB::table('kunjungans')->where('id', $id)->update($updateData);
 
+            ActivityLog::record(
+                'Ubah Laporan',
+                'Mengubah laporan kunjungan id ' . $id
+                    . ($kunjungan->nama_nasabah ? ' (' . $kunjungan->nama_nasabah . ')' : '')
+            );
+
             return response()->json(['success' => true, 'message' => 'Data kunjungan berhasil diperbarui.']);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
@@ -1067,12 +1092,14 @@ public function getDaftarNoAnggota(Request $request)
             $kunjungan = \DB::table('kunjungans')->where('id', $id)->first();
             if ($kunjungan) {
                 \DB::table('kunjungans')->where('id', $id)->delete();
+                ActivityLog::record('Hapus Laporan', 'Menghapus laporan kunjungan id ' . $id);
                 return response()->json(['success' => true, 'message' => 'Data kunjungan berhasil dihapus.']);
             }
 
             $jadwal = \DB::table('data_kunjungan_adms')->where('id', $id)->first();
             if ($jadwal) {
                 \DB::table('data_kunjungan_adms')->where('id', $id)->delete();
+                ActivityLog::record('Hapus Jadwal', 'Menghapus jadwal id ' . $id);
                 return response()->json(['success' => true, 'message' => 'Data jadwal berhasil dihapus.']);
             }
 

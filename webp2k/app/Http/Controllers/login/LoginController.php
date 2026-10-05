@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\login;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -37,6 +38,7 @@ class LoginController extends Controller
             RateLimiter::clear($throttleKey); // reset jika sukses
 
             $request->session()->regenerate();
+            ActivityLog::record('Login', 'Berhasil login sebagai Admin');
             return redirect()->intended('/admin/dashboard');
         }
 
@@ -48,16 +50,21 @@ class LoginController extends Controller
             RateLimiter::clear($throttleKey); 
 
             $request->session()->regenerate();
+            ActivityLog::record('Login', 'Berhasil login sebagai AO');
             return redirect()->intended('/user/dashboard');
         }
 
         RateLimiter::hit($throttleKey, 60);
+
+        ActivityLog::record('Login Gagal', 'Username salah atau password tidak cocok', $credentials['username'], 'Tamu');
 
         return back()->withInput()->with('error', 'Username atau password salah');
     }
 
     public function logout(Request $request)
     {
+        ActivityLog::record('Logout', 'Berhasil logout dari aplikasi');
+
         if (Auth::guard('karyawan')->check()) {
             Auth::guard('karyawan')->logout();
         } elseif (Auth::guard('web')->check()) {

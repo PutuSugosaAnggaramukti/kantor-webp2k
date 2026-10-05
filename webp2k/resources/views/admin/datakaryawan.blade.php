@@ -87,7 +87,15 @@
                 <i class="fa-solid fa-calendar-plus"></i> Input Jadwal Kunjungan
             </a>
 
-            {{-- 8. PENGATURAN ADMIN --}}
+            {{-- 8. VIEWLOG --}}
+            <a href="javascript:void(0)" 
+                onclick="loadAdminPage('viewlog', this)" 
+                class="nav-item {{ request()->is('admin/viewlog*') ? 'active' : '' }}" 
+                id="menu-viewlog">
+                <i class="fa-solid fa-clock-rotate-left"></i> Viewlog
+            </a>
+
+            {{-- 9. PENGATURAN ADMIN --}}
             <a href="javascript:void(0)" 
                 onclick="loadAdminPage('pengaturan', this)" 
                 class="nav-item {{ request()->is('admin/pengaturan*') ? 'active' : '' }}" 
@@ -239,6 +247,8 @@ document.addEventListener("DOMContentLoaded", function() {
         setActiveMenuOnly('menu-pelaporan');
     } else if (currentPath.includes('dokumen')) {
         setActiveMenuOnly('menu-dokumen');
+    } else if (currentPath.includes('viewlog')) {
+        setActiveMenuOnly('menu-viewlog');
     } else if (currentPath.includes('pengaturan')) {
         setActiveMenuOnly('menu-pengaturan');
         if (typeof window.loadAdminPage === 'function') {

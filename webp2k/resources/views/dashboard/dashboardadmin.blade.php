@@ -199,6 +199,10 @@
                             </span>
                         @endif
                     </a>
+                    <a href="javascript:void(0)" onclick="transitionToAdminPage('viewlog')" class="menu-item">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Viewlog</span>
+                    </a>
                     <a href="javascript:void(0)" onclick="transitionToAdminPage('pengaturan')" class="menu-item">
                         <i class="fa-solid fa-gear"></i>
                         <span>Pengaturan</span>
@@ -339,6 +343,7 @@
             'pelaporan': 'Memuat Laporan...',
             'dokumen': 'Memuat Dokumen...',
             'adm-kunjungan': 'Memuat Input Jadwal...',
+            'viewlog': 'Memuat Viewlog Aktivitas...',
             'pengaturan': 'Memuat Pengaturan...'
         };
 
@@ -350,6 +355,7 @@
             'pelaporan': "{{ route('pelaporan.index') }}",
             'dokumen': "{{ route('admin.dokumen.index') }}",
             'adm-kunjungan': "{{ route('admin.adm-kunjungan.index') }}",
+            'viewlog': "{{ route('admin.viewlog') }}",
             'pengaturan': "{{ route('admin.pengaturan') }}"
         };
 
