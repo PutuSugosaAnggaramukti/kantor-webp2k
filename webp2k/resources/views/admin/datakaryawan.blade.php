@@ -353,17 +353,21 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 
    function fetchPelaporan(keyword) {
-    // Kita pakai ID yang sudah kita buat di HTML tadi: isi-tabel-pelaporan
-    const container = $('#isi-tabel-pelaporan'); 
-    
+    // Wadah utama: #main-content-area (ikut konsisten dengan handler pagination)
+    const container = $('#main-content-area').length ? $('#main-content-area') : $('#isi-tabel-pelaporan');
+
     // Kasih efek loading di wadah tabelnya
     container.css('opacity', '0.5');
+
+    // Pertahankan filter bulan yang sedang dipilih
+    const plBulan = document.getElementById('pl-bulan');
 
     $.ajax({
         url: "/admin/pelaporan", 
         method: "GET",
         data: { 
             search: keyword,
+            bulan: plBulan ? plBulan.value : '',
             ajax: true 
         },
         success: function(data) {

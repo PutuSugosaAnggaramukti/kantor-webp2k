@@ -20,9 +20,7 @@
         style="padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; width: 250px;">
 </div>
 
-@if(!request()->ajax())
 <div id="isi-tabel-pelaporan">
-@endif
 
     {{-- TABEL 1: DAFTAR AO --}}
     <div style="margin-bottom: 15px;">
@@ -64,8 +62,16 @@
     <hr style="border: 1px solid #ccc; margin-bottom: 30px;">
 
     {{-- TABEL 2: REKAP NASABAH TERKUNJUNGI --}}
-    <div style="margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
         <h3 style="font-size: 18px; font-weight: 700; color: #333;">Daftar Nasabah Sudah Dikunjungi</h3>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="pl-bulan" style="font-size: 13px; font-weight: 600; color: #555;">
+                <i class="fa-solid fa-calendar-days" style="color: #3f36b1;"></i> Filter Bulan
+            </label>
+            <input type="month" id="pl-bulan" value="{{ $bulan }}"
+                title="Kosongkan untuk menampilkan semua bulan"
+                style="padding: 8px 10px; border: 1px solid #3f36b1; border-radius: 4px; font-size: 13px; font-weight: 600; background: #fff;">
+        </div>
     </div>
     <div class="table-responsive">
         <table style="width: 100%; border-collapse: collapse; border: 2px solid #000; background-color: #fff;">
@@ -124,7 +130,9 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" style="padding: 30px; text-align: center; color: #888;">Belum ada data nasabah yang berhasil dikunjungi.</td></tr>
+                <tr><td colspan="6" style="padding: 30px; text-align: center; color: #888;">
+                    {{ $bulan ? 'Belum ada nasabah yang dikunjungi pada bulan ' . \Carbon\Carbon::createFromFormat('Y-m', $bulan)->translatedFormat('F Y') . '.' : 'Belum ada data nasabah yang berhasil dikunjungi.' }}
+                </td></tr>
                 @endforelse
         </tbody>
     </table>
@@ -133,11 +141,9 @@
         {{ $nasabah_terkunjungi->links() }}
     </div>
 
-</div>
+</div>{{-- tutup .table-responsive --}}
 
-@if(!request()->ajax())
-</div>
-@endif
+</div>{{-- tutup #isi-tabel-pelaporan --}}
 
 <div id="modalDetailNasabah" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10000; align-items: center; justify-content: center; padding: 20px;">
     <div style="background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; flex-direction: column;">
@@ -154,6 +160,40 @@
 </div>
 
 <script>
+// Filter bulan "Daftar Nasabah Sudah Dikunjungi" (delegated, aman saat konten di-inject ulang)
+if (!window.__plBulanInit) {
+    window.__plBulanInit = true;
+
+    $(document).on('change', '#pl-bulan', function() {
+        const bulan = this.value || '';
+        const search = (document.getElementById('searchInput') || {}).value || '';
+        const container = $('#main-content-area');
+        if (!container.length) return;
+
+        container.css('opacity', '0.5');
+        $.ajax({
+            url: '/admin/pelaporan',
+            method: 'GET',
+            data: { bulan: bulan, search: search, ajax: true },
+            success: function(html) {
+                container.html(html).css('opacity', '1');
+
+                const params = new URLSearchParams();
+                params.set('bulan', bulan);
+                if (search) params.set('search', search);
+                const url = window.location.pathname + '?' + params.toString();
+                window.history.pushState(null, null, url);
+
+                $('html, body').animate({ scrollTop: Math.max(container.offset().top - 100, 0) }, 300);
+            },
+            error: function() {
+                container.css('opacity', '1');
+                console.error('Error filter bulan pelaporan');
+            }
+        });
+    });
+}
+
 function lihatDetailNasabah(noAngsuran, namaNasabah) {
     document.getElementById('detailNasabahTitle').textContent = 'Laporan Kunjungan — ' + namaNasabah;
     document.getElementById('detailNasabahBody').innerHTML = '<div style="text-align:center;padding:30px;color:#888;"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>';

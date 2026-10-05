@@ -18,6 +18,22 @@ class PelaporanController extends Controller
     {
         $keyword = $request->search;
 
+        // Filter bulan untuk tabel "Daftar Nasabah Sudah Dikunjungi"
+        // Default: bulan berjalan. Jika param 'bulan' ada tapi kosong -> tampilkan semua bulan.
+        $bulan = $request->has('bulan') ? trim((string) $request->query('bulan')) : date('Y-m');
+        if ($bulan !== '' && !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $bulan)) {
+            $bulan = date('Y-m');
+        }
+
+        $rangeBulan = null;
+        if ($bulan !== '') {
+            $awalBulan = \Carbon\Carbon::createFromFormat('Y-m-d', $bulan . '-01')->startOfMonth();
+            $rangeBulan = [
+                $awalBulan->toDateTimeString(),
+                $awalBulan->copy()->endOfMonth()->toDateTimeString(),
+            ];
+        }
+
         // 1. DAFTAR AO (Tabel Atas)
         // Hanya tampilkan AO yang SUDAH melapor di tabel 'kunjungans'
         $pelaporan_all = Karyawan::whereHas('realisasiKunjungan')
@@ -35,29 +51,35 @@ class PelaporanController extends Controller
         // 2. DAFTAR NASABAH (Tabel Bawah)
         // Nasabah hanya muncul jika ada datanya di tabel 'kunjungans'
         // Gunakan relasi baru 'laporanSelesai' (lihat poin 2 di bawah)
-       $nasabah_terkunjungi = Nasabah::whereHas('laporanSelesai', function($q) {
-            // Kita paksa query ini hanya melihat tabel kunjungans
+        // Filter bulan dipakai di whereHas DAN eager load supaya tanggal yang tampil ikut terfilter
+        $filterLaporan = function ($q) use ($rangeBulan) {
             $q->whereNotNull('no_nasabah');
-        })
+            if ($rangeBulan) {
+                $q->whereBetween('created_at', $rangeBulan);
+            }
+        };
+
+       $nasabah_terkunjungi = Nasabah::whereHas('laporanSelesai', $filterLaporan)
         ->when($keyword, function ($query) use ($keyword) {
             $query->where(function($q) use ($keyword) {
                 $q->where('nasabah', 'like', "%{$keyword}%")
                 ->orWhere('no_angsuran', 'like', "%{$keyword}%");
             });
         })
-        ->with(['laporanSelesai.karyawan']) 
+        ->with(['laporanSelesai' => $filterLaporan])
+        ->with(['laporanSelesai.karyawan'])
         ->orderBy('nasabah', 'asc')
         ->paginate(10)
         ->withQueryString();
 
         if ($request->ajax()) {
-            return view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
+            return view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi', 'bulan'))->render();
         }
 
         $dashboard = new \App\Http\Controllers\dashboard\DashboardAdminController();
         $data = $dashboard->getDashboardData();
 
-        $data['content'] = view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi'))->render();
+        $data['content'] = view('admin.partials.pelaporan', compact('pelaporan_all', 'nasabah_terkunjungi', 'bulan'))->render();
         $data['page'] = 'pelaporan';
         $data['title'] = 'Pelaporan Kunjungan';
 
