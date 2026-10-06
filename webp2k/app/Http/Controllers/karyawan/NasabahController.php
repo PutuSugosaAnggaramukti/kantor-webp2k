@@ -219,17 +219,32 @@ class NasabahController extends Controller
         $request->validate(['file' => 'required|mimes:xlsx,xls,csv']);
 
         try {
-            $labelBulan = date('F Y'); 
-            \App\Models\Nasabah::truncate(); 
+            $labelBulan = date('F Y');
+
+            // Hapus hanya data reguler (non-HB) supaya data HB tidak ikut hilang
+            // saat user meng-upload data reguler setelah import HB.
+            $jumlahHb = \App\Models\Nasabah::where('is_hb', 1)->count();
+            \App\Models\Nasabah::where('is_hb', 0)->delete();
+            \App\Imports\NasabahImport::$hbDilewati = 0;
 
             \Maatwebsite\Excel\Facades\Excel::import(
                 new \App\Imports\NasabahImport(null, $labelBulan), 
                 $request->file('file')
             );
-            
-            return redirect()->back()->with('success', 'Data Berhasil Diimport!');
+
+            $pesan = 'Data Berhasil Diimport!';
+            if ($jumlahHb > 0) {
+                $pesan .= " ({$jumlahHb} nasabah HB dipertahankan";
+                if (\App\Imports\NasabahImport::$hbDilewati > 0) {
+                    $pesan .= ', ' . \App\Imports\NasabahImport::$hbDilewati
+                        . ' baris di file dilewati karena sudah data HB';
+                }
+                $pesan .= ')';
+            }
+
+            return redirect()->back()->with('success', $pesan);
         } catch (\Exception $e) {
-            return "Error: " . $e->getMessage(); 
+            return back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
     }
 

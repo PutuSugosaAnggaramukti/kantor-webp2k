@@ -12,6 +12,9 @@ class NasabahImport implements ToModel, WithMultipleSheets
     private $currentKol;
     private $labelBulan;
 
+    /** Jumlah baris file yang dilewati karena no_angsuran-nya sudah terdaftar sebagai HB */
+    public static int $hbDilewati = 0;
+
     public function __construct($kol = '1', $bulan = null)
     {
         $this->currentKol = $kol;
@@ -36,6 +39,13 @@ class NasabahImport implements ToModel, WithMultipleSheets
 
         // VALIDASI: Lewati jika bukan baris data nasabah
         if (!$noAngsuran || $noAngsuran == 'No.Ang' || !is_numeric($noAngsuran)) {
+            return null;
+        }
+
+        // Nasabah HB tidak boleh diubah oleh import data reguler
+        // (supaya aman baik import Data->HB maupun HB->Data)
+        if (Nasabah::where('no_angsuran', (string) $noAngsuran)->where('is_hb', 1)->exists()) {
+            self::$hbDilewati++;
             return null;
         }
 

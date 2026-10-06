@@ -428,7 +428,8 @@
                         • Kolom A: No_Angsuran<br>
                         • Kolom B: Nama Nasabah<br>
                         • Kolom C: Alamat<br>
-                        • Kolom D: KOL (1-4)
+                        • Kolom D: KOL (1-4)<br>
+                        <b style="color: #3b82f6;">• Data nasabah HB tidak dihapus / tidak ikut terganti</b>
                     </small>
                 </div>
             </div>
