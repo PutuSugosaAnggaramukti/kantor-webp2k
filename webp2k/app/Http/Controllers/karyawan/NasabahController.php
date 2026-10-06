@@ -256,10 +256,22 @@ class NasabahController extends Controller
         ]);
 
         try {
+            // 1) Perbaiki data HB lama yang kolomnya bergeser (ada kolom ID di file)
+            $diperbaiki = $this->perbaikiHbGeser();
+
+            // 2) Import file terbaru
             $import = new NasabahHBImport;
+            \App\Imports\NasabahHBImport::$barisGeser = 0;
             Excel::import($import, $request->file('file_excel'));
 
             $pesan = 'Data Nasabah HB berhasil diimport!';
+            if (\App\Imports\NasabahHBImport::$barisGeser > 0) {
+                $pesan .= ' ' . \App\Imports\NasabahHBImport::$barisGeser
+                    . ' baris terdeteksi ada kolom ID di depan, sudah digeser otomatis.';
+            }
+            if ($diperbaiki > 0) {
+                $pesan .= " {$diperbaiki} data HB lama yang kolomnya bergeser sudah diperbaiki.";
+            }
             if (!empty($import->kodeAoTidakDikenal)) {
                 $pesan .= ' Kode AO belum terdaftar di data karyawan: '
                     . implode(', ', $import->kodeAoTidakDikenal)
@@ -271,6 +283,65 @@ class NasabahController extends Controller
             // Ini akan memunculkan pesan error spesifik jika ada kolom yang salah
             return back()->with('error', 'Gagal import: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Perbaiki baris HB hasil import lama yang bergeser 1 kolom karena file
+     * punya kolom ID di paling kiri. Ciri: nama nasabah berupa angka murni
+     * (padahal tidak mungkin) dan no. angsuran berisi kode (berhuruf).
+     */
+    private function perbaikiHbGeser(): int
+    {
+        $korup = \App\Models\Nasabah::where('is_hb', 1)
+            ->where('nasabah', 'REGEXP', '^[0-9]+$')
+            ->where('no_angsuran', 'NOT REGEXP', '^[0-9]+$')
+            ->get();
+
+        $diperbaiki = 0;
+
+        foreach ($korup as $r) {
+            $kunciBaru = trim($r->nasabah);   // no. angsuran asli (tersimpan di kolom nasabah)
+            $kodeAsli  = trim($r->no_angsuran); // kode asli (tersimpan di kolom no_angsuran)
+
+            // Nama asli tersimpan di kolom alamat, kadang masih menyatu "NAMA/ALAMAT"
+            $namaBaru   = trim((string) $r->alamat);
+            $alamatBaru = '-';
+            if ($namaBaru !== '' && strpos($namaBaru, '/') !== false) {
+                $bagi      = explode('/', $namaBaru, 2);
+                $namaBaru  = trim($bagi[0]);
+                $alamatBaru = trim($bagi[1]) ?: '-';
+            }
+            if ($namaBaru === '' || $namaBaru === '-' || preg_match('/^[0-9]+$/', $namaBaru)) {
+                $namaBaru = '-';
+            }
+
+            // Plafon & Baki Debet ikut bergeser satu kolom
+            $plafonBaru = (float) $r->bakidebet;
+            $bakiBaru   = is_numeric($r->kode_ao_nasabah) ? (float) $r->kode_ao_nasabah : 0.0;
+            if ($bakiBaru <= 0) $bakiBaru = $plafonBaru;
+
+            // Tabrakan kunci: buang baris lama, biar import berikutnya menulis ulang
+            if (\App\Models\Nasabah::where('no_angsuran', $kunciBaru)->exists()) {
+                $r->delete();
+                $diperbaiki++;
+                continue;
+            }
+
+            \App\Models\Nasabah::where('no_angsuran', $r->no_angsuran)->update([
+                'no_angsuran'     => $kunciBaru,
+                'kode'            => $kodeAsli,
+                'nasabah'         => $namaBaru,
+                'alamat'          => $alamatBaru,
+                'nominal'         => $plafonBaru,
+                'sisa_pokok'      => $bakiBaru,
+                'bakidebet'       => $bakiBaru,
+                'kode_ao_nasabah' => null, // kolom asli tidak ikut tersimpan, nanti terisi dari file
+            ]);
+
+            $diperbaiki++;
+        }
+
+        return $diperbaiki;
     }
 
   public function exportExcel(Request $request)
