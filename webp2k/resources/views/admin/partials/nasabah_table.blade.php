@@ -67,6 +67,41 @@
 </div>
 
 <div id="main-content-area" style="border: 2px solid #000; background: #fff; padding: 0px; border-radius: 0 0 10px 10px; overflow: hidden; transition: opacity 0.3s;">
+   @if($activeTab === 'hb')
+   {{-- TAB HB: kolom ringkas --}}
+   <div class="table-responsive" style="overflow-x: auto;">
+        <table class="table table-bordered table-hover" style="min-width: 1300px; font-size: 12px;">
+           <thead class="bg-light text-center">
+                <tr>
+                    <th style="width: 80px;">Kode</th>
+                    <th style="width: 120px;">No. Ang</th>
+                    <th style="min-width: 230px;">Nama</th>
+                    <th style="min-width: 300px;">Alamat</th>
+                    <th style="width: 150px;">Plafon Kredit</th>
+                    <th style="width: 150px;">Baki Debet</th>
+                    <th style="width: 100px;">Kode AO</th>
+                    <th style="min-width: 170px;">AO</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($nasabah_all as $row)
+                <tr>
+                    <td class="text-center">{{ $row->kode ?? '-' }}</td>
+                    <td>{{ $row->no_angsuran }}</td>
+                    <td style="text-transform: uppercase;">{{ $row->nasabah }}</td>
+                    <td><small>{{ $row->alamat }}</small></td>
+                    <td class="text-end">{{ number_format($row->nominal, 0, ',', '.') }}</td>
+                    <td class="text-end"><strong>{{ number_format($row->bakidebet, 0, ',', '.') }}</strong></td>
+                    <td class="text-center">{{ $row->kode_ao_nasabah ?? '-' }}</td>
+                    <td>{{ optional($row->ao)->nama ?? '-' }}</td>
+                </tr>
+                @empty
+                <tr><td colspan="8" style="padding: 30px; text-align: center; color: #888;">Tidak ada data nasabah HB.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+   @else
    <div class="table-responsive" style="overflow-x: auto;">
         <table class="table table-bordered table-hover" style="min-width: 2000px; font-size: 12px;">
            <thead class="bg-light text-center">
@@ -131,6 +166,7 @@
             </tbody>
         </table>
     </div>
+   @endif
 
     <div class="pagination-wrapper" style="padding: 15px; border-top: 2px solid #000;">
         {{ $nasabah_all->links() }}

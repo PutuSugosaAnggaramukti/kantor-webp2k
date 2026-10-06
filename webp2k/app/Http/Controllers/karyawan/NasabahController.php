@@ -24,7 +24,7 @@ class NasabahController extends Controller
 
     // 1. Logika Filter Tab
     if ($activeTab === 'hb') {
-        $query->where('is_hb', 1);
+        $query->where('is_hb', 1)->with('ao');
     } else {
         // Pastikan data yang muncul bukan data HB
         $targetKol = in_array($activeTab, ['1', '2', '3', '4', '5']) ? $activeTab : '1';

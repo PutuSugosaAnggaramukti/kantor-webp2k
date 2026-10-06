@@ -52,6 +52,12 @@ class Nasabah extends Model
         return $this->belongsTo(Karyawan::class, 'kode_ao', 'kode_ao');
     }
 
+    // Relasi AO: kode AO nasabah disimpan di kolom kode_ao_nasabah
+    public function ao()
+    {
+        return $this->belongsTo(Karyawan::class, 'kode_ao_nasabah', 'kode_ao');
+    }
+
     // Relasi ke tabel kunjungan (DataKunjunganAdm)
    public function kunjungan()
     {
