@@ -36,6 +36,7 @@ class Nasabah extends Model
         'denda',
         'bakidebet',
         'kol',
+        'is_hb',
         'bulan'
     ];
 

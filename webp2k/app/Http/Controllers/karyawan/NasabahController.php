@@ -241,8 +241,17 @@ class NasabahController extends Controller
         ]);
 
         try {
-            Excel::import(new NasabahHBImport, $request->file('file_excel'));
-            return back()->with('success', 'Data Nasabah HB berhasil diimport!');
+            $import = new NasabahHBImport;
+            Excel::import($import, $request->file('file_excel'));
+
+            $pesan = 'Data Nasabah HB berhasil diimport!';
+            if (!empty($import->kodeAoTidakDikenal)) {
+                $pesan .= ' Kode AO belum terdaftar di data karyawan: '
+                    . implode(', ', $import->kodeAoTidakDikenal)
+                    . ' (kolom AO tampil "-").';
+            }
+
+            return back()->with('success', $pesan);
         } catch (\Exception $e) {
             // Ini akan memunculkan pesan error spesifik jika ada kolom yang salah
             return back()->with('error', 'Gagal import: ' . $e->getMessage());

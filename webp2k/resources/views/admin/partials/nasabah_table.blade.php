@@ -7,6 +7,18 @@
     </p>
 </div>
 
+@if(session('success'))
+<div style="margin-bottom: 15px; padding: 12px 15px; background: #e9f7ef; border: 1px solid #28a745; border-left: 5px solid #28a745; border-radius: 8px; font-size: 13px; font-weight: 600; color: #146c43;">
+    <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
+</div>
+@endif
+
+@if(session('error'))
+<div style="margin-bottom: 15px; padding: 12px 15px; background: #fdf2f2; border: 1px solid #dc3545; border-left: 5px solid #dc3545; border-radius: 8px; font-size: 13px; font-weight: 600; color: #842029;">
+    <i class="fa-solid fa-circle-exclamation"></i> {{ session('error') }}
+</div>
+@endif
+
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
         <button onclick="openModalExportNasabah()" style="background-color: #4CAF50; color: white; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 700; display: flex; align-items: center; cursor: pointer; font-size: 13px;">

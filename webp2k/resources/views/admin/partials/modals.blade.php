@@ -571,12 +571,16 @@
                 </div>
                 
                 <div style="margin-top: 15px; background: #f8f9fa; padding: 12px; border-radius: 10px; border-left: 4px solid #d9534f;">
-                    <small style="display: block; font-weight: 800; color: #333; margin-bottom: 4px;">Aturan Kolom Excel:</small>
+                    <small style="display: block; font-weight: 800; color: #333; margin-bottom: 4px;">Aturan Kolom Excel (baris 1 = judul):</small>
                     <small style="display: block; color: #555; font-size: 11px; line-height: 1.5;">
-                        • Kolom A: No. Angsuran<br>
-                        • Kolom B: Nama Nasabah<br>
-                        • Kolom C: Alamat<br>
-                        • Kolom D: Nominal (Akan tersimpan sebagai status HB)
+                        • Kolom A: Kode<br>
+                        • Kolom B: No. Angsuran<br>
+                        • Kolom C: Nama Nasabah<br>
+                        • Kolom D: Alamat<br>
+                        • Kolom E: Plafon Kredit<br>
+                        • Kolom F: Baki Debet<br>
+                        • Kolom G: Kode AO<br>
+                        • Kolom H: AO (opsional, terisi otomatis dari data karyawan)
                     </small>
                 </div>
             </div>
