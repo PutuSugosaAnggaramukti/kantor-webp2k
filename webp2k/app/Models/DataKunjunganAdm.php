@@ -22,6 +22,7 @@ class DataKunjunganAdm extends Model
         'no_angsuran',
         'kode_nasabah',
         'karyawan_id',
+        'is_hb',
     ];
 
     protected $casts = [
