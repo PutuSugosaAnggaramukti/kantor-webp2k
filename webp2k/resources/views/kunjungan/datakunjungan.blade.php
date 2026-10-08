@@ -977,7 +977,18 @@
                     let data;
                     try { data = JSON.parse(text); } catch(e) { data = null; }
                     if (!response.ok && !data) {
-                        Swal.fire('Error', 'Server mengembalikan error (HTTP ' + response.status + '). Muat ulang halaman dan coba lagi.', 'error');
+                        // Ambil potongan isi respons supaya kelihatan asal errornya
+                        // (contoh: halaman error bawaan nginx vs error Laravel)
+                        const snippet = (text || '').replace(/<[^>]+>/g, ' ')
+                            .replace(/\s+/g, ' ').trim().slice(0, 160);
+                        let msg = 'Server mengembalikan error (HTTP ' + response.status + ').';
+                        if (response.status >= 500) {
+                            msg = 'Server menolak unggahan (HTTP ' + response.status + '). '
+                                + 'Ini masalah konfigurasi server (nginx), bukan data Anda.';
+                        }
+                        if (snippet) msg += ' Detail server: ' + snippet;
+                        msg += ' Coba lagi nanti atau laporkan ke pengelola sistem.';
+                        Swal.fire('Error', msg, 'error');
                         if (btn) { btn.disabled = false; btn.innerHTML = 'Ya, Simpan!'; }
                         return;
                     }
