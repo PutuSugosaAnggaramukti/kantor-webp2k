@@ -494,6 +494,23 @@ class KunjunganController extends Controller
             $koordinatAkhir = $exifKoordinat ?: $browserKoordinat;
 
             // =========================
+            // ANTI-DOUBLE SUBMIT
+            // =========================
+            // Kalau koneksi sempat terputus lalu browser kirim ulang (retry),
+            // laporan dengan jadwal_id yang sama TIDAK boleh masuk dua kali.
+            if ($request->filled('jadwal_id')) {
+                $sudahAda = \DB::table('kunjungans')
+                    ->where('jadwal_id', $request->jadwal_id)
+                    ->exists();
+
+                if ($sudahAda) {
+                    return response()->json([
+                        'success' => 'Laporan untuk jadwal ini sudah tercatat sebelumnya.'
+                    ]);
+                }
+            }
+
+            // =========================
             // PROSES BUKTI TRANSFER
             // =========================
             $nama_bukti_transfer = null;

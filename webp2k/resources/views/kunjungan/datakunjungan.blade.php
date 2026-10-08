@@ -880,10 +880,10 @@
                 return;
             }
 
-            const MAX_SIZE = 2 * 1024 * 1024;
-            const MAX_WIDTH = 2048;
-            const MAX_HEIGHT = 2048;
-            const QUALITY = 0.8;
+            const MAX_SIZE = 1.5 * 1024 * 1024;
+            const MAX_WIDTH = 1920;
+            const MAX_HEIGHT = 1920;
+            const QUALITY = 0.75;
             const files = Array.from(fileInput.files);
             const compressed = [];
             let processed = 0;
@@ -962,7 +962,7 @@
         if (e.persisted) pingSesi();
     });
 
-    function submitKunjungan(form, formData, btn) {
+    function submitKunjungan(form, formData, btn, attempt = 0) {
             fetch(form.action, {
                 method: 'POST',
                 body: formData,
@@ -978,8 +978,7 @@
                     try { data = JSON.parse(text); } catch(e) { data = null; }
                     if (!response.ok && !data) {
                         Swal.fire('Error', 'Server mengembalikan error (HTTP ' + response.status + '). Muat ulang halaman dan coba lagi.', 'error');
-                        btn.disabled = false;
-                        btn.innerHTML = 'Ya, Simpan!';
+                        if (btn) { btn.disabled = false; btn.innerHTML = 'Ya, Simpan!'; }
                         return;
                     }
                     if (data) {
@@ -987,8 +986,7 @@
                             Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.success, timer: 2000, showConfirmButton: false })
                             .then(() => { closeModal(); location.reload(); });
                         } else {
-                            btn.disabled = false;
-                            btn.innerHTML = 'Ya, Simpan!';
+                            if (btn) { btn.disabled = false; btn.innerHTML = 'Ya, Simpan!'; }
                             let msg = data.error || data.message || 'Terjadi kesalahan saat menyimpan.';
                             if (data.errors) msg = Object.values(data.errors).flat().join('<br>');
                             Swal.fire({ icon: 'error', title: 'Gagal!', html: msg });
@@ -997,11 +995,19 @@
                 });
             })
             .catch(error => {
-                btn.disabled = false;
-                btn.innerHTML = 'Ya, Simpan!';
                 console.error('Error:', error);
-                let detailMsg = 'Gagal terhubung ke server. Coba periksa koneksi internet atau muat ulang halaman.';
-                if (error.message) detailMsg = 'Terjadi kesalahan: ' + error.message;
+
+                // "Failed to fetch" = koneksi terputus (unggahan lambat / sinyal).
+                // Coba kirim ulang SATU KALI; server anti-duplikat via jadwal_id.
+                if (attempt === 0) {
+                    try { Swal.update({ html: 'Koneksi terputus. Mengirim ulang otomatis (1x)...' }); } catch (e) {}
+                    setTimeout(() => submitKunjungan(form, formData, btn, 1), 3000);
+                    return;
+                }
+
+                if (btn) { btn.disabled = false; btn.innerHTML = 'Ya, Simpan!'; }
+                let detailMsg = 'Koneksi ke server terputus saat mengirim. Periksa sinyal internet lalu tekan Simpan lagi.';
+                if (error.message) detailMsg = 'Terjadi kesalahan: ' + error.message + '. Coba kirim ulang, atau periksa koneksi internet Anda.';
                 Swal.fire('Error', detailMsg, 'error');
             });
     }
@@ -1067,41 +1073,8 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
     });
 
     compressImages(formManual).then(formData => {
-    fetch(formManual.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        }
-    })
-    .then(response => {
-        if (response.status === 401) { handleAuthError(); return; }
-        return response.text().then(text => {
-            let data;
-            try { data = JSON.parse(text); } catch(e) { data = null; }
-            if (!response.ok && !data) {
-                Swal.fire('Error', 'Server mengembalikan error (HTTP ' + response.status + '). Muat ulang halaman dan coba lagi.', 'error');
-                return;
-            }
-            if (data) {
-                if (data.success) {
-                    Swal.fire({ icon: 'success', title: 'Berhasil!', text: data.success, timer: 2000, showConfirmButton: false })
-                    .then(() => { closeModal(); location.reload(); });
-                } else {
-                    let msg = data.error || data.message || 'Terjadi kesalahan sistem.';
-                    if (data.errors) msg = Object.values(data.errors).flat().join('<br>');
-                    Swal.fire({ icon: 'error', title: 'Gagal Simpan', html: msg });
-                }
-            }
-        });
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        let detailMsg = 'Gagal terhubung ke server. Coba periksa koneksi internet atau muat ulang halaman.';
-        if (error.message) detailMsg = 'Terjadi kesalahan: ' + error.message;
-        Swal.fire('Error', detailMsg, 'error');
-    });
+        // Pakai jalur yang sama dengan form jadwal: ada retry 1x bila koneksi putus
+        submitKunjungan(formManual, formData, null);
     });
     });
 });
