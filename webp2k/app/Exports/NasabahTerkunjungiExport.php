@@ -14,7 +14,10 @@ class NasabahTerkunjungiExport implements FromView, ShouldAutoSize
         $nasabah_terkunjungi = Nasabah::whereHas('laporanSelesai', function($q) {
             $q->whereNotNull('no_nasabah');
         })
-        ->with(['laporanSelesai.karyawan'])
+        ->with(['laporanSelesai' => function ($q) {
+            // Urutkan laporan per nasabah: tanggal terlama di atas
+            $q->orderBy('created_at', 'asc');
+        }, 'laporanSelesai.karyawan'])
         ->orderBy('nasabah', 'asc')
         ->get();
 

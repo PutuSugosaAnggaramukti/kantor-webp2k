@@ -56,7 +56,8 @@ class PelaporanExport implements FromView, ShouldAutoSize, WithStyles
             $first = $items->first();
 
             // Gabungkan semua catatan dengan tanggal
-            $catatanList = $items->map(function ($item) {
+            // Diurutkan dari tanggal TERLAMA di atas sampai terbaru di bawah
+            $catatanList = $items->sortBy('created_at')->map(function ($item) {
                 $tanggal = \Carbon\Carbon::parse($item->created_at)->locale('id')->translatedFormat('d F Y');
                 $catatan = $item->catatan ?? '-';
                 return "Tanggal {$tanggal} {$catatan}";
