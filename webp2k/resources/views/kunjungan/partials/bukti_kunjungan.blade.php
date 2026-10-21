@@ -296,13 +296,19 @@
                 </div>
             </div>
 
-           {{-- 4. Status Janji Bayar (Hanya Muncul Jika Ada Tanggal Janji) --}}
-                @if($detail->tgl_janji_bayar)
+           {{-- 4. Status Janji Bayar (Muncul Jika Ada Tanggal MAUPUN Nominal) --}}
+                @if($detail->tgl_janji_bayar || $nominalTampil > 0)
                 <div class="detail-section" style="background: #fff9db; border-color: #ffe066;">
                     <span class="section-label" style="color: #856404;"><i class="fa-solid fa-calendar-check"></i> Janji Bayar Nasabah</span>
+                    @if($detail->tgl_janji_bayar)
                     <p class="section-value" style="color: #e67e22; margin-bottom: 5px;">
                         {{ \Carbon\Carbon::parse($detail->tgl_janji_bayar)->translatedFormat('d F Y') }}
                     </p>
+                    @else
+                    <p class="section-value" style="color: #9e7e1a; margin-bottom: 5px; font-size: 13px; font-style: italic;">
+                        Tanggal janji tidak ditentukan
+                    </p>
+                    @endif
 
                     {{-- Tampilkan Nominal Kesanggupan (Hasil Olahan Logika di Atas) --}}
                     <div style="border-top: 1px dashed #ffe066; margin-top: 10px; padding-top: 8px;">
