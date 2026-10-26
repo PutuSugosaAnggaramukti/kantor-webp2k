@@ -306,7 +306,7 @@
                     </p>
                     @else
                     <p class="section-value" style="color: #9e7e1a; margin-bottom: 5px; font-size: 13px; font-style: italic;">
-                        Tanggal janji tidak ditentukan
+                        Belum dapat dipastikan
                     </p>
                     @endif
 
