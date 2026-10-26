@@ -80,37 +80,6 @@
                     </div>
                 </div>
 
-                {{-- DAFTAR NASABAH SUDAH BAYAR (real-time, data baru ditandai BARU) --}}
-                <div style="margin-top: 2rem; background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
-                        <h4 style="margin: 0; font-size: 1.05rem;">
-                            Daftar Nasabah Sudah Bayar
-                            <small style="font-size: 0.65rem; color: #999; font-weight: normal;">(berdasarkan Bukti Pembayaran, 200 data terbaru)</small>
-                            <span id="sbBadgeCount" style="display: none; margin-left: 6px; background: #16a34a; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; vertical-align: middle;"></span>
-                        </h4>
-                        <button type="button" onclick="tandaiSudahBayarDilihat()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                            <i class="fa-solid fa-check-double"></i> Tandai sudah dilihat
-                        </button>
-                    </div>
-
-                    <div style="overflow-x: auto;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                            <thead>
-                                <tr style="background: #f4f4f4;">
-                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Tgl Laporan</th>
-                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Kode AO</th>
-                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">AO</th>
-                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">No. Angsuran</th>
-                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Nasabah</th>
-                                    <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Bukti</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sbTbody"></tbody>
-                        </table>
-                    </div>
-                    <div id="sbPager" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 14px; font-size: 13px;"></div>
-                </div>
-
                 {{-- RIWAYAT STATISTIK BULANAN (arsip bulan lalu, bisa di-download) --}}
                 <div style="margin-top: 2rem; background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
@@ -156,6 +125,37 @@
                             </table>
                         </div>
                     @endif
+                </div>
+
+                {{-- DAFTAR NASABAH SUDAH BAYAR (real-time, data baru ditandai BARU) --}}
+                <div style="margin-top: 2rem; background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+                        <h4 style="margin: 0; font-size: 1.05rem;">
+                            Daftar Nasabah Sudah Bayar
+                            <small style="font-size: 0.65rem; color: #999; font-weight: normal;">(berdasarkan Bukti Pembayaran, 200 data terbaru)</small>
+                            <span id="sbBadgeCount" style="display: none; margin-left: 6px; background: #16a34a; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; vertical-align: middle;"></span>
+                        </h4>
+                        <button type="button" onclick="tandaiSudahBayarDilihat()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                            <i class="fa-solid fa-check-double"></i> Tandai sudah dilihat
+                        </button>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #f4f4f4;">
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Tgl Laporan</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Kode AO</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">AO</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">No. Angsuran</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Nasabah</th>
+                                    <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Bukti</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sbTbody"></tbody>
+                        </table>
+                    </div>
+                    <div id="sbPager" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 14px; font-size: 13px;"></div>
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; margin-bottom: 1.5rem;">
