@@ -152,22 +152,7 @@ class DashboardAdminController extends Controller
         ->count() : 0;
 
     // --- DAFTAR NASABAH SUDAH BAYAR (laporan yang punya bukti pembayaran) ---
-    $list_sudah_bayar = \DB::table('kunjungans')
-        ->leftJoin('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
-        ->whereNotNull('kunjungans.bukti_transfer')
-        ->where('kunjungans.bukti_transfer', '!=', '')
-        ->orderBy('kunjungans.created_at', 'desc')
-        ->select(
-            'kunjungans.id',
-            'kunjungans.no_nasabah',
-            'kunjungans.nama_nasabah',
-            'kunjungans.kode_ao',
-            'kunjungans.created_at',
-            'kunjungans.bukti_transfer',
-            'karyawans.nama as nama_ao'
-        )
-        ->limit(200)
-        ->get();
+    $list_sudah_bayar = $this->queryListSudahBayar();
 
     // --- LOGIKA PERFORMA AO (INDIVIDU) ---
     [$tahunAktif, $bulanAngkaAktif] = explode('-', $bulanAktif);
@@ -372,6 +357,47 @@ class DashboardAdminController extends Controller
         'daftarBulan' => $daftarBulan,
     ];
 }
+
+    /**
+     * Daftar nasabah yang sudah bayar = laporan kunjungan yang punya bukti pembayaran.
+     * Dipakai oleh dashboard (render awal) dan endpoint JSON (polling real-time).
+     */
+    private function queryListSudahBayar()
+    {
+        return \DB::table('kunjungans')
+            ->leftJoin('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
+            ->whereNotNull('kunjungans.bukti_transfer')
+            ->where('kunjungans.bukti_transfer', '!=', '')
+            ->orderBy('kunjungans.id', 'desc')
+            ->select(
+                'kunjungans.id',
+                'kunjungans.no_nasabah',
+                'kunjungans.nama_nasabah',
+                'kunjungans.kode_ao',
+                'kunjungans.created_at',
+                'kunjungans.bukti_transfer',
+                'karyawans.nama as nama_ao'
+            )
+            ->limit(200)
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id'           => (int) $r->id,
+                    'tgl'          => $r->created_at ? \Carbon\Carbon::parse($r->created_at)->format('d/m/Y H:i') : '-',
+                    'kode_ao'      => $r->kode_ao,
+                    'nama_ao'      => $r->nama_ao ?? '-',
+                    'no_nasabah'   => $r->no_nasabah,
+                    'nama_nasabah' => $r->nama_nasabah,
+                    'bukti_url'    => asset('uploads/kunjungan/' . $r->bukti_transfer),
+                ];
+            })
+            ->values();
+    }
+
+    public function listSudahBayarJson()
+    {
+        return response()->json(['rows' => $this->queryListSudahBayar()]);
+    }
 
     public function hitungStatistikBulan($bulan)
     {

@@ -33,6 +33,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('/dashboard-detail/{type}', [DashboardAdminController::class, 'getDetail'])->name('admin.dashboard.detail');
     Route::get('/dashboard-stats', [DashboardAdminController::class, 'statsJson'])->name('admin.dashboard.stats');
+    Route::get('/dashboard-sudah-bayar', [DashboardAdminController::class, 'listSudahBayarJson'])->name('admin.dashboard.sudah-bayar');
     Route::get('/dashboard-performa/{bulan}', [DashboardAdminController::class, 'getPerformaBulan'])->name('admin.dashboard.performa');
     Route::get('/statistik-bulanan/export/{bulan?}', [DashboardAdminController::class, 'exportStatistikBulanan'])->name('admin.statistik-bulanan.export');
     Route::post('/admin/mark-ijin-as-read', [DashboardAdminController::class, 'markAsRead'])->name('admin.ijin.markAsRead');

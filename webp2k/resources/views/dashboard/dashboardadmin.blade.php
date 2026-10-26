@@ -80,6 +80,36 @@
                     </div>
                 </div>
 
+                {{-- DAFTAR NASABAH SUDAH BAYAR (real-time, data baru ditandai BARU) --}}
+                <div style="margin-top: 2rem; background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+                        <h4 style="margin: 0; font-size: 1.05rem;">
+                            Daftar Nasabah Sudah Bayar
+                            <small style="font-size: 0.65rem; color: #999; font-weight: normal;">(berdasarkan Bukti Pembayaran, 200 data terbaru)</small>
+                            <span id="sbBadgeCount" style="display: none; margin-left: 6px; background: #16a34a; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; vertical-align: middle;"></span>
+                        </h4>
+                        <button type="button" onclick="tandaiSudahBayarDilihat()" style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                            <i class="fa-solid fa-check-double"></i> Tandai sudah dilihat
+                        </button>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #f4f4f4;">
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Tgl Laporan</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Kode AO</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">AO</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">No. Angsuran</th>
+                                    <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Nasabah</th>
+                                    <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Bukti</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sbTbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 {{-- RIWAYAT STATISTIK BULANAN (arsip bulan lalu, bisa di-download) --}}
                 <div style="margin-top: 2rem; background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 10px rgba(0,0,0,0.06);">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
@@ -157,41 +187,6 @@
                     <canvas id="myChart"></canvas>
                 </div>
 
-                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Daftar Nasabah Sudah Bayar <small style="font-size: 0.65rem; color: #999;">(berdasarkan Bukti Pembayaran, {{ $list_sudah_bayar->count() }} data terbaru)</small></h3>
-                <div style="background: white; padding: 20px; border-radius: 12px; overflow-x: auto; margin-bottom: 1.5rem;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                        <thead>
-                            <tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #000;">
-                                <th style="padding: 10px; border: 1px solid #ddd;">Tgl Laporan</th>
-                                <th style="padding: 10px; border: 1px solid #ddd;">Kode AO</th>
-                                <th style="padding: 10px; border: 1px solid #ddd;">AO</th>
-                                <th style="padding: 10px; border: 1px solid #ddd;">No. Angsuran</th>
-                                <th style="padding: 10px; border: 1px solid #ddd;">Nasabah</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Bukti</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($list_sudah_bayar as $bayar)
-                            <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 10px; border: 1px solid #eee;">{{ \Carbon\Carbon::parse($bayar->created_at)->format('d/m/Y H:i') }}</td>
-                                <td style="padding: 10px; border: 1px solid #eee;">{{ $bayar->kode_ao }}</td>
-                                <td style="padding: 10px; border: 1px solid #eee;">{{ $bayar->nama_ao ?? '-' }}</td>
-                                <td style="padding: 10px; border: 1px solid #eee;">{{ $bayar->no_nasabah }}</td>
-                                <td style="padding: 10px; border: 1px solid #eee; font-weight: 600;">{{ $bayar->nama_nasabah }}</td>
-                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">
-                                    <a href="{{ asset('uploads/kunjungan/' . $bayar->bukti_transfer) }}" target="_blank" style="color: #4e4bc1; font-weight: 600;">
-                                        <i class="fa-solid fa-receipt"></i> Lihat
-                                    </a>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="6" style="padding: 20px; text-align: center; color: #999;">Belum ada nasabah yang membayar.</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
 
                 <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
                 
@@ -863,6 +858,109 @@ function refreshStatistikKinerja() {
 
 // Jalankan sekali saat halaman dibuka, lalu ulangi tiap 15 detik
 setInterval(refreshStatistikKinerja, 15000);
+
+// --- DAFTAR NASABAH SUDAH BAYAR (real-time) ---
+const SB_URL = "{{ route('admin.dashboard.sudah-bayar') }}";
+const SB_KEY = 'sudahBayarLastSeenId';
+let sbRows = @json($list_sudah_bayar);
+
+function sbMaxId(rows) {
+    return rows.reduce((m, r) => Math.max(m, Number(r.id)), 0);
+}
+
+// ID terakhir yang sudah dilihat admin (disimpan per browser).
+// Pertama kali dibuka: anggap semua data yang ada sudah dilihat.
+function sbLastSeen() {
+    let v = localStorage.getItem(SB_KEY);
+    if (v === null) {
+        v = sbMaxId(sbRows);
+        localStorage.setItem(SB_KEY, v);
+    }
+    return Number(v);
+}
+
+function sbCell(text, style) {
+    const td = document.createElement('td');
+    td.style.cssText = 'padding: 10px; border: 1px solid #eee;' + (style || '');
+    td.textContent = text;
+    return td;
+}
+
+function renderSudahBayar() {
+    const tbody = document.getElementById('sbTbody');
+    if (!tbody) return;
+
+    const seen = sbLastSeen();
+    const unseen = sbRows.filter(r => Number(r.id) > seen).length;
+
+    const badge = document.getElementById('sbBadgeCount');
+    if (badge) {
+        badge.textContent = unseen + ' baru';
+        badge.style.display = unseen > 0 ? 'inline-block' : 'none';
+    }
+
+    tbody.innerHTML = '';
+    if (sbRows.length === 0) {
+        const tr = document.createElement('tr');
+        const td = document.createElement('td');
+        td.colSpan = 6;
+        td.style.cssText = 'padding: 20px; text-align: center; color: #999;';
+        td.textContent = 'Belum ada nasabah yang membayar.';
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+    }
+
+    sbRows.forEach(r => {
+        const isNew = Number(r.id) > seen;
+        const tr = document.createElement('tr');
+        if (isNew) tr.style.background = '#ecfdf5';
+
+        // Kolom tanggal, dengan penanda BARU jika data belum dilihat
+        const tdTgl = sbCell(r.tgl, '');
+        if (isNew) {
+            const tag = document.createElement('span');
+            tag.textContent = 'BARU';
+            tag.style.cssText = 'margin-left: 6px; background: #16a34a; color: white; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700;';
+            tdTgl.appendChild(tag);
+        }
+        tr.appendChild(tdTgl);
+        tr.appendChild(sbCell(r.kode_ao || '-', ''));
+        tr.appendChild(sbCell(r.nama_ao || '-', ''));
+        tr.appendChild(sbCell(r.no_nasabah || '-', ''));
+        tr.appendChild(sbCell(r.nama_nasabah || '-', 'font-weight: 600;'));
+
+        const tdBukti = sbCell('', 'text-align: center;');
+        const link = document.createElement('a');
+        link.href = r.bukti_url;
+        link.target = '_blank';
+        link.style.cssText = 'color: #4e4bc1; font-weight: 600;';
+        link.textContent = 'Lihat';
+        tdBukti.appendChild(link);
+        tr.appendChild(tdBukti);
+
+        tbody.appendChild(tr);
+    });
+}
+
+function tandaiSudahBayarDilihat() {
+    localStorage.setItem(SB_KEY, sbMaxId(sbRows));
+    renderSudahBayar();
+}
+
+function refreshSudahBayar() {
+    fetch(SB_URL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
+        .then(r => r.json())
+        .then(data => {
+            if (!Array.isArray(data.rows)) return;
+            sbRows = data.rows;
+            renderSudahBayar();
+        })
+        .catch(err => console.error('Gagal refresh daftar sudah bayar:', err));
+}
+
+renderSudahBayar();
+setInterval(refreshSudahBayar, 15000);
     </script>
 
 </body>
