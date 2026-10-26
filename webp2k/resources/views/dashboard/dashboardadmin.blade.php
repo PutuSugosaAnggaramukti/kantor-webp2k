@@ -108,6 +108,7 @@
                             <tbody id="sbTbody"></tbody>
                         </table>
                     </div>
+                    <div id="sbPager" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 14px; font-size: 13px;"></div>
                 </div>
 
                 {{-- RIWAYAT STATISTIK BULANAN (arsip bulan lalu, bisa di-download) --}}
@@ -863,6 +864,8 @@ setInterval(refreshStatistikKinerja, 15000);
 const SB_URL = "{{ route('admin.dashboard.sudah-bayar') }}";
 const SB_KEY = 'sudahBayarLastSeenId';
 let sbRows = @json($list_sudah_bayar);
+const SB_PER_PAGE = 10;
+let sbPage = 1;
 
 function sbMaxId(rows) {
     return rows.reduce((m, r) => Math.max(m, Number(r.id)), 0);
@@ -908,10 +911,15 @@ function renderSudahBayar() {
         td.textContent = 'Belum ada nasabah yang membayar.';
         tr.appendChild(td);
         tbody.appendChild(tr);
+        renderSudahBayarPager();
         return;
     }
 
-    sbRows.forEach(r => {
+    const totalPages = Math.max(1, Math.ceil(sbRows.length / SB_PER_PAGE));
+    if (sbPage > totalPages) sbPage = totalPages;
+    const start = (sbPage - 1) * SB_PER_PAGE;
+
+    sbRows.slice(start, start + SB_PER_PAGE).forEach(r => {
         const isNew = Number(r.id) > seen;
         const tr = document.createElement('tr');
         if (isNew) tr.style.background = '#ecfdf5';
@@ -941,6 +949,43 @@ function renderSudahBayar() {
 
         tbody.appendChild(tr);
     });
+
+    renderSudahBayarPager();
+}
+
+// Kontrol pagination: Sebelumnya | Halaman X dari Y | Berikutnya
+function renderSudahBayarPager() {
+    const el = document.getElementById('sbPager');
+    if (!el) return;
+    el.innerHTML = '';
+
+    const totalPages = Math.max(1, Math.ceil(sbRows.length / SB_PER_PAGE));
+    if (sbRows.length <= SB_PER_PAGE) return;
+
+    const btnStyle = 'padding: 5px 12px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: #334155; cursor: pointer; font-size: 12px;';
+    const btnDisabled = 'padding: 5px 12px; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; color: #cbd5e1; cursor: not-allowed; font-size: 12px;';
+
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.textContent = '« Sebelumnya';
+    prev.disabled = sbPage <= 1;
+    prev.style.cssText = prev.disabled ? btnDisabled : btnStyle;
+    prev.onclick = () => { sbPage--; renderSudahBayar(); };
+
+    const info = document.createElement('span');
+    info.style.color = '#64748b';
+    info.textContent = 'Halaman ' + sbPage + ' dari ' + totalPages + ' (' + sbRows.length + ' data)';
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.textContent = 'Berikutnya »';
+    next.disabled = sbPage >= totalPages;
+    next.style.cssText = next.disabled ? btnDisabled : btnStyle;
+    next.onclick = () => { sbPage++; renderSudahBayar(); };
+
+    el.appendChild(prev);
+    el.appendChild(info);
+    el.appendChild(next);
 }
 
 function tandaiSudahBayarDilihat() {
