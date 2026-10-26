@@ -178,7 +178,7 @@
                 <div class="detail-section" style="border: 2px solid #55efc4; background: #f0fff4; text-align: center;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                         <span class="section-label" style="color: #00b894; margin: 0;">
-                            <i class="fa-solid fa-receipt"></i> Bukti Transfer
+                            <i class="fa-solid fa-receipt"></i> Bukti Pembayaran
                         </span>
                         <span style="background: #55efc4; color: #006266; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase;">
                             Verified Payment
@@ -194,7 +194,7 @@
                     </div>
                     
                     <p style="margin-top: 10px; font-size: 11px; color: #00b894; font-weight: 600;">
-                        <i class="fa-solid fa-circle-info"></i> Nasabah melakukan pembayaran via transfer.
+                        <i class="fa-solid fa-circle-info"></i> Nasabah melakukan pembayaran.
                     </p>
                 </div>
                 @endif

@@ -157,6 +157,42 @@
                     <canvas id="myChart"></canvas>
                 </div>
 
+                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Daftar Nasabah Sudah Bayar <small style="font-size: 0.65rem; color: #999;">(berdasarkan Bukti Pembayaran, {{ $list_sudah_bayar->count() }} data terbaru)</small></h3>
+                <div style="background: white; padding: 20px; border-radius: 12px; overflow-x: auto; margin-bottom: 1.5rem;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead>
+                            <tr style="background: #f1f5f9; text-align: left; border-bottom: 2px solid #000;">
+                                <th style="padding: 10px; border: 1px solid #ddd;">Tgl Laporan</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Kode AO</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">AO</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">No. Angsuran</th>
+                                <th style="padding: 10px; border: 1px solid #ddd;">Nasabah</th>
+                                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Bukti</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($list_sudah_bayar as $bayar)
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 10px; border: 1px solid #eee;">{{ \Carbon\Carbon::parse($bayar->created_at)->format('d/m/Y H:i') }}</td>
+                                <td style="padding: 10px; border: 1px solid #eee;">{{ $bayar->kode_ao }}</td>
+                                <td style="padding: 10px; border: 1px solid #eee;">{{ $bayar->nama_ao ?? '-' }}</td>
+                                <td style="padding: 10px; border: 1px solid #eee;">{{ $bayar->no_nasabah }}</td>
+                                <td style="padding: 10px; border: 1px solid #eee; font-weight: 600;">{{ $bayar->nama_nasabah }}</td>
+                                <td style="padding: 10px; border: 1px solid #eee; text-align: center;">
+                                    <a href="{{ asset('uploads/kunjungan/' . $bayar->bukti_transfer) }}" target="_blank" style="color: #4e4bc1; font-weight: 600;">
+                                        <i class="fa-solid fa-receipt"></i> Lihat
+                                    </a>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" style="padding: 20px; text-align: center; color: #999;">Belum ada nasabah yang membayar.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
                 <h3 style="margin-top: 2rem; margin-bottom: 1.5rem;">Menu Aplikasi</h3>
                 
                 <div class="menu-grid">

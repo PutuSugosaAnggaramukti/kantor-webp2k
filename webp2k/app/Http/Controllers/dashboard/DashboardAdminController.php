@@ -151,6 +151,24 @@ class DashboardAdminController extends Controller
         ->where('type', 'App\Notifications\IjinKunjunganNotification')
         ->count() : 0;
 
+    // --- DAFTAR NASABAH SUDAH BAYAR (laporan yang punya bukti pembayaran) ---
+    $list_sudah_bayar = \DB::table('kunjungans')
+        ->leftJoin('karyawans', 'kunjungans.kode_ao', '=', 'karyawans.kode_ao')
+        ->whereNotNull('kunjungans.bukti_transfer')
+        ->where('kunjungans.bukti_transfer', '!=', '')
+        ->orderBy('kunjungans.created_at', 'desc')
+        ->select(
+            'kunjungans.id',
+            'kunjungans.no_nasabah',
+            'kunjungans.nama_nasabah',
+            'kunjungans.kode_ao',
+            'kunjungans.created_at',
+            'kunjungans.bukti_transfer',
+            'karyawans.nama as nama_ao'
+        )
+        ->limit(200)
+        ->get();
+
     // --- LOGIKA PERFORMA AO (INDIVIDU) ---
     [$tahunAktif, $bulanAngkaAktif] = explode('-', $bulanAktif);
     $performaAO = \App\Models\Karyawan::where('status', 'aktif')->get()->map(function ($karyawan) use ($bulanAktif, $tahunAktif, $bulanAngkaAktif) {
@@ -350,6 +368,7 @@ class DashboardAdminController extends Controller
         'pengajuan_ijin_count' => $pengajuan_ijin_count,
         'list_pengajuan' => $list_pengajuan,
         'total_gagal_global' => $total_gagal_global,
+        'list_sudah_bayar' => $list_sudah_bayar,
         'daftarBulan' => $daftarBulan,
     ];
 }
