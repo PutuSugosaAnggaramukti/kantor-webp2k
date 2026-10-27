@@ -915,9 +915,17 @@ public function getDaftarNoAnggota(Request $request)
     public function updateStatus(Request $request, $id)
     {
         try {
-            // 1. Update status kunjungan
+            // Hanya nilai enum DB yang boleh masuk. 'Broken Promise' bukan status tersimpan:
+            // disimpan sebagai Menunggu, dan tampilannya Broken Promise otomatis bila tanggal janji sudah lewat.
+            $status = $request->status === 'Broken Promise' ? 'Menunggu Pembayaran' : $request->status;
+            if (!in_array($status, ['Menunggu Pembayaran', 'Sudah Bayar', 'Gagal Bayar'], true)) {
+                return response()->json(['message' => 'Status tidak valid.'], 422);
+            }
+
+            // 1. Update status kunjungan.
+            // Hanya kolom status yang ditulis; tgl_janji_bayar & nominal_janji_bayar TIDAK disentuh.
             DB::table('kunjungans')->where('id', $id)->update([
-                'status' => $request->status,
+                'status' => $status,
                 'updated_at' => now()
             ]);
 
@@ -937,7 +945,7 @@ public function getDaftarNoAnggota(Request $request)
                     // KIRIM NOTIFIKASI
                     $ao->notify(new \App\Notifications\UpdateStatusNotification([
                         'nama_nasabah' => $dataKunjungan->nama_nasabah,
-                        'status' => $request->status,
+                        'status' => $status,
                         'id_kunjungan' => $id
                     ]));
                 } else {
@@ -948,7 +956,7 @@ public function getDaftarNoAnggota(Request $request)
 
             ActivityLog::record(
                 'Ubah Status',
-                'Mengubah status jadi "' . $request->status . '" untuk kunjungan id ' . $id
+                'Mengubah status jadi "' . $status . '" untuk kunjungan id ' . $id
             );
 
             return response()->json(['success' => true]);
@@ -1057,7 +1065,11 @@ public function getDaftarNoAnggota(Request $request)
 
             $updateData = [];
             if ($request->has('catatan')) $updateData['catatan'] = $request->catatan;
-            if ($request->has('tgl_janji_bayar')) $updateData['tgl_janji_bayar'] = $request->tgl_janji_bayar ?: null;
+            if ($request->has('tgl_janji_bayar')) {
+                // Simpan riwayat sebelum tanggal ditimpa (tercatat hanya jika tanggal benar-benar berubah)
+                \App\Services\JanjiBayarHistory::catat((int) $id, $kunjungan->tgl_janji_bayar, $request->tgl_janji_bayar);
+                $updateData['tgl_janji_bayar'] = $request->tgl_janji_bayar ?: null;
+            }
             if ($request->has('nominal_janji_bayar')) $updateData['nominal_janji_bayar'] = $request->nominal_janji_bayar ?: null;
             if ($request->has('status')) {
                 $status = $request->status;

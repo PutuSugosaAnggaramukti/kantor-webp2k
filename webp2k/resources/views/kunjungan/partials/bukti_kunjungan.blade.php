@@ -325,6 +325,37 @@
                 </div>
                 @endif
 
+    {{-- 4b. Riwayat Perubahan Tanggal Janji Bayar --}}
+    @php
+        $riwayatJanji = \App\Services\JanjiBayarHistory::daftar((int) $detail->id);
+    @endphp
+    @if($riwayatJanji->isNotEmpty())
+    <div class="detail-section" style="background: #f5f3ff; border-color: #c4b5fd;">
+        <span class="section-label" style="color: #5b21b6;"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat Perubahan Janji Bayar</span>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+            @foreach($riwayatJanji as $h)
+                @php
+                    if ($h->tgl_lama && $h->tgl_baru) {
+                        $jenis = $h->tgl_baru > $h->tgl_lama ? 'Perpanjangan' : 'Dimajukan';
+                    } elseif (!$h->tgl_lama && $h->tgl_baru) {
+                        $jenis = 'Tanggal Ditetapkan';
+                    } else {
+                        $jenis = 'Tanggal Dihapus';
+                    }
+                    $fmt = fn($t) => $t ? \Carbon\Carbon::parse($t)->translatedFormat('d M Y') : 'Belum dapat dipastikan';
+                @endphp
+                <div style="background: white; border: 1px solid #ddd6fe; border-radius: 10px; padding: 10px 14px; font-size: 13px;">
+                    <strong style="color: {{ $jenis === 'Perpanjangan' ? '#b45309' : '#5b21b6' }};">{{ $jenis }}</strong>
+                    : {{ $fmt($h->tgl_lama) }} &rarr; {{ $fmt($h->tgl_baru) }}
+                    <div style="color: #888; font-size: 11px; margin-top: 3px;">
+                        Diubah oleh {{ $h->diubah_oleh }} &middot; {{ \Carbon\Carbon::parse($h->created_at)->translatedFormat('d M Y, H:i') }}
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     {{-- Tombol Kembali --}}
     <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 25px;">
         <button onclick="loadPage('laporan-kunjungan')" 

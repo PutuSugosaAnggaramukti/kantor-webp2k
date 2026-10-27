@@ -713,7 +713,11 @@ class KunjunganController extends Controller
 
             $updateData = [];
             if ($request->has('catatan')) $updateData['catatan'] = $request->catatan;
-            if ($request->has('tgl_janji_bayar')) $updateData['tgl_janji_bayar'] = $request->tgl_janji_bayar ?: null;
+            if ($request->has('tgl_janji_bayar')) {
+                // Simpan riwayat sebelum tanggal ditimpa (tercatat hanya jika tanggal benar-benar berubah)
+                \App\Services\JanjiBayarHistory::catat((int) $id, $kunjungan->tgl_janji_bayar, $request->tgl_janji_bayar);
+                $updateData['tgl_janji_bayar'] = $request->tgl_janji_bayar ?: null;
+            }
             if ($request->has('nominal_janji_bayar')) $updateData['nominal_janji_bayar'] = $request->nominal_janji_bayar ?: null;
             $updateData['updated_at'] = now();
 
