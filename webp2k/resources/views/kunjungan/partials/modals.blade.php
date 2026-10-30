@@ -59,14 +59,14 @@
                 <div class="form-group mb-3">
                     <label style="font-weight: 600;">Foto Kunjungan (Wajib GPS Nyala)</label>
                     <input type="file" name="foto_kunjungan[]" class="form-control" multiple 
-                        accept="image/jpeg, image/jpg" required 
+                        accept="image/*,.heic,.heif" required 
                         style="border: 1px solid #ddd; padding: 8px;"
                         onchange="bacaGpsDariFotoDipilih(this)">
                     
                     <div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 10px; margin-top: 10px; border-radius: 4px;">
                         <p style="font-size: 11px; color: #856404; margin: 0; line-height: 1.4;">
                             <i class="fas fa-exclamation-triangle"></i> <strong>PENTING:</strong><br>
-                            - Gunakan foto <strong>ASLI</strong> dari kamera HP (format .JPG).<br>
+                            - Gunakan foto <strong>ASLI</strong> dari kamera HP (JPG, PNG, WEBP, atau HEIC).<br>
                             - Pastikan <strong>GPS Kamera</strong> aktif saat memotret.<br>
                             - Foto Screenshot atau dari WhatsApp akan <strong>DITOLAK</strong> karena tidak memiliki data GPS asli.
                         </p>
@@ -145,7 +145,7 @@
 
             <div class="form-group mb-3">
                 <label style="font-weight: 600;">Foto Kunjungan (Wajib GPS)</label>
-                <input type="file" name="foto_kunjungan[]" class="form-control" multiple accept=".jpg,.jpeg" required onchange="bacaGpsDariFotoDipilih(this)">
+                <input type="file" name="foto_kunjungan[]" class="form-control" multiple accept="image/*,.heic,.heif" required onchange="bacaGpsDariFotoDipilih(this)">
             </div>
 
             <div class="form-group mb-3">

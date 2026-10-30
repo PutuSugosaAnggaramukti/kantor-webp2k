@@ -877,6 +877,42 @@
         );
     }
 
+    // ===== Dukungan format foto: JPG, PNG, WEBP, HEIC/HEIF =====
+    let heicLoader = null;
+
+    function isHeicFile(file) {
+        return /image\/hei[cf]/i.test(file.type) || /\.(heic|heif)$/i.test(file.name || '');
+    }
+
+    // Library konversi HEIC hanya dimuat saat benar-benar ada foto HEIC
+    function loadHeic2any() {
+        if (window.heic2any) return Promise.resolve(window.heic2any);
+        if (!heicLoader) {
+            heicLoader = new Promise((res, rej) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+                s.onload = () => res(window.heic2any);
+                s.onerror = () => { heicLoader = null; rej(new Error('Gagal memuat konverter HEIC. Periksa koneksi internet.')); };
+                document.head.appendChild(s);
+            });
+        }
+        return heicLoader;
+    }
+
+    // HEIC diubah jadi JPEG (browser umumnya tidak bisa menampilkan HEIC). Format lain dibiarkan.
+    function prepareImage(file) {
+        if (!isHeicFile(file)) return Promise.resolve(file);
+        return loadHeic2any()
+            .then(h2a => h2a({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
+            .then(out => {
+                const blob = Array.isArray(out) ? out[0] : out;
+                return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg', lastModified: Date.now() });
+            })
+            .catch(() => {
+                throw new Error('Foto "' + file.name + '" (HEIC) tidak bisa dikonversi. Ambil ulang foto atau pilih format JPG/PNG.');
+            });
+    }
+
     function compressImages(form) {
         return new Promise((resolve, reject) => {
             const fileInput = form.querySelector('input[name="foto_kunjungan[]"]');
@@ -889,14 +925,14 @@
             const TOTAL_BUDGET = 6 * 1024 * 1024;  // batas total unggahan per laporan
             const files = Array.from(fileInput.files);
 
-            // Kecilkan satu foto lewat canvas. Gagal baca/decode -> reject (tidak menggantung).
+            // Kecilkan satu foto lewat canvas (JPEG keluaran). Gagal -> reject, tidak menggantung.
             function encodeFile(file, maxDim, quality) {
                 return new Promise((res, rej) => {
                     const reader = new FileReader();
                     reader.onerror = () => rej(new Error('Foto "' + file.name + '" tidak bisa dibaca.'));
                     reader.onload = function(e) {
                         const img = new Image();
-                        img.onerror = () => rej(new Error('Foto "' + file.name + '" tidak didukung. Gunakan foto JPG langsung dari kamera.'));
+                        img.onerror = () => rej(new Error('Foto "' + file.name + '" tidak didukung. Pilih format JPG, PNG, WEBP, atau HEIC.'));
                         img.onload = function() {
                             let w = img.width, h = img.height;
                             if (w > maxDim || h > maxDim) {
@@ -907,7 +943,10 @@
                             const canvas = document.createElement('canvas');
                             canvas.width = w;
                             canvas.height = h;
-                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                            const ctx = canvas.getContext('2d');
+                            ctx.fillStyle = '#ffffff';          // PNG transparan jangan jadi hitam saat jadi JPEG
+                            ctx.fillRect(0, 0, w, h);
+                            ctx.drawImage(img, 0, 0, w, h);
                             canvas.toBlob(function(blob) {
                                 if (!blob) { rej(new Error('Foto "' + file.name + '" gagal dikecilkan.')); return; }
                                 res(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
@@ -919,30 +958,38 @@
                 });
             }
 
-            // Foto kecil & JPEG dibiarkan; selainnya dikecilkan
-            const passSatu = files.map(file =>
-                (file.size <= MAX_SIZE && file.type === 'image/jpeg')
-                    ? Promise.resolve(file)
-                    : encodeFile(file, 1920, 0.75)
-            );
+            Promise.all(files.map(prepareImage)).then(srcFiles => {
+                // Foto kecil & JPEG dibiarkan; selainnya dikecilkan
+                const passSatu = srcFiles.map((file, i) =>
+                    (file.size <= MAX_SIZE && file.type === 'image/jpeg')
+                        ? Promise.resolve(file)
+                        : encodeFile(file, 1920, 0.75)
+                );
+                return Promise.all(passSatu).then(compressed => {
+                    const total = compressed.reduce((s, f) => s + f.size, 0);
+                    if (total <= TOTAL_BUDGET) return compressed;
 
-            Promise.all(passSatu).then(compressed => {
-                const total = compressed.reduce((s, f) => s + f.size, 0);
-                if (total <= TOTAL_BUDGET) return compressed;
-
-                // Total terlalu besar (koneksi bisa putus di tengah unggahan):
-                // kecilkan ulang foto yang masih besar dari file asli dengan setting lebih hemat.
-                // Foto yang sudah kecil tidak diubah, supaya data EXIF GPS-nya tetap utuh.
-                return Promise.all(compressed.map((f, i) =>
-                    f.size > 400 * 1024 ? encodeFile(files[i], 1280, 0.6) : f
-                ));
+                    // Total terlalu besar (koneksi bisa putus di tengah unggahan):
+                    // kecilkan ulang foto yang masih besar dengan setting lebih hemat.
+                    // Foto yang sudah kecil tidak diubah, supaya data EXIF GPS-nya tetap utuh.
+                    return Promise.all(compressed.map((f, i) =>
+                        f.size > 400 * 1024 ? encodeFile(srcFiles[i], 1280, 0.6) : f
+                    ));
+                });
             })
             .then(compressed => {
                 const fd = new FormData(form);
                 fd.delete('foto_kunjungan[]');
                 compressed.forEach(f => fd.append('foto_kunjungan[]', f));
-                resolve(fd);
+
+                // Bukti transfer HEIC juga diubah ke JPEG agar bisa ditampilkan di Detail Bukti
+                const bukti = form.querySelector('input[name="bukti_transfer"]');
+                if (bukti && bukti.files && bukti.files[0] && isHeicFile(bukti.files[0])) {
+                    return prepareImage(bukti.files[0]).then(f => { fd.set('bukti_transfer', f); return fd; });
+                }
+                return fd;
             })
+            .then(resolve)
             .catch(reject);
         });
     }
