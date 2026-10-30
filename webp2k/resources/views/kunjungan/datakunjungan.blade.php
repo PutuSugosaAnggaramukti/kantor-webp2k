@@ -13,6 +13,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/heic-exif.js') }}"></script>
     
     <style>
         .btn-excel { cursor: pointer; transition: 0.3s; }
@@ -118,6 +119,16 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
+                    if (isHeicFile(file)) {
+                        // HEIC: EXIF dibungkus ulang jadi segmen APP1 agar parser JPEG bisa membacanya
+                        const tiff = window.HeicExif.heicExifTiff(e.target.result);
+                        const app1 = tiff ? window.HeicExif.exifApp1Segment(tiff) : null;
+                        if (!app1) { resolve(null); return; }
+                        const fake = new Uint8Array(2 + app1.length);
+                        fake[0] = 0xFF; fake[1] = 0xD8; fake.set(app1, 2);
+                        resolve(ekstrakGpsExif(fake.buffer));
+                        return;
+                    }
                     resolve(ekstrakGpsExif(e.target.result));
                 } catch (err) {
                     resolve(null);
@@ -899,20 +910,44 @@
         return heicLoader;
     }
 
-    // HEIC diubah jadi JPEG (browser umumnya tidak bisa menampilkan HEIC). Format lain dibiarkan.
-    function prepareImage(file) {
-        if (!isHeicFile(file)) return Promise.resolve(file);
-        return loadHeic2any()
-            .then(h2a => h2a({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
-            .then(out => {
-                const blob = Array.isArray(out) ? out[0] : out;
-                return new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg', lastModified: Date.now() });
-            })
-            .catch(() => {
-                throw new Error('Foto "' + file.name + '" (HEIC) tidak bisa dikonversi. Ambil ulang foto atau pilih format JPG/PNG.');
-            });
+    function readFileBuffer(file) {
+        return new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = e => res(e.target.result);
+            r.onerror = () => rej(new Error('Foto "' + file.name + '" tidak bisa dibaca.'));
+            r.readAsArrayBuffer(file);
+        });
     }
 
+    // Pasang EXIF asli (GPS & waktu foto) dari HEIC ke JPEG. Dipanggil lagi setelah kompresi,
+    // karena kompresi lewat canvas menghapus EXIF.
+    function attachExif(jpegFile, tiff) {
+        return readFileBuffer(jpegFile).then(buf => {
+            const out = window.HeicExif.injectExifIntoJpeg(buf, tiff);
+            const f = out ? new File([out], jpegFile.name, { type: 'image/jpeg', lastModified: Date.now() }) : jpegFile;
+            f._tiff = tiff;
+            return f;
+        });
+    }
+
+    // HEIC diubah jadi JPEG; EXIF (GPS, waktu, dll) dari HEIC ikut dipasang ke JPEG-nya.
+    function prepareImage(file) {
+        if (!isHeicFile(file)) return Promise.resolve(file);
+        return readFileBuffer(file).then(buf => {
+            let tiff = null;
+            try { tiff = window.HeicExif.heicExifTiff(buf); } catch (e) { tiff = null; }
+            return loadHeic2any()
+                .then(h2a => h2a({ blob: file, toType: 'image/jpeg', quality: 0.9 }))
+                .then(out => {
+                    const blob = Array.isArray(out) ? out[0] : out;
+                    const jpg = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg', lastModified: Date.now() });
+                    return tiff ? attachExif(jpg, tiff) : jpg;
+                });
+        })
+        .catch(() => {
+            throw new Error('Foto "' + file.name + '" (HEIC) tidak bisa dikonversi. Ambil ulang foto atau pilih format JPG/PNG.');
+        });
+    }
     function compressImages(form) {
         return new Promise((resolve, reject) => {
             const fileInput = form.querySelector('input[name="foto_kunjungan[]"]');
@@ -963,7 +998,7 @@
                 const passSatu = srcFiles.map((file, i) =>
                     (file.size <= MAX_SIZE && file.type === 'image/jpeg')
                         ? Promise.resolve(file)
-                        : encodeFile(file, 1920, 0.75)
+                        : encodeFile(file, 1920, 0.75).then(f => (file._tiff ? attachExif(f, file._tiff) : f))
                 );
                 return Promise.all(passSatu).then(compressed => {
                     const total = compressed.reduce((s, f) => s + f.size, 0);
@@ -973,7 +1008,7 @@
                     // kecilkan ulang foto yang masih besar dengan setting lebih hemat.
                     // Foto yang sudah kecil tidak diubah, supaya data EXIF GPS-nya tetap utuh.
                     return Promise.all(compressed.map((f, i) =>
-                        f.size > 400 * 1024 ? encodeFile(srcFiles[i], 1280, 0.6) : f
+                        f.size > 400 * 1024 ? encodeFile(srcFiles[i], 1280, 0.6).then(x => (srcFiles[i]._tiff ? attachExif(x, srcFiles[i]._tiff) : x)) : f
                     ));
                 });
             })
