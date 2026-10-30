@@ -782,6 +782,11 @@
                 setWaktuLaporanHp('form-waktu-laporan');
                 compressImages(form).then(formData => {
                     submitKunjungan(form, formData, btn);
+                }).catch(err => {
+                    // Foto gagal diproses: tombol dibuka lagi, tidak dibiarkan macet di "Menyimpan"
+                    btn.disabled = false;
+                    btn.innerHTML = 'Ya, Simpan!';
+                    Swal.fire('Foto Tidak Bisa Diproses', (err && err.message) || 'Periksa foto yang dipilih.', 'error');
                 });
             });
         }
@@ -873,63 +878,74 @@
     }
 
     function compressImages(form) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             const fileInput = form.querySelector('input[name="foto_kunjungan[]"]');
             if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
                 resolve(new FormData(form));
                 return;
             }
 
-            const MAX_SIZE = 1.5 * 1024 * 1024;
-            const MAX_WIDTH = 1920;
-            const MAX_HEIGHT = 1920;
-            const QUALITY = 0.75;
+            const MAX_SIZE = 1.5 * 1024 * 1024;    // foto di atas ini selalu dikecilkan
+            const TOTAL_BUDGET = 6 * 1024 * 1024;  // batas total unggahan per laporan
             const files = Array.from(fileInput.files);
-            const compressed = [];
-            let processed = 0;
 
-            files.forEach((file, idx) => {
-                if (file.size <= MAX_SIZE && file.type === 'image/jpeg') {
-                    compressed[idx] = file;
-                    processed++;
-                    if (processed === files.length) buildFormData();
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.onload = function() {
-                        let w = img.width, h = img.height;
-                        if (w > MAX_WIDTH || h > MAX_HEIGHT) {
-                            const ratio = Math.min(MAX_WIDTH / w, MAX_HEIGHT / h);
-                            w = Math.round(w * ratio);
-                            h = Math.round(h * ratio);
-                        }
-                        const canvas = document.createElement('canvas');
-                        canvas.width = w;
-                        canvas.height = h;
-                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                        canvas.toBlob(function(blob) {
-                            compressed[idx] = new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() });
-                            processed++;
-                            if (processed === files.length) buildFormData();
-                        }, 'image/jpeg', QUALITY);
+            // Kecilkan satu foto lewat canvas. Gagal baca/decode -> reject (tidak menggantung).
+            function encodeFile(file, maxDim, quality) {
+                return new Promise((res, rej) => {
+                    const reader = new FileReader();
+                    reader.onerror = () => rej(new Error('Foto "' + file.name + '" tidak bisa dibaca.'));
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.onerror = () => rej(new Error('Foto "' + file.name + '" tidak didukung. Gunakan foto JPG langsung dari kamera.'));
+                        img.onload = function() {
+                            let w = img.width, h = img.height;
+                            if (w > maxDim || h > maxDim) {
+                                const ratio = Math.min(maxDim / w, maxDim / h);
+                                w = Math.round(w * ratio);
+                                h = Math.round(h * ratio);
+                            }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w;
+                            canvas.height = h;
+                            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                            canvas.toBlob(function(blob) {
+                                if (!blob) { rej(new Error('Foto "' + file.name + '" gagal dikecilkan.')); return; }
+                                res(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+                            }, 'image/jpeg', quality);
+                        };
+                        img.src = e.target.result;
                     };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            });
+                    reader.readAsDataURL(file);
+                });
+            }
 
-            function buildFormData() {
+            // Foto kecil & JPEG dibiarkan; selainnya dikecilkan
+            const passSatu = files.map(file =>
+                (file.size <= MAX_SIZE && file.type === 'image/jpeg')
+                    ? Promise.resolve(file)
+                    : encodeFile(file, 1920, 0.75)
+            );
+
+            Promise.all(passSatu).then(compressed => {
+                const total = compressed.reduce((s, f) => s + f.size, 0);
+                if (total <= TOTAL_BUDGET) return compressed;
+
+                // Total terlalu besar (koneksi bisa putus di tengah unggahan):
+                // kecilkan ulang foto yang masih besar dari file asli dengan setting lebih hemat.
+                // Foto yang sudah kecil tidak diubah, supaya data EXIF GPS-nya tetap utuh.
+                return Promise.all(compressed.map((f, i) =>
+                    f.size > 400 * 1024 ? encodeFile(files[i], 1280, 0.6) : f
+                ));
+            })
+            .then(compressed => {
                 const fd = new FormData(form);
                 fd.delete('foto_kunjungan[]');
                 compressed.forEach(f => fd.append('foto_kunjungan[]', f));
                 resolve(fd);
-            }
+            })
+            .catch(reject);
         });
     }
-
     function handleAuthError() {
         Swal.fire({
             icon: 'warning',
@@ -1086,6 +1102,8 @@ document.getElementById('formKunjunganMandiri').addEventListener('submit', funct
     compressImages(formManual).then(formData => {
         // Pakai jalur yang sama dengan form jadwal: ada retry 1x bila koneksi putus
         submitKunjungan(formManual, formData, null);
+    }).catch(err => {
+        Swal.fire('Foto Tidak Bisa Diproses', (err && err.message) || 'Periksa foto yang dipilih.', 'error');
     });
     });
 });
