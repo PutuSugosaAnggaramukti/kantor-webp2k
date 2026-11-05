@@ -119,7 +119,8 @@
                                     $statusOtomatis = 'Sudah Bayar';
                                 } elseif ($item->status_kunjungan == 'Menunggu Pembayaran'
                                     && !empty($tglJanji)
-                                    && \Carbon\Carbon::parse($tglJanji)->isPast()) {
+                                    && \Carbon\Carbon::parse($tglJanji)->startOfDay()->lt(now()->startOfDay())) {
+                                    // Hanya jika TANGGAL janji sudah lewat (janji hari ini belum broken)
                                     // Janji bayar lewat & belum ada bukti -> broken promise
                                     $statusOtomatis = 'Broken Promise';
                                 }

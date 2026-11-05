@@ -1046,7 +1046,8 @@ public function getDaftarNoAnggota(Request $request)
             $data->status_efektif = 'Sudah Bayar';
         } elseif ($data->status === 'Menunggu Pembayaran'
             && !empty($data->tgl_janji_bayar)
-            && \Carbon\Carbon::parse($data->tgl_janji_bayar)->isPast()) {
+            && \Carbon\Carbon::parse($data->tgl_janji_bayar)->startOfDay()->lt(now()->startOfDay())) {
+            // Hanya jika TANGGAL janji sudah lewat (janji hari ini belum broken)
             $data->status_efektif = 'Broken Promise';
         } else {
             $data->status_efektif = $data->status ?: 'Menunggu Pembayaran';
