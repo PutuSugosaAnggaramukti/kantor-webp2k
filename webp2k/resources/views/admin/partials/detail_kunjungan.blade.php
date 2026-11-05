@@ -125,23 +125,26 @@
                                     $statusOtomatis = 'Broken Promise';
                                 }
                             @endphp
-                            @if($statusOtomatis)
-                                <span style="background-color: {{ $statusOtomatis == 'Sudah Bayar' ? '#d4edda' : '#343a40' }}; color: {{ $statusOtomatis == 'Sudah Bayar' ? '#155724' : '#fff' }}; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; display: inline-block;">
-                                    @if($statusOtomatis == 'Sudah Bayar') ✅ @else ❌ @endif {{ $statusOtomatis }}
-                                </span>
-                            @else
-                            <select class="status-select" 
-                                    data-id="{{ $item->id_kunjungan }}"
-                                    data-kode-ao="{{ $kode_ao }}"
-                                    style="padding: 5px; border-radius: 5px; font-weight: bold; font-size: 11px; cursor: pointer;
-                                    {{ $item->status_kunjungan == 'Sudah Bayar' ? 'background-color: #d4edda; color: #155724;' : '' }}
-                                    {{ $item->status_kunjungan == 'Gagal Bayar' ? 'background-color: #f8d7da; color: #721c24;' : '' }}
-                                    {{ $item->status_kunjungan == 'Menunggu Pembayaran' ? 'background-color: #fff3cd; color: #856404;' : '' }}">
-                                <option value="Menunggu Pembayaran" {{ $item->status_kunjungan == 'Menunggu Pembayaran' ? 'selected' : '' }}>⏳ Menunggu</option>
-                                <option value="Sudah Bayar" {{ $item->status_kunjungan == 'Sudah Bayar' ? 'selected' : '' }}>✅ Sudah Bayar</option>
-                                <option value="Gagal Bayar" {{ $item->status_kunjungan == 'Gagal Bayar' ? 'selected' : '' }}>❌ Gagal Bayar</option>
-                            </select>
-                            @endif
+                            {{-- Status hanya ditampilkan (badge). Perubahan status dilakukan lewat tombol Edit. --}}
+                            @php
+                                $statusTampil = $statusOtomatis ?? ($item->status_kunjungan ?: 'Menunggu Pembayaran');
+                                $badgeStyle = [
+                                    'Sudah Bayar'          => 'background-color: #d4edda; color: #155724;',
+                                    'Gagal Bayar'          => 'background-color: #f8d7da; color: #721c24;',
+                                    'Broken Promise'       => 'background-color: #343a40; color: #fff;',
+                                    'Menunggu Pembayaran'  => 'background-color: #fff3cd; color: #856404;',
+                                ][$statusTampil] ?? 'background-color: #fff3cd; color: #856404;';
+                                $badgeIcon = [
+                                    'Sudah Bayar'         => '✅',
+                                    'Gagal Bayar'         => '❌',
+                                    'Broken Promise'      => '❌',
+                                    'Menunggu Pembayaran' => '⏳',
+                                ][$statusTampil] ?? '⏳';
+                                $badgeLabel = $statusTampil === 'Menunggu Pembayaran' ? 'Menunggu' : $statusTampil;
+                            @endphp
+                            <span style="{{ $badgeStyle }} padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; display: inline-block;">
+                                {{ $badgeIcon }} {{ $badgeLabel }}
+                            </span>
                         @else
                             <span style="background-color: #e9ecef; color: #6c757d; padding: 5px 10px; border-radius: 5px; font-size: 10px; font-weight: bold; display: inline-block; border: 1px dashed #adb5bd;">
                                 Belum Kunjungan
