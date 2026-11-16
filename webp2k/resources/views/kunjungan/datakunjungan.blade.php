@@ -1017,12 +1017,20 @@
                 fd.delete('foto_kunjungan[]');
                 compressed.forEach(f => fd.append('foto_kunjungan[]', f));
 
-                // Bukti transfer HEIC juga diubah ke JPEG agar bisa ditampilkan di Detail Bukti
+                // Bukti transfer ikut diproses seperti foto: HEIC -> JPEG, lalu dikecilkan bila besar.
+                // Sebelumnya dikirim mentah (3-10 MB dari HP) sehingga unggahan lambat & sering putus.
                 const bukti = form.querySelector('input[name="bukti_transfer"]');
-                if (bukti && bukti.files && bukti.files[0] && isHeicFile(bukti.files[0])) {
-                    return prepareImage(bukti.files[0]).then(f => { fd.set('bukti_transfer', f); return fd; });
-                }
-                return fd;
+                if (!bukti || !bukti.files || !bukti.files[0]) return fd;
+                const fileBukti = bukti.files[0];
+                if (!/^image\//i.test(fileBukti.type) && !isHeicFile(fileBukti)) return fd;
+
+                return prepareImage(fileBukti)
+                    .then(f => {
+                        if (f.size <= 1024 * 1024 && f.type === 'image/jpeg') return f;
+                        return encodeFile(f, 1600, 0.8).catch(() => f); // gagal kecilkan -> pakai file apa adanya
+                    })
+                    .then(f => { fd.set('bukti_transfer', f); return fd; });
+                    // Error HEIC (tidak bisa dikonversi) dilempar ke pemanggil dan ditampilkan ke AO
             })
             .then(resolve)
             .catch(reject);
