@@ -5,6 +5,7 @@ namespace App\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class JanjiBayarHistory
 {
@@ -17,7 +18,7 @@ class JanjiBayarHistory
         $lama = self::normal($tglLama);
         $baru = self::normal($tglBaruInput);
 
-        if ($lama === $baru) {
+        if ($lama === $baru || !self::tersedia()) {
             return;
         }
 
@@ -33,11 +34,21 @@ class JanjiBayarHistory
     /** Riwayat terbaru di atas, untuk ditampilkan di Detail Bukti. */
     public static function daftar(int $kunjunganId)
     {
+        if (!self::tersedia()) {
+            return collect();
+        }
+
         return DB::table('kunjungan_janji_histories')
             ->where('kunjungan_id', $kunjunganId)
             ->orderBy('created_at', 'desc')
             ->orderBy('id', 'desc')
             ->get();
+    }
+
+    // Tabel belum ada (migrasi belum dijalankan) -> fitur riwayat dilewati, halaman tetap jalan
+    private static function tersedia(): bool
+    {
+        return Schema::hasTable('kunjungan_janji_histories');
     }
 
     private static function normal(?string $tgl): ?string
