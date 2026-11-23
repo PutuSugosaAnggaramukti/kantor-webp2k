@@ -240,9 +240,15 @@ public function detail($kode_ao)
     try {
         $data_adm = \DB::table('data_kunjungan_adms')
             ->leftJoin('kunjungans', function ($join) {
-                $join->on('data_kunjungan_adms.no_angsuran', '=', 'kunjungans.no_nasabah')
-                     ->on('data_kunjungan_adms.kode_ao', '=', 'kunjungans.kode_ao')
-                     ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
+                // Laporan terhubung ke jadwal lewat jadwal_id. Pencocokan nama + tanggal
+                // hanya untuk laporan lama yang belum punya jadwal_id.
+                $join->on('kunjungans.jadwal_id', '=', 'data_kunjungan_adms.id')
+                     ->orWhere(function ($q) {
+                         $q->whereNull('kunjungans.jadwal_id')
+                           ->whereColumn('kunjungans.no_nasabah', 'data_kunjungan_adms.no_angsuran')
+                           ->whereColumn('kunjungans.kode_ao', 'data_kunjungan_adms.kode_ao')
+                           ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
+                     });
             })
             ->leftJoin('nasabahs', 'data_kunjungan_adms.no_angsuran', '=', 'nasabahs.no_angsuran')
             ->where('data_kunjungan_adms.kode_ao', $kode_ao_clean)
@@ -273,46 +279,20 @@ public function detail($kode_ao)
                 'nasabahs.alamat as alamat_master'
             );
 
+       // 2. Ambil data dari Kunjungan Mandiri (laporan yang tidak terhubung ke jadwal mana pun)
         $data_mandiri = \DB::table('kunjungans')
             ->leftJoin('data_kunjungan_adms', function ($join) {
-                $join->on('kunjungans.no_nasabah', '=', 'data_kunjungan_adms.no_angsuran')
-                     ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao')
-                     ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
+                $join->on('kunjungans.jadwal_id', '=', 'data_kunjungan_adms.id')
+                     ->orWhere(function ($q) {
+                         $q->whereNull('kunjungans.jadwal_id')
+                           ->whereColumn('kunjungans.no_nasabah', 'data_kunjungan_adms.no_angsuran')
+                           ->whereColumn('kunjungans.kode_ao', 'data_kunjungan_adms.kode_ao')
+                           ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
+                     });
             })
             ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
             ->where('kunjungans.kode_ao', $kode_ao_clean)
-            ->whereNull('data_kunjungan_adms.no_angsuran')
-            ->whereRaw('MONTH(kunjungans.created_at) = ?', [$bulanFilter]) // ← dinamis
-            ->whereRaw('YEAR(kunjungans.created_at) = ?', [$tahunFilter])  // ← dinamis
-            ->select(
-                'kunjungans.no_nasabah as no_angsuran',
-                'kunjungans.nama_nasabah as nama_nasabah',
-                'kunjungans.alamat_nasabah as alamat_nasabah',
-                'kunjungans.created_at',
-                'kunjungans.id as id_kunjungan',
-                'kunjungans.status as status_kunjungan',
-                'kunjungans.catatan as catatan_lapangan',
-                'kunjungans.nominal_janji_bayar as nominal_janji_hasil',
-                'kunjungans.tgl_janji_bayar as tgl_janji_hasil',
-                'kunjungans.foto_kunjungan',
-                'kunjungans.bukti_transfer',
-                'kunjungans.koordinat as koordinat_db',
-                'kunjungans.created_at as tgl_realisasi',
-                'nasabahs.nasabah as nama_nasabah_asli',
-                'nasabahs.alamat as alamat_master'
-            );
-
-       // 2. Ambil data dari Kunjungan Mandiri
-        $data_mandiri = \DB::table('kunjungans')
-            ->leftJoin('data_kunjungan_adms', function ($join) {
-                $join->on('kunjungans.no_nasabah', '=', 'data_kunjungan_adms.no_angsuran')
-                     ->on('kunjungans.kode_ao', '=', 'data_kunjungan_adms.kode_ao')
-                     // Sama seperti di atas
-                     ->whereRaw('DATE(kunjungans.created_at) = DATE(data_kunjungan_adms.created_at)');
-            })
-            ->leftJoin('nasabahs', 'kunjungans.no_nasabah', '=', 'nasabahs.no_angsuran')
-            ->where('kunjungans.kode_ao', $kode_ao_clean)
-            ->whereNull('data_kunjungan_adms.no_angsuran')
+            ->whereNull('data_kunjungan_adms.id')
             ->when($namaFilter !== '', function ($q) use ($namaFilter) {
                 $q->where(function ($query) use ($namaFilter) {
                     $query->where('kunjungans.nama_nasabah', 'LIKE', '%' . $namaFilter . '%')
