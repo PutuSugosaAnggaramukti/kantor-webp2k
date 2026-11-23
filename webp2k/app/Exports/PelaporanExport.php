@@ -63,8 +63,10 @@ class PelaporanExport implements FromView, ShouldAutoSize, WithStyles
                 return "Tanggal {$tanggal} {$catatan}";
             })->implode("\n");
 
-            // Ambil tgl_janji_bayar & nominal terbaru (dari item terakhir)
-            $latest = $items->last();
+            // Janji bayar = kunjungan TERBARU yang punya janji (tanggal atau nominal).
+            // Kunjungan yang lebih baru tanpa janji tidak menghapus janji dari kunjungan sebelumnya.
+            $janji = $items->sortByDesc('created_at')
+                ->first(fn ($i) => !empty($i->tgl_janji_bayar) || (float) $i->nominal_janji_bayar > 0);
 
             return (object) [
                 'no_nasabah' => $first->no_nasabah,
@@ -80,8 +82,8 @@ class PelaporanExport implements FromView, ShouldAutoSize, WithStyles
                 'kode_ao' => $first->kode_ao,
                 'nama_karyawan' => $first->nama_karyawan,
                 'catatan_lengkap' => $catatanList,
-                'tgl_janji_bayar' => $latest->tgl_janji_bayar,
-                'nominal_janji_bayar' => $latest->nominal_janji_bayar,
+                'tgl_janji_bayar' => $janji->tgl_janji_bayar ?? null,
+                'nominal_janji_bayar' => $janji->nominal_janji_bayar ?? null,
                 'jumlah_kunjungan' => $items->count(),
             ];
         })->values();
